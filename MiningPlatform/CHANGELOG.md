@@ -5,7 +5,6 @@
 - Added universal CPU, GPU, FPGA, ASIC, and hybrid worker profiles.
 - Added evidence-based miner detection and persistence.
 - Added universal hardware website review surfaces.
-- Added Abia Nugrahanto author attribution headers across code files.
 - Removed packaged build and dependency artifacts from the release archive.
 - Included and synchronized `pnpm-lock.yaml` for reproducible workspace installation.
 - Fixed legacy ESM logger import and frontend type errors found during universal-hardware validation.
