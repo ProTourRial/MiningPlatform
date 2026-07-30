@@ -55,12 +55,15 @@ async function publishHashrate(event: DomainEvent<ShareAcceptedPayload>): Promis
 logger.info({ stream: eventStream }, 'mining projection started');
 try {
   await consumer.run(async (event) => {
-    await projection.handle(event);
-    if (event.eventName === MiningEvents.shareLocalAccepted) {
+    const result = await projection.handle(event);
+    if (result.processed && event.eventName === MiningEvents.shareLocalAccepted) {
       await publishHashrate(event as DomainEvent<ShareAcceptedPayload>);
     }
-    logger.debug({ eventId: event.eventId, eventName: event.eventName }, 'mining event projected');
+    logger.debug(
+      { eventId: event.eventId, eventName: event.eventName, processed: result.processed },
+      result.processed ? 'mining event projected' : 'duplicate mining event skipped',
+    );
   }, abortController.signal);
 } finally {
-  await Promise.all([consumer.close(), publisher.close()]);
+  await Promise.all([consumer.close(), publisher.close(), prisma.$disconnect()]);
 }

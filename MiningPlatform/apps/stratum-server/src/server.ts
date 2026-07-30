@@ -4,13 +4,15 @@ import { InMemoryEventBus, RedisStreamEventBus, type DomainEvent, type EventBus 
 import {
   BitcoinShareValidationService,
   InMemoryDuplicateShareStore,
-  calculateHashrateWindow,
+  addDecimalStrings,
+  calculateHashrateFromAccumulatedDifficulty,
   createDevelopmentJob,
   type BitcoinShareSubmission,
+  type DuplicateShareStore,
   type ShareValidationResult,
 } from '@mining/mining-core';
 import { createLogger } from '@mining/logger';
-import { hashSensitiveValue } from '@mining/security';
+import { hmacSensitiveValue } from '@mining/security';
 import {
   MiningEvents,
   type MinerSessionAuthorizedPayload,
@@ -36,45 +38,75 @@ import {
 } from '@mining/stratum-protocol';
 import type { StratumServerConfig } from './config.js';
 import { DevelopmentWorkerAuthenticator, type WorkerAuthenticator } from './development-authenticator.js';
-import { DevelopmentJsonlEventStore, type MiningEventStore } from './development-event-store.js';
+import {
+  DevelopmentJsonlEventStore,
+  PostgresOutboxEventStore,
+  type MiningEventStore,
+} from './development-event-store.js';
+import { RedisDuplicateShareStore } from './redis-duplicate-share-store.js';
 import type { MinerSession } from './session.js';
 
 const logger = createLogger('stratum-server');
 
 export interface StratumServerDependencies {
   authenticator: WorkerAuthenticator;
-  eventBus: EventBus;
+  eventBus?: EventBus;
   eventStore: MiningEventStore;
+  duplicateStore: DuplicateShareStore;
   close?: () => Promise<void>;
 }
 
 export class StratumServer {
   private readonly server: net.Server;
-  private readonly validator = new BitcoinShareValidationService(new InMemoryDuplicateShareStore());
+  private readonly validator: BitcoinShareValidationService;
   private readonly sessions = new Map<string, MinerSession>();
 
   constructor(
     private readonly config: StratumServerConfig,
     private readonly dependencies: StratumServerDependencies,
   ) {
+    this.validator = new BitcoinShareValidationService(dependencies.duplicateStore);
     this.server = net.createServer((socket) => this.acceptConnection(socket));
   }
 
   static async create(config: StratumServerConfig): Promise<StratumServer> {
-    const eventBus = config.eventBusDriver === 'redis'
-      ? await RedisStreamEventBus.connect({ url: config.redisUrl, stream: config.eventStream })
-      : new InMemoryEventBus();
-    eventBus.subscribe(MiningEvents.shareLocalAccepted, async (event) => {
+    if (process.env.NODE_ENV === 'production' && config.eventBusDriver !== 'redis') {
+      throw new Error('Production Stratum requires EVENT_BUS_DRIVER=redis for durable duplicate reservation');
+    }
+
+    const closers: Array<() => Promise<void>> = [];
+    const duplicateStore = config.eventBusDriver === 'redis'
+      ? await RedisDuplicateShareStore.connect(config.redisUrl)
+      : new InMemoryDuplicateShareStore();
+    if (duplicateStore instanceof RedisDuplicateShareStore) closers.push(() => duplicateStore.close());
+
+    let eventBus: EventBus | undefined;
+    let eventStore: MiningEventStore;
+    if (config.eventStoreDriver === 'postgres') {
+      eventStore = new PostgresOutboxEventStore();
+    } else {
+      eventStore = new DevelopmentJsonlEventStore(config.developmentDataDirectory);
+      eventBus = config.eventBusDriver === 'redis'
+        ? await RedisStreamEventBus.connect({ url: config.redisUrl, stream: config.eventStream })
+        : new InMemoryEventBus();
+      if (eventBus instanceof RedisStreamEventBus) closers.push(() => eventBus.close());
+    }
+
+    eventBus?.subscribe(MiningEvents.shareLocalAccepted, async (event) => {
       logger.info({ eventId: event.eventId, aggregateId: event.aggregateId }, 'local share accepted');
     });
-    eventBus.subscribe(MiningEvents.shareLocalRejected, async (event) => {
+    eventBus?.subscribe(MiningEvents.shareLocalRejected, async (event) => {
       logger.warn({ eventId: event.eventId, aggregateId: event.aggregateId }, 'local share rejected');
     });
+
     return new StratumServer(config, {
       authenticator: new DevelopmentWorkerAuthenticator(config),
       eventBus,
-      eventStore: new DevelopmentJsonlEventStore(config.developmentDataDirectory),
-      close: eventBus instanceof RedisStreamEventBus ? () => eventBus.close() : undefined,
+      eventStore,
+      duplicateStore,
+      close: async () => {
+        for (const close of closers.reverse()) await close();
+      },
     });
   }
 
@@ -105,16 +137,16 @@ export class StratumServer {
   }
 
   private acceptConnection(socket: Socket): void {
-    const remote = `${socket.remoteAddress ?? 'unknown'}:${socket.remotePort ?? 0}`;
+    const normalizedIp = (socket.remoteAddress ?? 'unknown').replace(/^::ffff:/, '');
     const session: MinerSession = {
       id: randomUUID(),
       socket,
-      remoteHash: hashSensitiveValue(remote),
+      remoteHash: hmacSensitiveValue(normalizedIp, this.config.ipHashKey),
       state: 'CONNECTED',
       extranonce1: randomBytes(4).toString('hex'),
       extranonce2Size: 4,
       assignedDifficulty: this.config.developmentDifficulty,
-      acceptedShares: [],
+      acceptedDifficultyBuckets: new Map(),
       submissionWindowStartedAt: Date.now(),
       submissionsInWindow: 0,
       connectedAt: new Date(),
@@ -137,22 +169,29 @@ export class StratumServer {
     let buffer = '';
     socket.on('data', (chunk: string) => {
       buffer += chunk;
-      if (Buffer.byteLength(buffer, 'utf8') > this.config.maximumLineBytes) {
-        logger.warn({ sessionId: session.id }, 'stratum input exceeded maximum line size');
-        socket.destroy();
-        return;
-      }
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-      for (const rawLine of lines) {
+      let newlineIndex = buffer.indexOf('\n');
+      while (newlineIndex >= 0) {
+        const rawLine = buffer.slice(0, newlineIndex);
+        buffer = buffer.slice(newlineIndex + 1);
+        if (Buffer.byteLength(rawLine, 'utf8') > this.config.maximumLineBytes) {
+          logger.warn({ sessionId: session.id }, 'stratum line exceeded maximum size');
+          socket.destroy();
+          return;
+        }
         const line = rawLine.trim();
-        if (!line) continue;
-        session.processing = session.processing
-          .then(() => this.handleLine(session, line))
-          .catch((error) => {
-            logger.error({ sessionId: session.id, error }, 'stratum session processing failed');
-            socket.destroy();
-          });
+        if (line) {
+          session.processing = session.processing
+            .then(() => this.handleLine(session, line))
+            .catch((error) => {
+              logger.error({ sessionId: session.id, error }, 'stratum session processing failed');
+              socket.destroy();
+            });
+        }
+        newlineIndex = buffer.indexOf('\n');
+      }
+      if (Buffer.byteLength(buffer, 'utf8') > this.config.maximumLineBytes) {
+        logger.warn({ sessionId: session.id }, 'unfinished stratum line exceeded maximum size');
+        socket.destroy();
       }
     });
 
@@ -309,14 +348,41 @@ export class StratumServer {
       job: session.currentJob,
       submission,
     });
-    await this.recordValidationResult(session, submission, result);
+    try {
+      await this.recordValidationResult(session, submission, result);
+    } catch (error) {
+      const ownsReservation = result.accepted || (result.fingerprint && result.code !== 'DUPLICATE');
+      if (ownsReservation && result.fingerprint) await this.validator.releaseReservation(result.fingerprint);
+      throw error;
+    }
 
     if (result.accepted) {
-      session.acceptedShares.push({ difficulty: result.assignedDifficulty, acceptedAt: submission.submittedAt });
-      session.acceptedShares = session.acceptedShares.filter(
-        (share) => share.acceptedAt.getTime() > Date.now() - 24 * 60 * 60 * 1_000,
+      const bucketStart = Math.floor(submission.submittedAt.getTime() / 60_000) * 60_000;
+      const bucket = session.acceptedDifficultyBuckets.get(bucketStart) ?? {
+        accumulatedDifficulty: '0',
+        shareCount: 0,
+      };
+      bucket.accumulatedDifficulty = addDecimalStrings(
+        [bucket.accumulatedDifficulty, result.assignedDifficulty],
+        12,
       );
-      const hashrate = calculateHashrateWindow(session.acceptedShares, 300);
+      bucket.shareCount += 1;
+      session.acceptedDifficultyBuckets.set(bucketStart, bucket);
+      const cutoff = Date.now() - 24 * 60 * 60 * 1_000;
+      for (const key of session.acceptedDifficultyBuckets.keys()) {
+        if (key < cutoff) session.acceptedDifficultyBuckets.delete(key);
+      }
+      const fiveMinuteCutoff = submission.submittedAt.getTime() - 5 * 60 * 1_000;
+      const included = [...session.acceptedDifficultyBuckets.entries()]
+        .filter(([key]) => key > fiveMinuteCutoff)
+        .map(([, value]) => value);
+      const hashrate = calculateHashrateFromAccumulatedDifficulty(
+        included.length === 0
+          ? '0'
+          : addDecimalStrings(included.map((value) => value.accumulatedDifficulty), 12),
+        included.reduce((sum, value) => sum + value.shareCount, 0),
+        300,
+      );
       logger.info(
         {
           sessionId: session.id,
@@ -352,7 +418,7 @@ export class StratumServer {
       payload,
     };
     await this.dependencies.eventStore.append(event);
-    await this.dependencies.eventBus.publish(event);
+    await this.dependencies.eventBus?.publish(event);
   }
 
   private async recordValidationResult(
@@ -370,7 +436,7 @@ export class StratumServer {
       aggregateId: result.fingerprint ?? eventId,
       correlationId: session.id,
       causationId: submission.jobId,
-      idempotencyKey: result.fingerprint ?? eventId,
+      idempotencyKey: result.accepted ? result.fingerprint : eventId,
     };
 
     const event: DomainEvent<ShareAcceptedPayload | ShareRejectedPayload> = result.accepted
@@ -416,7 +482,7 @@ export class StratumServer {
         };
 
     await this.dependencies.eventStore.append(event);
-    await this.dependencies.eventBus.publish(event);
+    await this.dependencies.eventBus?.publish(event);
   }
 
   private allowSubmission(session: MinerSession): boolean {

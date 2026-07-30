@@ -1,7 +1,12 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export function hashSensitiveValue(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+
+export function hmacSensitiveValue(value: string, key: string): string {
+  if (key.length < 16) throw new Error('Sensitive-value HMAC key must contain at least 16 characters');
+  return createHmac('sha256', key).update(value).digest('hex');
 }
 
 export function randomToken(bytes = 32): string {
@@ -9,7 +14,7 @@ export function randomToken(bytes = 32): string {
 }
 
 export function safeEqual(left: string, right: string): boolean {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const a = createHash('sha256').update(left).digest();
+  const b = createHash('sha256').update(right).digest();
+  return timingSafeEqual(a, b);
 }

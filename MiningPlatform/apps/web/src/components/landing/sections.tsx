@@ -72,6 +72,7 @@ const transparencyMetrics = [
 ] as const;
 
 export function LandingSections() {
+  const developmentDashboardEnabled = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD !== 'false';
   return (
     <>
       <section id="platform" className="relative border-b border-white/10 py-24 sm:py-30">
@@ -365,8 +366,11 @@ export function LandingSections() {
               </h2>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-[#acbdca] sm:text-base">Gunakan halaman ini sebagai fondasi visual. Implementasi berikutnya tetap berfokus pada upstream compatibility dan durable share intake.</p>
             </div>
-            <Link href="/dashboard" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d7ff63] px-6 py-3.5 text-sm font-extrabold text-[#06111f] transition hover:bg-[#e4ff91]">
-              Buka Dashboard <ArrowUpRight size={17} />
+            <Link
+              href={developmentDashboardEnabled ? '/dashboard' : '/transparency'}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#d7ff63] px-6 py-3.5 text-sm font-extrabold text-[#06111f] transition hover:bg-[#e4ff91]"
+            >
+              {developmentDashboardEnabled ? 'Buka Dashboard Dev' : 'Lihat Status Alpha'} <ArrowUpRight size={17} />
             </Link>
           </div>
         </div>

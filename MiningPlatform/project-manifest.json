@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.1",
-  "generated_files": 217,
+  "version": "0.2.0-alpha.2",
+  "generated_files": 241,
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
@@ -10,14 +10,21 @@
     "user_deposit": false,
     "ledger": "double-entry",
     "event_delivery": "at-least-once",
+    "event_durability": "postgres-outbox",
+    "duplicate_reservation": "redis-nx-ex",
     "idempotency": "mandatory",
     "state_machines": "mandatory",
     "scheduler": "centralized"
   },
   "target_release": "0.2.0",
   "architecture_baseline": "ADR-0001",
-  "release_status": "development-alpha",
+  "release_status": "hardened-development-alpha",
   "implemented": {
+    "landing_page": [
+      "responsive-mining-design",
+      "alpha-boundary-copy",
+      "production-dashboard-disabled"
+    ],
     "stratum_methods": [
       "mining.configure",
       "mining.subscribe",
@@ -35,24 +42,44 @@
       "time",
       "version"
     ],
-    "event_transport": [
-      "memory",
-      "redis-stream"
+    "durability": [
+      "postgres-outbox",
+      "outbox-dispatcher",
+      "redis-pending-recovery",
+      "dead-letter-stream"
     ],
     "monitoring": [
-      "five-minute-hashrate",
-      "websocket-development-panel"
+      "1m",
+      "5m",
+      "15m",
+      "1h",
+      "24h",
+      "development-websocket-room"
     ],
     "database": [
-      "expanded-prisma-schema",
-      "baseline-core-mining-migration"
+      "31-model-prisma-schema",
+      "baseline-migration",
+      "hardening-migration",
+      "ledger-database-constraints"
+    ],
+    "operations": [
+      "liveness-readiness",
+      "prometheus-metrics",
+      "central-retention-scheduler",
+      "service-env-isolation"
     ]
   },
   "release_blockers": [
-    "upstream-relay",
-    "transactional-outbox",
-    "pending-recovery-and-dead-letter",
-    "full-integration-tests",
-    "load-tests"
+    "upstream-fixtures",
+    "upstream-session",
+    "job-normalization",
+    "multi-job-registry",
+    "upstream-submit-correlation",
+    "production-worker-auth",
+    "postgres-redis-integration-tests",
+    "load-and-soak-tests"
+  ],
+  "known_environment_limitations": [
+    "pnpm-lock.yaml requires first networked pnpm install"
   ]
 }

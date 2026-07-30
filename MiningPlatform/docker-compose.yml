@@ -5,16 +5,14 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-mining_platform}
-      POSTGRES_USER: ${POSTGRES_USER:-mining}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mining} -d ${POSTGRES_DB:-mining_platform}"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -23,28 +21,25 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 10
     networks: [mining-network]
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-change-me}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in .env}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in .env}
     volumes:
       - minio_data:/data
     networks: [mining-network]
@@ -54,14 +49,25 @@ services:
       context: .
       dockerfile: infrastructure/docker/api.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      APP_URL: ${APP_URL:?Set APP_URL in .env}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
+      REALTIME_EVENT_GROUP: ${REALTIME_EVENT_GROUP:-api-realtime-v1}
+      ENABLE_DEVELOPMENT_DASHBOARD: "false"
+      ENABLE_SWAGGER: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    ports:
-      - "4000:4000"
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
     networks: [mining-network]
 
   web:
@@ -69,11 +75,13 @@ services:
       context: .
       dockerfile: infrastructure/docker/web.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      ENABLE_DEVELOPMENT_DASHBOARD: "false"
     depends_on:
-      - api
-    ports:
-      - "3000:3000"
+      api: { condition: service_healthy }
     networks: [mining-network]
 
   stratum-server:
@@ -81,14 +89,45 @@ services:
       context: .
       dockerfile: infrastructure/docker/stratum.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      EVENT_BUS_DRIVER: redis
+      EVENT_STORE_DRIVER: postgres
+      EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
+      STRATUM_HOST: 0.0.0.0
+      STRATUM_PORT: 3333
+      STRATUM_DEV_MODE: "false"
+      STRATUM_IP_HASH_KEY: ${STRATUM_IP_HASH_KEY:?Set STRATUM_IP_HASH_KEY in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
     ports:
-      - "3333:3333"
+      - "127.0.0.1:3333:3333"
     volumes:
       - stratum_data:/app/data/stratum
+    networks: [mining-network]
+
+  outbox-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/outbox-worker.Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
+      OUTBOX_POLL_MS: ${OUTBOX_POLL_MS:-500}
+      OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-100}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
+      OUTBOX_LOCK_TIMEOUT_MS: ${OUTBOX_LOCK_TIMEOUT_MS:-60000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
     networks: [mining-network]
 
   mining-worker:
@@ -96,52 +135,79 @@ services:
       context: .
       dockerfile: infrastructure/docker/mining-worker.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
+      MINING_EVENT_GROUP: ${MINING_EVENT_GROUP:-mining-projection-v1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      outbox-worker: { condition: service_started }
+    networks: [mining-network]
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/scheduler.Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      SCHEDULER_INTERVAL_MS: ${SCHEDULER_INTERVAL_MS:-3600000}
+      HASHRATE_BUCKET_RETENTION_DAYS: ${HASHRATE_BUCKET_RETENTION_DAYS:-7}
+      HASHRATE_SNAPSHOT_RETENTION_DAYS: ${HASHRATE_SNAPSHOT_RETENTION_DAYS:-90}
+      OUTBOX_PUBLISHED_RETENTION_DAYS: ${OUTBOX_PUBLISHED_RETENTION_DAYS:-7}
+      IDEMPOTENCY_RETENTION_DAYS: ${IDEMPOTENCY_RETENTION_DAYS:-30}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres: { condition: service_healthy }
     networks: [mining-network]
 
   wallet-worker:
+    profiles: ["wallet"]
     build:
       context: .
       dockerfile: infrastructure/docker/wallet-worker.Dockerfile
     restart: unless-stopped
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      BITCOIN_RPC_URL: ${BITCOIN_RPC_URL:?Set BITCOIN_RPC_URL in .env}
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:?Set BITCOIN_RPC_USER in .env}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set BITCOIN_RPC_PASSWORD in .env}
+      BITCOIN_WALLET_NAME: ${BITCOIN_WALLET_NAME:?Set BITCOIN_WALLET_NAME in .env}
+      PAYOUTS_ENABLED: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
     networks: [mining-network]
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.5.0
     restart: unless-stopped
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     volumes:
       - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
     networks: [mining-network]
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.1.0
     restart: unless-stopped
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     networks: [mining-network]
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.29.8-alpine
     restart: unless-stopped
     depends_on:
-      - web
-      - api
+      web: { condition: service_started }
+      api: { condition: service_healthy }
     ports:
       - "80:80"
     volumes:

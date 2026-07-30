@@ -1,6 +1,6 @@
 {
   "name": "@mining/security",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.2",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -9,13 +9,14 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('security tests not configured')\""
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
-    "typescript": "^5.7.0"
+    "@types/node": "22.0.0",
+    "eslint": "9.0.0",
+    "typescript": "5.7.0",
+    "tsx": "4.19.0"
   },
   "exports": {
     ".": {

@@ -1,196 +1,232 @@
 # MiningPlatform
 
-MiningPlatform adalah monorepo TypeScript untuk pengelolaan mining pool, koneksi Stratum, validasi share, monitoring worker, akuntansi reward, ledger, wallet, payout, dan transparansi operasional.
+MiningPlatform adalah monorepo TypeScript untuk pengelolaan mining pool berbasis upstream gateway, validasi share, monitoring worker, akuntansi reward, double-entry ledger, wallet orchestration, payout, dan transparansi operasional.
 
-Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivitas mining berasal dari ASIC atau GPU fisik. Fase awal memakai model upstream pool gateway.
+Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivitas mining berasal dari ASIC atau GPU fisik yang terhubung melalui Stratum.
 
-## Status
+## Status rilis
 
-Versi saat ini: `0.2.0-alpha.1`
+Versi saat ini: `0.2.0-alpha.2`
 
-Rilis alpha ini menyediakan pipeline development dari Stratum test miner sampai dashboard realtime. Upstream relay nyata, reward settlement, ledger posting, wallet Bitcoin, dan payout belum aktif.
+Rilis ini merupakan **development mining pipeline yang diperkeras**, bukan mining pool produksi. Landing page, Stratum development flow, local share validation, durable event intake, Redis Stream recovery, PostgreSQL projection, multi-window hashrate, dan dashboard development sudah tersedia.
 
-Landing page publik pada route `/` telah menggunakan desain mining khusus dengan status alpha yang eksplisit. Spesifikasi visual dan tipografi tersedia di `docs/ui/landing-page-v1.md`.
+Bagian berikut belum aktif:
+
+- upstream Stratum connector nyata;
+- job normalization dari upstream pool;
+- upstream share submission dan response correlation;
+- autentikasi pengguna produksi;
+- reward settlement;
+- ledger posting reward;
+- Bitcoin wallet signing;
+- payout nyata.
+
+Jangan menghubungkan ASIC produksi atau dana nyata ke rilis ini.
+
+## Pipeline alpha
 
 ```text
-Stratum test miner
+Stratum development miner
     ↓
-subscribe dan authorize
+mining.configure
     ↓
-development mining job
+mining.subscribe
     ↓
-share submission
+mining.authorize
+    ↓
+mining.notify
+    ↓
+mining.submit
     ↓
 local SHA-256d validation
+    ↓
+Redis duplicate reservation
+    ↓
+PostgreSQL durable outbox
+    ↓
+outbox dispatcher
     ↓
 Redis Stream
     ↓
 PostgreSQL projection
     ↓
-5-minute hashrate snapshot
+1m / 5m / 15m / 1h / 24h hashrate
     ↓
-WebSocket
+authorized development WebSocket room
     ↓
-Next.js dashboard
+Next.js development dashboard
 ```
 
-## Baseline
+## Baseline arsitektur
 
 - Aset pertama: BTC
 - Algoritma: SHA-256
-- Model: upstream pool gateway
-- Reward: `FOLLOW_UPSTREAM` setelah rekonsiliasi
+- Model awal: upstream pool gateway
+- Reward awal: `FOLLOW_UPSTREAM`
 - Fee platform: 2%
 - Hardware awal: ASIC
 - Ledger: immutable double-entry journal
 - Monitoring: Stratum dan agent opsional
 - Role: Guest, User, Owner
 - Deposit pengguna: tidak tersedia
+- Event delivery: at-least-once
+- Event durability: PostgreSQL outbox
+- Duplicate reservation: Redis dengan PostgreSQL sebagai pertahanan lanjutan
 
-## Aturan Dependensi
+Wallet tidak boleh mengubah saldo pengguna secara langsung. Perubahan saldo hanya boleh berasal dari journal entry yang valid dan seimbang.
 
-```text
-Stratum
-    ↓
-Share Validation
-    ↓
-Accepted Share
-    ↓
-Difficulty Accumulation
-    ↓
-Monitoring and Statistics
-    ↓
-Reward Allocation
-    ↓
-Ledger
-    ↓
-Wallet
-    ↓
-Payout
-```
-
-Wallet tidak boleh mengubah saldo pengguna. Perubahan saldo hanya berasal dari journal entry yang valid dan seimbang.
-
-## Struktur
+## Struktur utama
 
 ```text
 apps/
-  web/                 Next.js dashboard dan landing page
-  api/                 NestJS REST API dan WebSocket gateway
-  stratum-server/      TCP Stratum gateway
+  web/                 Next.js landing page dan dashboard development
+  api/                 NestJS REST API, health, metrics, dan WebSocket
+  stratum-server/      TCP Stratum development gateway
+  outbox-worker/       PostgreSQL outbox dispatcher ke Redis Stream
   mining-worker/       Event projection dan hashrate aggregation
-  wallet-worker/       Future wallet and payout jobs
-  scheduler/           Central scheduled job dispatcher
-  monitoring-agent/    Optional miner telemetry agent
+  wallet-worker/       Boundary wallet, tetap nonaktif
+  scheduler/           Central scheduler foundation
+  monitoring-agent/    Optional telemetry agent foundation
 packages/
-  mining-core/         Bitcoin header, target, validation, duplicate, and hashrate logic
-  stratum-protocol/    Stratum parser, request types, response, and notification helpers
-  event-bus/           In-memory event bus and Redis Stream transport
-  database/            Prisma schema, baseline migration, seed, and client
-  shared/              Shared event contracts and domain types
-  idempotency/         Shared idempotency contract
+  mining-core/         Bitcoin header, target, validation, duplicate, hashrate
+  stratum-protocol/    Stratum parser dan serializer
+  event-bus/           In-memory bus dan Redis Stream transport
+  database/            Prisma schema, migrations, seed, dan client
+  shared/              Event contracts dan domain types
+  idempotency/         Idempotency contracts
   state-machine/       Finite state transition guard
-  ledger/              Double-entry ledger rules
-  reward-engine/       Reward strategy foundation
-  blockchain-adapters/ Blockchain adapter foundation
+  ledger/              Double-entry invariants
+  reward-engine/       FOLLOW_UPSTREAM allocation foundation
 ```
 
-## Menjalankan Core Mining Smoke Test
+## Persyaratan
 
-Persyaratan:
+- Node.js 22 direkomendasikan
+- pnpm 10.13.1
+- Docker dan Docker Compose untuk PostgreSQL serta Redis
 
-- Node.js 20.9 atau lebih baru
-- pnpm 10
-- Docker dan Docker Compose
-
-Salin environment file.
+## Instalasi pertama
 
 ```bash
 cp .env.example .env
+corepack enable
+corepack prepare pnpm@10.13.1 --activate
+pnpm install
 ```
 
-Aktifkan konfigurasi development berikut pada `.env`:
-
-```dotenv
-NODE_ENV=development
-STRATUM_DEV_MODE=true
-STRATUM_DEV_WORKER=demo.worker1
-STRATUM_DEV_PASSWORD=x
-STRATUM_DEV_DIFFICULTY=0.000001
-SEED_DEVELOPMENT_DATA=true
-EVENT_BUS_DRIVER=redis
-PAYOUTS_ENABLED=false
-```
-
-Saat service Node.js berjalan dari host, gunakan `localhost` untuk PostgreSQL dan Redis.
-
-```dotenv
-DATABASE_URL=postgresql://mining:change-me@localhost:5432/mining_platform?schema=public
-REDIS_URL=redis://localhost:6379
-```
-
-Pasang dependency dan siapkan database.
+Lingkungan pembuatan arsip ini tidak memiliki akses registry, sehingga `pnpm-lock.yaml` tidak dapat dihasilkan di sini. Seluruh dependency langsung sudah dipatok ke versi exact. Setelah instalasi pertama pada mesin yang memiliki akses registry, commit file berikut ke GitHub:
 
 ```bash
-corepack enable
-pnpm install
+git add pnpm-lock.yaml
+git commit -m "chore: lock dependencies"
+```
+
+Setelah lockfile tersedia, ubah CI dan Docker dari `--no-frozen-lockfile` menjadi `--frozen-lockfile`.
+
+## Development dengan Docker
+
+Pastikan seluruh nilai `change-me` pada `.env` diganti.
+
+```bash
+pnpm docker:up:dev
 pnpm db:generate
-docker compose up -d postgres redis
 pnpm db:migrate:deploy
 pnpm db:seed
 ```
 
-Jalankan service pada terminal terpisah.
+Service development tersedia pada:
+
+```text
+Landing page     http://localhost
+Web langsung     http://localhost:3000
+API              http://localhost:4000/api/v1
+Swagger          http://localhost:4000/docs
+Stratum          localhost:3333
+Prometheus       http://localhost:9090
+Grafana          http://localhost:3001
+```
+
+Dashboard development membutuhkan token dari `.env`. Dashboard dan endpoint development dipaksa nonaktif saat `NODE_ENV=production`.
+
+## Development dari host
+
+Jalankan database dan Redis:
 
 ```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis
+```
+
+Sesuaikan `DATABASE_URL` dan `REDIS_URL` agar menunjuk ke `localhost`, lalu jalankan:
+
+```bash
+pnpm install
+pnpm prepare:workspace
+pnpm db:migrate:deploy
+pnpm db:seed
+```
+
+Jalankan service pada terminal terpisah:
+
+```bash
+pnpm --filter @mining/outbox-worker dev
 pnpm --filter @mining/mining-worker dev
 pnpm --filter @mining/api dev
 pnpm --filter @mining/web dev
 pnpm --filter @mining/stratum-server dev
 ```
 
-Kirim satu share development yang valid.
+Kirim satu share development:
 
 ```bash
 pnpm smoke:stratum
 ```
 
-Buka dashboard:
-
-```text
-http://localhost:3000/dashboard
-```
-
-Panduan lengkap tersedia di `docs/deployment/core-mining-smoke-test.md`.
-
-## Pengujian Core
+## Quality checks
 
 ```bash
-pnpm --filter @mining/mining-core test
-pnpm --filter @mining/stratum-protocol test
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
 ```
 
-Test mencakup compact target, nonce validation, duplicate share, stale job, hashrate window, request parsing, dan notification serialization.
+Pemeriksaan readiness:
 
-## Peringatan Produksi
+```text
+GET /api/v1/health/live
+GET /api/v1/health/ready
+GET /api/v1/metrics
+```
 
-- Jangan aktifkan `STRATUM_DEV_MODE` pada production. Konfigurasi akan ditolak ketika `NODE_ENV=production`.
-- Jangan mengarahkan ASIC produksi ke server alpha.
-- `PAYOUTS_ENABLED` harus tetap `false`.
-- Jangan simpan private key, seed phrase, atau kredensial wallet dalam repository, PostgreSQL aplikasi, Redis, atau file log.
-- Endpoint monitoring user belum dilindungi autentikasi produksi. Endpoint snapshot saat ini hanya tersedia pada non-production.
-- Redis Stream alpha belum memiliki pending recovery dan dead-letter processing.
-- Event JSONL development bukan pengganti transactional outbox.
+## Batas keamanan
 
-## Dokumen Acuan
+- `STRATUM_DEV_MODE=true` ditolak saat production.
+- Production Stratum mewajibkan PostgreSQL event store dan Redis duplicate reservation.
+- Dashboard development dan WebSocket development ditolak saat production.
+- Wallet worker berada di Docker profile terpisah dan `PAYOUTS_ENABLED=false`.
+- Database, Redis, MinIO, Prometheus, dan Grafana tidak dipublikasikan pada compose utama.
+- Private key, seed phrase, dan credential wallet tidak boleh disimpan dalam repository, database aplikasi, Redis, atau log.
+- Satu file `.env` tidak diteruskan secara penuh ke seluruh container. Setiap service hanya menerima variable yang diperlukan.
 
-1. `docs/adr/0001-core-mining-foundation.md`
-2. `docs/releases/v0.2.0-definition-of-done.md`
-3. `docs/releases/v0.2.0-alpha.1.md`
-4. `docs/releases/v0.2.0-alpha.1-validation.md`
-5. `docs/architecture/share-validation.md`
-6. `docs/architecture/event-driven-core.md`
-7. `docs/deployment/core-mining-smoke-test.md`
-8. `docs/database/time-series-monitoring.md`
-9. `docs/ui/landing-page-v1.md`
-10. `docs/releases/landing-v1-validation.md`
+## Blocker sebelum upstream staging
+
+1. Fixture Stratum nyata dan validasi byte order.
+2. Upstream session state machine.
+3. Multi-job registry dan `clean_jobs` invalidation.
+4. Job normalization.
+5. Upstream submit dan response correlation.
+6. PostgreSQL dan Redis integration tests.
+7. Load test serta soak test.
+8. Production worker authentication dan tenant isolation.
+
+## Dokumen utama
+
+- `docs/adr/0001-core-mining-foundation.md`
+- `docs/architecture/hardening-alpha-2.md`
+- `docs/architecture/share-validation.md`
+- `docs/architecture/event-driven-core.md`
+- `docs/database/time-series-monitoring.md`
+- `docs/releases/v0.2.0-alpha.2-validation.md`
+- `docs/releases/v0.2.0-definition-of-done.md`
+- `docs/ui/landing-page-v1.md`

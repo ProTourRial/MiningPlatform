@@ -1,11 +1,27 @@
-FROM node:22-alpine AS base
-RUN corepack enable
+FROM node:22-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@10.13.1 --activate
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json eslint.config.mjs ./
 COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --no-frozen-lockfile
+ARG NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD=false
+ARG NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN=local-development-dashboard
+ARG NEXT_PUBLIC_DEVELOPMENT_WORKER_ID=dev-7d9a4df2e77952c0657de069
+ENV NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD=$NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD
+ENV NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN=$NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN
+ENV NEXT_PUBLIC_DEVELOPMENT_WORKER_ID=$NEXT_PUBLIC_DEVELOPMENT_WORKER_ID
+RUN pnpm --filter @mining/shared build && pnpm --filter @mining/web build
 
-RUN pnpm turbo build --filter=@mining/web...
+FROM node:22-alpine AS runner
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+WORKDIR /app
+RUN addgroup -S mining && adduser -S mining -G mining
+COPY --from=builder --chown=mining:mining /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=mining:mining /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder --chown=mining:mining /app/apps/web/public ./apps/web/public
+USER mining
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@mining/web", "start"]
+CMD ["node", "apps/web/server.js"]

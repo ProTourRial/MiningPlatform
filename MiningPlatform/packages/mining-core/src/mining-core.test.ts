@@ -99,3 +99,11 @@ test('calculates hashrate from accepted difficulty', () => {
   assert.equal(result.accumulatedDifficulty, '3');
   assert.equal(result.hashesPerSecond, '214748364');
 });
+
+test('calculates hashrate from an aggregated difficulty bucket', async () => {
+  const { calculateHashrateFromAccumulatedDifficulty } = await import('./hashrate.js');
+  const result = calculateHashrateFromAccumulatedDifficulty('3', 2, 60);
+  assert.equal(result.shareCount, 2);
+  assert.equal(result.accumulatedDifficulty, '3');
+  assert.equal(result.hashesPerSecond, '214748364');
+});

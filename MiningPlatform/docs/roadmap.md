@@ -16,25 +16,29 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.2.0-alpha.1
+## Current Checkpoint: v0.2.0-alpha.2
 
 Implemented:
 
-- Development Stratum handshake and submission flow.
+- Development Stratum handshake and local submission flow.
 - Local Bitcoin SHA-256d share validation.
-- Duplicate and stale detection.
-- Mining domain schema and baseline migration.
-- Redis Stream event transport and PostgreSQL projection code.
-- Five-minute hashrate projection and development WebSocket panel.
-- TCP smoke test from configure through accepted share.
+- Redis duplicate reservation and PostgreSQL durable outbox.
+- Outbox dispatcher, Redis pending recovery, retry, and dead-letter stream.
+- Mining domain schema, baseline migration, and hardening migration.
+- Idempotent PostgreSQL projection with finite state transitions.
+- Rolling 1m, 5m, 15m, 1h, and 24h hashrate snapshots.
+- Development-only authorized WebSocket room and dashboard panel.
+- Centralized retention scheduler.
+- Hardened Docker and Nginx boundaries.
 
 Release blockers:
 
-- Real upstream Stratum connection, job normalization, relay, and submission result.
-- Transactional outbox.
-- Redis pending recovery, retry policy, and dead-letter stream.
-- Full PostgreSQL and Redis integration test.
-- Remaining hashrate windows and load test.
+- Real upstream Stratum fixtures and byte-order validation.
+- Upstream session state machine and multi-job registry.
+- Job normalization, relay, share submit, and response correlation.
+- Production worker authentication and tenant authorization.
+- Full PostgreSQL and Redis integration tests.
+- Load and soak tests.
 
 ## v0.2.0: Core Mining Foundation
 

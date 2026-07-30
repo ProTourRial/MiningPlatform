@@ -1,6 +1,6 @@
 {
   "name": "@mining/stratum-server",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-alpha.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,12 +17,14 @@
     "@mining/stratum-protocol": "workspace:*",
     "@mining/event-bus": "workspace:*",
     "@mining/mining-core": "workspace:*",
-    "@mining/shared": "workspace:*"
+    "@mining/shared": "workspace:*",
+    "redis": "5.0.0",
+    "@mining/database": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "@types/node": "22.0.0",
+    "eslint": "9.0.0",
+    "tsx": "4.19.0",
+    "typescript": "5.7.0"
   }
 }

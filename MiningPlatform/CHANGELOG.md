@@ -1,21 +1,45 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-alpha.2 - 2026-07-30
 
 ### Added
 
-- Mining-focused landing page adapted from the owner-provided visual template.
-- Responsive fixed navigation and mobile menu.
-- Hero pipeline status board for the current development boundary.
-- Platform, pipeline, monitoring, simulator, transparency, security, FAQ, and dashboard CTA sections.
-- Landing page typography and content specification in `docs/ui/landing-page-v1.md`.
-- SEO metadata baseline with indexing disabled during internal alpha.
+- PostgreSQL durable outbox event store and dedicated outbox dispatcher.
+- Redis duplicate-share reservation with expiry and release on durability failure.
+- Redis Stream pending recovery, retry tracking, malformed-event isolation, and dead-letter stream.
+- One-minute hashrate buckets and rolling 1m, 5m, 15m, 1h, and 24h snapshots.
+- Centralized retention scheduler protected by a PostgreSQL advisory transaction lock.
+- API liveness, readiness, and Prometheus metrics endpoints.
+- Development WebSocket authentication and per-worker rooms.
+- Database constraints for non-negative, one-sided, asset-consistent, and balanced journal entries.
+- Soft-delete fields and restrictive historical mining relations.
+- Non-root multi-stage Docker images and isolated service environment variables.
+- Development Docker override with localhost-only infrastructure ports.
 
 ### Changed
 
-- Replaced the initial generic landing page with an alpine-dark technical interface.
-- Replaced Arial-only typography with display, body, and technical font stacks.
-- Revised public copy to avoid cloud-mining, guaranteed-profit, production-ready, and live-payout claims.
+- Corrected Next.js typed route configuration and same-origin API/WebSocket routing.
+- Added Nginx Socket.IO proxy support.
+- Replaced per-share five-minute database rescans with time buckets.
+- Applied share state transitions through the domain state machine.
+- Routed mining projection through the shared idempotency contract.
+- Prevented duplicate projection delivery from emitting duplicate realtime hashrate events.
+- Replaced raw IP hashing with keyed HMAC over normalized IP addresses.
+- Replaced unbounded session share retention with fixed-duration difficulty buckets.
+- Pinned direct dependency versions exactly.
+- Disabled fake login, registration, and production dashboard actions until authentication is implemented.
+
+### Security
+
+- Production dashboard and development monitoring endpoints are forcibly disabled.
+- PostgreSQL, Redis, MinIO, Prometheus, and Grafana are private in the base compose file.
+- Wallet service remains behind an explicit profile with payouts disabled.
+
+### Known gaps
+
+- Upstream Stratum connection, job normalization, and upstream response lifecycle are not implemented.
+- A registry-generated `pnpm-lock.yaml` must be created and committed on the first networked installation.
+- Full dependency-aware build, Docker integration, PostgreSQL integration, and Redis integration tests require a networked development environment.
 
 ## 0.2.0-alpha.1 - 2026-07-30
 

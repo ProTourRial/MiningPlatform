@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import type { HashrateUpdatedPayload, MinerSessionAuthorizedPayload, MinerSessionDisconnectedPayload } from '@mining/shared';
+import type {
+  HashrateUpdatedPayload,
+  MinerSessionAuthorizedPayload,
+  MinerSessionDisconnectedPayload,
+} from '@mining/shared';
 
-const DEVELOPMENT_WORKER_ID = 'dev-7d9a4df2e77952c0657de069';
+const DEVELOPMENT_WORKER_ID =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_WORKER_ID ?? 'dev-7d9a4df2e77952c0657de069';
+const DEVELOPMENT_TOKEN =
+  process.env.NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN ?? 'local-development-dashboard';
 
 interface WorkerSnapshot {
   id: string;
@@ -38,9 +45,11 @@ export function RealtimeMiningPanel() {
   const [recordedAt, setRecordedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
-    void fetch(`${apiBase}/monitoring/development/workers/${DEVELOPMENT_WORKER_ID}/snapshot`)
-      .then((response) => (response.ok ? response.json() as Promise<WorkerSnapshot> : null))
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+    void fetch(`${apiBase}/monitoring/development/workers/${DEVELOPMENT_WORKER_ID}/snapshot`, {
+      headers: { 'x-development-dashboard-token': DEVELOPMENT_TOKEN },
+    })
+      .then((response) => (response.ok ? (response.json() as Promise<WorkerSnapshot>) : null))
       .then((snapshot) => {
         if (!snapshot) return;
         setWorkerStatus(snapshot.status);
@@ -51,8 +60,12 @@ export function RealtimeMiningPanel() {
       })
       .catch(() => undefined);
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? 'http://localhost:4000/mining';
-    const socket = io(socketUrl, { transports: ['websocket'], withCredentials: true });
+    const socket = io('/mining', {
+      path: '/socket.io',
+      transports: ['websocket'],
+      withCredentials: true,
+      auth: { token: DEVELOPMENT_TOKEN },
+    });
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('hashrate.updated', (payload: HashrateUpdatedPayload) => {
@@ -83,7 +96,9 @@ export function RealtimeMiningPanel() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Pipeline Mining Realtime</h2>
-          <p className="text-sm text-[var(--muted)]">Data pengembangan dari Stratum, Redis Stream, mining worker, dan WebSocket.</p>
+          <p className="text-sm text-[var(--muted)]">
+            Data pengembangan dari Stratum, outbox, Redis Stream, mining worker, dan WebSocket.
+          </p>
         </div>
         <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-[var(--muted)]">
           WebSocket {connected ? 'terhubung' : 'terputus'}

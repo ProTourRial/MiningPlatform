@@ -4,8 +4,8 @@ import { prisma } from '@mining/database';
 @Injectable()
 export class MonitoringService {
   async getWorkerSnapshot(workerId: string) {
-    const worker = await prisma.worker.findUnique({
-      where: { id: workerId },
+    const worker = await prisma.worker.findFirst({
+      where: { id: workerId, deletedAt: null },
       select: {
         id: true,
         name: true,

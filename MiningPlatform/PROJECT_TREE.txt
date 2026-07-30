@@ -1,326 +1,352 @@
 MiningPlatform/
-.dockerignore
-.env.example
-.github
-.github/workflows
-.github/workflows/ci.yml
-.gitignore
-.prettierignore
-.prettierrc.json
-CHANGELOG.md
-LICENSE
-PROJECT_TREE.txt
-README.md
-apps
-apps/api
-apps/api/nest-cli.json
-apps/api/package.json
-apps/api/src
-apps/api/src/app.module.ts
-apps/api/src/main.ts
-apps/api/src/modules
-apps/api/src/modules/auth
-apps/api/src/modules/auth/auth.controller.ts
-apps/api/src/modules/auth/auth.module.ts
-apps/api/src/modules/domain-modules.ts
-apps/api/src/modules/health
-apps/api/src/modules/health/health.controller.ts
-apps/api/src/modules/health/health.module.ts
-apps/api/src/modules/ledger
-apps/api/src/modules/ledger/ledger.controller.ts
-apps/api/src/modules/ledger/ledger.module.ts
-apps/api/src/modules/monitoring
-apps/api/src/modules/monitoring/monitoring.controller.ts
-apps/api/src/modules/monitoring/monitoring.gateway.ts
-apps/api/src/modules/monitoring/monitoring.module.ts
-apps/api/src/modules/monitoring/monitoring.service.ts
-apps/api/src/modules/notifications
-apps/api/src/modules/notifications/notifications.controller.ts
-apps/api/src/modules/notifications/notifications.module.ts
-apps/api/src/modules/owner
-apps/api/src/modules/owner/owner.module.ts
-apps/api/src/modules/payouts
-apps/api/src/modules/payouts/payouts.controller.ts
-apps/api/src/modules/payouts/payouts.module.ts
-apps/api/src/modules/rewards
-apps/api/src/modules/rewards/rewards.controller.ts
-apps/api/src/modules/rewards/rewards.module.ts
-apps/api/src/modules/shares
-apps/api/src/modules/shares/shares.controller.ts
-apps/api/src/modules/shares/shares.module.ts
-apps/api/src/modules/system
-apps/api/src/modules/system/system.controller.ts
-apps/api/src/modules/system/system.module.ts
-apps/api/src/modules/transparency
-apps/api/src/modules/transparency/transparency.controller.ts
-apps/api/src/modules/transparency/transparency.module.ts
-apps/api/src/modules/users
-apps/api/src/modules/users/users.controller.ts
-apps/api/src/modules/users/users.module.ts
-apps/api/src/modules/wallets
-apps/api/src/modules/wallets/wallets.controller.ts
-apps/api/src/modules/wallets/wallets.module.ts
-apps/api/src/modules/workers
-apps/api/src/modules/workers/workers.controller.ts
-apps/api/src/modules/workers/workers.module.ts
-apps/api/tsconfig.json
-apps/mining-worker
-apps/mining-worker/package.json
-apps/mining-worker/src
-apps/mining-worker/src/main.ts
-apps/mining-worker/src/projection.ts
-apps/mining-worker/tsconfig.json
-apps/monitoring-agent
-apps/monitoring-agent/package.json
-apps/monitoring-agent/src
-apps/monitoring-agent/src/main.ts
-apps/monitoring-agent/tsconfig.json
-apps/scheduler
-apps/scheduler/package.json
-apps/scheduler/src
-apps/scheduler/src/main.ts
-apps/scheduler/tsconfig.json
-apps/stratum-server
-apps/stratum-server/package.json
-apps/stratum-server/src
-apps/stratum-server/src/config.ts
-apps/stratum-server/src/development-authenticator.ts
-apps/stratum-server/src/development-event-store.ts
-apps/stratum-server/src/main.ts
-apps/stratum-server/src/server.ts
-apps/stratum-server/src/session.ts
-apps/stratum-server/tsconfig.json
-apps/wallet-worker
-apps/wallet-worker/package.json
-apps/wallet-worker/src
-apps/wallet-worker/src/main.ts
-apps/wallet-worker/tsconfig.json
-apps/web
-apps/web/eslint.config.mjs
-apps/web/next-env.d.ts
-apps/web/next.config.ts
-apps/web/package.json
-apps/web/postcss.config.mjs
-apps/web/src
-apps/web/src/app
-apps/web/src/app/dashboard
-apps/web/src/app/dashboard/api
-apps/web/src/app/dashboard/api/page.tsx
-apps/web/src/app/dashboard/hashrate
-apps/web/src/app/dashboard/hashrate/page.tsx
-apps/web/src/app/dashboard/layout.tsx
-apps/web/src/app/dashboard/page.tsx
-apps/web/src/app/dashboard/profile
-apps/web/src/app/dashboard/profile/page.tsx
-apps/web/src/app/dashboard/rewards
-apps/web/src/app/dashboard/rewards/page.tsx
-apps/web/src/app/dashboard/security
-apps/web/src/app/dashboard/security/page.tsx
-apps/web/src/app/dashboard/settings
-apps/web/src/app/dashboard/settings/page.tsx
-apps/web/src/app/dashboard/wallet
-apps/web/src/app/dashboard/wallet/page.tsx
-apps/web/src/app/dashboard/workers
-apps/web/src/app/dashboard/workers/page.tsx
-apps/web/src/app/globals.css
-apps/web/src/app/layout.tsx
-apps/web/src/app/login
-apps/web/src/app/login/page.tsx
-apps/web/src/app/page.tsx
-apps/web/src/app/register
-apps/web/src/app/register/page.tsx
-apps/web/src/app/transparency
-apps/web/src/app/transparency/page.tsx
-apps/web/src/components
-apps/web/src/components/dashboard
-apps/web/src/components/dashboard/page-shell.tsx
-apps/web/src/components/dashboard/realtime-mining-panel.tsx
-apps/web/src/components/dashboard/sidebar.tsx
-apps/web/src/components/landing
-apps/web/src/components/landing/footer.tsx
-apps/web/src/components/landing/hero.tsx
-apps/web/src/components/landing/navbar.tsx
-apps/web/src/components/landing/sections.tsx
-apps/web/src/components/providers
-apps/web/src/components/providers/app-providers.tsx
-apps/web/src/components/ui
-apps/web/src/components/ui/auth-card.tsx
-apps/web/src/services
-apps/web/src/services/api-client.ts
-apps/web/src/store
-apps/web/src/store/ui-store.ts
-apps/web/tsconfig.json
-backups
-backups/.gitkeep
-docker-compose.yml
-docs
-docs/adr
-docs/adr/0001-core-mining-foundation.md
-docs/adr/0002-upstream-gateway-first.md
-docs/adr/0003-double-entry-ledger.md
-docs/adr/0004-no-user-deposit-in-mvp.md
-docs/api
-docs/api/event-contracts.md
-docs/architecture
-docs/architecture/event-driven-core.md
-docs/architecture/idempotency.md
-docs/architecture/mvp-boundary.md
-docs/architecture/service-boundaries.md
-docs/architecture/share-validation.md
-docs/architecture/state-machines.md
-docs/architecture/system-interpretation-v1.md
-docs/database
-docs/database/ledger-invariants.md
-docs/database/time-series-monitoring.md
-docs/deployment
-docs/deployment/core-mining-smoke-test.md
-docs/deployment/local-development.md
-docs/erd
-docs/erd/README.md
-docs/flowcharts
-docs/flowcharts/mining-flow.md
-docs/operations
-docs/operations/README.md
-docs/operations/payout-runbook.md
-docs/operations/scheduler-boundaries.md
-docs/releases
-docs/releases/landing-v1-validation.md
-docs/releases/v0.2.0-alpha.1-validation.md
-docs/releases/v0.2.0-alpha.1.md
-docs/releases/v0.2.0-definition-of-done.md
-docs/roadmap.md
-docs/security
-docs/security/threat-model-v1.md
-docs/ui
-docs/ui/README.md
-docs/ui/landing-page-v1.md
-eslint.config.mjs
-infrastructure
-infrastructure/backups
-infrastructure/backups/README.md
-infrastructure/blockchain-nodes
-infrastructure/blockchain-nodes/README.md
-infrastructure/docker
-infrastructure/docker/api.Dockerfile
-infrastructure/docker/mining-worker.Dockerfile
-infrastructure/docker/stratum.Dockerfile
-infrastructure/docker/wallet-worker.Dockerfile
-infrastructure/docker/web.Dockerfile
-infrastructure/monitoring
-infrastructure/monitoring/prometheus.yml
-infrastructure/nginx
-infrastructure/nginx/nginx.conf
-infrastructure/postgres
-infrastructure/postgres/init.sql
-package.json
-packages
-packages/blockchain-adapters
-packages/blockchain-adapters/package.json
-packages/blockchain-adapters/src
-packages/blockchain-adapters/src/index.ts
-packages/blockchain-adapters/tsconfig.json
-packages/config
-packages/config/package.json
-packages/config/src
-packages/config/src/index.ts
-packages/config/tsconfig.json
-packages/database
-packages/database/package.json
-packages/database/prisma
-packages/database/prisma.config.ts
-packages/database/prisma/migrations
-packages/database/prisma/migrations/20260730000100_baseline_core_mining
-packages/database/prisma/migrations/20260730000100_baseline_core_mining/migration.sql
-packages/database/prisma/migrations/README.md
-packages/database/prisma/migrations/migration_lock.toml
-packages/database/prisma/schema.prisma
-packages/database/prisma/seed.ts
-packages/database/src
-packages/database/src/index.ts
-packages/database/tsconfig.json
-packages/event-bus
-packages/event-bus/package.json
-packages/event-bus/src
-packages/event-bus/src/core.ts
-packages/event-bus/src/index.test.ts
-packages/event-bus/src/index.ts
-packages/event-bus/src/redis-stream.ts
-packages/event-bus/tsconfig.json
-packages/idempotency
-packages/idempotency/package.json
-packages/idempotency/src
-packages/idempotency/src/index.test.ts
-packages/idempotency/src/index.ts
-packages/idempotency/tsconfig.json
-packages/ledger
-packages/ledger/package.json
-packages/ledger/src
-packages/ledger/src/index.test.ts
-packages/ledger/src/index.ts
-packages/ledger/tsconfig.json
-packages/logger
-packages/logger/package.json
-packages/logger/src
-packages/logger/src/index.ts
-packages/logger/tsconfig.json
-packages/mining-core
-packages/mining-core/package.json
-packages/mining-core/src
-packages/mining-core/src/bitcoin-header.ts
-packages/mining-core/src/difficulty.ts
-packages/mining-core/src/duplicate-store.ts
-packages/mining-core/src/fingerprint.ts
-packages/mining-core/src/hashrate.ts
-packages/mining-core/src/hex.ts
-packages/mining-core/src/index.ts
-packages/mining-core/src/mining-core.test.ts
-packages/mining-core/src/share-state-machine.ts
-packages/mining-core/src/share-validation-service.ts
-packages/mining-core/src/testing
-packages/mining-core/src/testing/dev-job.ts
-packages/mining-core/src/types.ts
-packages/mining-core/tsconfig.json
-packages/reward-engine
-packages/reward-engine/package.json
-packages/reward-engine/src
-packages/reward-engine/src/index.test.ts
-packages/reward-engine/src/index.ts
-packages/reward-engine/tsconfig.json
-packages/security
-packages/security/package.json
-packages/security/src
-packages/security/src/index.ts
-packages/security/tsconfig.json
-packages/shared
-packages/shared/package.json
-packages/shared/src
-packages/shared/src/constants.ts
-packages/shared/src/events.ts
-packages/shared/src/index.ts
-packages/shared/src/types.ts
-packages/shared/tsconfig.json
-packages/state-machine
-packages/state-machine/package.json
-packages/state-machine/src
-packages/state-machine/src/index.test.ts
-packages/state-machine/src/index.ts
-packages/state-machine/tsconfig.json
-packages/stratum-protocol
-packages/stratum-protocol/package.json
-packages/stratum-protocol/src
-packages/stratum-protocol/src/index.test.ts
-packages/stratum-protocol/src/index.ts
-packages/stratum-protocol/tsconfig.json
-packages/validation
-packages/validation/package.json
-packages/validation/src
-packages/validation/src/index.ts
-packages/validation/tsconfig.json
-pnpm-workspace.yaml
-project-manifest.json
-scripts
-scripts/bootstrap.sh
-scripts/check-secrets.sh
-scripts/stratum-smoke-client.ts
-tsconfig.base.json
-turbo.json
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── apps/
+│   ├── api/
+│   │   ├── src/
+│   │   │   ├── modules/
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── auth.controller.ts
+│   │   │   │   │   └── auth.module.ts
+│   │   │   │   ├── health/
+│   │   │   │   │   ├── health.controller.ts
+│   │   │   │   │   ├── health.module.ts
+│   │   │   │   │   ├── health.service.ts
+│   │   │   │   │   └── metrics.controller.ts
+│   │   │   │   ├── ledger/
+│   │   │   │   │   ├── ledger.controller.ts
+│   │   │   │   │   └── ledger.module.ts
+│   │   │   │   ├── monitoring/
+│   │   │   │   │   ├── development-access.ts
+│   │   │   │   │   ├── monitoring-runtime-state.ts
+│   │   │   │   │   ├── monitoring.controller.ts
+│   │   │   │   │   ├── monitoring.gateway.ts
+│   │   │   │   │   ├── monitoring.module.ts
+│   │   │   │   │   └── monitoring.service.ts
+│   │   │   │   ├── notifications/
+│   │   │   │   │   ├── notifications.controller.ts
+│   │   │   │   │   └── notifications.module.ts
+│   │   │   │   ├── owner/
+│   │   │   │   │   └── owner.module.ts
+│   │   │   │   ├── payouts/
+│   │   │   │   │   ├── payouts.controller.ts
+│   │   │   │   │   └── payouts.module.ts
+│   │   │   │   ├── rewards/
+│   │   │   │   │   ├── rewards.controller.ts
+│   │   │   │   │   └── rewards.module.ts
+│   │   │   │   ├── shares/
+│   │   │   │   │   ├── shares.controller.ts
+│   │   │   │   │   └── shares.module.ts
+│   │   │   │   ├── system/
+│   │   │   │   │   ├── system.controller.ts
+│   │   │   │   │   └── system.module.ts
+│   │   │   │   ├── transparency/
+│   │   │   │   │   ├── transparency.controller.ts
+│   │   │   │   │   └── transparency.module.ts
+│   │   │   │   ├── users/
+│   │   │   │   │   ├── users.controller.ts
+│   │   │   │   │   └── users.module.ts
+│   │   │   │   ├── wallets/
+│   │   │   │   │   ├── wallets.controller.ts
+│   │   │   │   │   └── wallets.module.ts
+│   │   │   │   ├── workers/
+│   │   │   │   │   ├── workers.controller.ts
+│   │   │   │   │   └── workers.module.ts
+│   │   │   │   └── domain-modules.ts
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   ├── nest-cli.json
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── mining-worker/
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── prisma-idempotency.ts
+│   │   │   └── projection.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── monitoring-agent/
+│   │   ├── src/
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── outbox-worker/
+│   │   ├── src/
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── scheduler/
+│   │   ├── src/
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── stratum-server/
+│   │   ├── src/
+│   │   │   ├── config.ts
+│   │   │   ├── development-authenticator.ts
+│   │   │   ├── development-event-store.ts
+│   │   │   ├── main.ts
+│   │   │   ├── redis-duplicate-share-store.ts
+│   │   │   ├── server.ts
+│   │   │   └── session.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── wallet-worker/
+│   │   ├── src/
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── web/
+│       ├── public/
+│       │   └── .gitkeep
+│       ├── src/
+│       │   ├── app/
+│       │   │   ├── dashboard/
+│       │   │   │   ├── api/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── hashrate/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── profile/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── rewards/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── security/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── settings/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── wallet/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── workers/
+│       │   │   │   │   └── page.tsx
+│       │   │   │   ├── layout.tsx
+│       │   │   │   └── page.tsx
+│       │   │   ├── login/
+│       │   │   │   └── page.tsx
+│       │   │   ├── register/
+│       │   │   │   └── page.tsx
+│       │   │   ├── transparency/
+│       │   │   │   └── page.tsx
+│       │   │   ├── globals.css
+│       │   │   ├── layout.tsx
+│       │   │   └── page.tsx
+│       │   ├── components/
+│       │   │   ├── dashboard/
+│       │   │   │   ├── page-shell.tsx
+│       │   │   │   ├── realtime-mining-panel.tsx
+│       │   │   │   └── sidebar.tsx
+│       │   │   ├── landing/
+│       │   │   │   ├── footer.tsx
+│       │   │   │   ├── hero.tsx
+│       │   │   │   ├── navbar.tsx
+│       │   │   │   └── sections.tsx
+│       │   │   ├── providers/
+│       │   │   │   └── app-providers.tsx
+│       │   │   └── ui/
+│       │   │       └── auth-card.tsx
+│       │   ├── services/
+│       │   │   └── api-client.ts
+│       │   └── store/
+│       │       └── ui-store.ts
+│       ├── eslint.config.mjs
+│       ├── next-env.d.ts
+│       ├── next.config.ts
+│       ├── package.json
+│       ├── postcss.config.mjs
+│       └── tsconfig.json
+├── backups/
+│   └── .gitkeep
+├── docs/
+│   ├── adr/
+│   │   ├── 0001-core-mining-foundation.md
+│   │   ├── 0001-upstream-gateway-first.md
+│   │   ├── 0002-double-entry-ledger.md
+│   │   ├── 0002-upstream-gateway-first.md
+│   │   ├── 0003-double-entry-ledger.md
+│   │   ├── 0003-no-user-deposit-in-mvp.md
+│   │   └── 0004-no-user-deposit-in-mvp.md
+│   ├── api/
+│   │   └── event-contracts.md
+│   ├── architecture/
+│   │   ├── event-driven-core.md
+│   │   ├── hardening-alpha-2.md
+│   │   ├── idempotency.md
+│   │   ├── mvp-boundary.md
+│   │   ├── service-boundaries.md
+│   │   ├── share-validation.md
+│   │   ├── state-machines.md
+│   │   └── system-interpretation-v1.md
+│   ├── database/
+│   │   ├── ledger-invariants.md
+│   │   └── time-series-monitoring.md
+│   ├── deployment/
+│   │   ├── core-mining-smoke-test.md
+│   │   └── local-development.md
+│   ├── erd/
+│   │   └── README.md
+│   ├── flowcharts/
+│   │   └── mining-flow.md
+│   ├── operations/
+│   │   ├── payout-runbook.md
+│   │   ├── README.md
+│   │   └── scheduler-boundaries.md
+│   ├── releases/
+│   │   ├── landing-v1-validation.md
+│   │   ├── v0.2.0-alpha.1-validation.md
+│   │   ├── v0.2.0-alpha.1.md
+│   │   ├── v0.2.0-alpha.2-validation.md
+│   │   ├── v0.2.0-alpha.2.md
+│   │   └── v0.2.0-definition-of-done.md
+│   ├── security/
+│   │   └── threat-model-v1.md
+│   ├── ui/
+│   │   ├── landing-page-v1.md
+│   │   └── README.md
+│   └── roadmap.md
+├── infrastructure/
+│   ├── backups/
+│   │   └── README.md
+│   ├── blockchain-nodes/
+│   │   └── README.md
+│   ├── docker/
+│   │   ├── api.Dockerfile
+│   │   ├── mining-worker.Dockerfile
+│   │   ├── outbox-worker.Dockerfile
+│   │   ├── scheduler.Dockerfile
+│   │   ├── stratum.Dockerfile
+│   │   ├── wallet-worker.Dockerfile
+│   │   └── web.Dockerfile
+│   ├── monitoring/
+│   │   └── prometheus.yml
+│   ├── nginx/
+│   │   └── nginx.conf
+│   └── postgres/
+│       └── init.sql
+├── packages/
+│   ├── blockchain-adapters/
+│   │   ├── src/
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── config/
+│   │   ├── src/
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── database/
+│   │   ├── prisma/
+│   │   │   ├── migrations/
+│   │   │   │   ├── 20260730000100_baseline_core_mining/
+│   │   │   │   │   └── migration.sql
+│   │   │   │   ├── 20260730000200_hardening_alpha_2/
+│   │   │   │   │   └── migration.sql
+│   │   │   │   ├── migration_lock.toml
+│   │   │   │   └── README.md
+│   │   │   ├── schema.prisma
+│   │   │   └── seed.ts
+│   │   ├── src/
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   ├── prisma.config.ts
+│   │   └── tsconfig.json
+│   ├── event-bus/
+│   │   ├── src/
+│   │   │   ├── core.ts
+│   │   │   ├── index.test.ts
+│   │   │   ├── index.ts
+│   │   │   └── redis-stream.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── idempotency/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── ledger/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── logger/
+│   │   ├── src/
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── mining-core/
+│   │   ├── src/
+│   │   │   ├── testing/
+│   │   │   │   └── dev-job.ts
+│   │   │   ├── bitcoin-header.ts
+│   │   │   ├── difficulty.ts
+│   │   │   ├── duplicate-store.ts
+│   │   │   ├── fingerprint.ts
+│   │   │   ├── hashrate.ts
+│   │   │   ├── hex.ts
+│   │   │   ├── index.ts
+│   │   │   ├── mining-core.test.ts
+│   │   │   ├── share-state-machine.ts
+│   │   │   ├── share-validation-service.ts
+│   │   │   └── types.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── reward-engine/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── security/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── shared/
+│   │   ├── src/
+│   │   │   ├── constants.ts
+│   │   │   ├── events.ts
+│   │   │   ├── index.ts
+│   │   │   └── types.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── state-machine/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── stratum-protocol/
+│   │   ├── src/
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── validation/
+│       ├── src/
+│       │   └── index.ts
+│       ├── package.json
+│       └── tsconfig.json
+├── scripts/
+│   ├── bootstrap.sh
+│   ├── check-secrets.sh
+│   └── stratum-smoke-client.ts
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── .npmrc
+├── .prettierignore
+├── .prettierrc.json
+├── CHANGELOG.md
+├── docker-compose.dev.yml
+├── docker-compose.yml
+├── eslint.config.mjs
+├── LICENSE
+├── package.json
+├── pnpm-workspace.yaml
+├── project-manifest.json
+├── PROJECT_TREE.txt
+├── README.md
+├── tsconfig.base.json
+└── turbo.json

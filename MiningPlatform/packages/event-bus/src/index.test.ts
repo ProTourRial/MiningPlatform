@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { InMemoryEventBus, type DomainEvent } from './index.js';
+import { InMemoryEventBus, type DomainEvent } from './core.js';
 
 test('publishes an event to a subscribed handler', async () => {
   const bus = new InMemoryEventBus();

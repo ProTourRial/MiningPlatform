@@ -1,6 +1,6 @@
 {
   "name": "@mining/config",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.2",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -12,12 +12,12 @@
     "test": "node -e \"console.log('config tests not configured')\""
   },
   "dependencies": {
-    "zod": "^4.0.0"
+    "zod": "4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
-    "typescript": "^5.7.0"
+    "@types/node": "22.0.0",
+    "eslint": "9.0.0",
+    "typescript": "5.7.0"
   },
   "exports": {
     ".": {

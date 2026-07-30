@@ -14,6 +14,7 @@ const links = [
 ] as const;
 
 export function Navbar() {
+  const developmentDashboardEnabled = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD !== 'false';
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -69,12 +70,21 @@ export function Navbar() {
           >
             Masuk
           </Link>
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-[#d7ff63] px-4 py-2 text-sm font-bold text-[#06111f] transition hover:bg-[#e3ff91]"
-          >
-            Dashboard
-          </Link>
+          {developmentDashboardEnabled ? (
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-[#d7ff63] px-4 py-2 text-sm font-bold text-[#06111f] transition hover:bg-[#e3ff91]"
+            >
+              Dashboard Dev
+            </Link>
+          ) : (
+            <Link
+              href="/transparency"
+              className="rounded-lg border border-[#d7ff63]/30 px-4 py-2 text-sm font-bold text-[#d7ff63] transition hover:bg-[#d7ff63]/10"
+            >
+              Status Alpha
+            </Link>
+          )}
         </div>
 
         <button
@@ -105,8 +115,11 @@ export function Navbar() {
               <Link href="/login" className="rounded-lg border border-white/12 px-4 py-3 text-center text-sm font-semibold">
                 Masuk
               </Link>
-              <Link href="/dashboard" className="rounded-lg bg-[#d7ff63] px-4 py-3 text-center text-sm font-bold text-[#06111f]">
-                Dashboard
+              <Link
+                href={developmentDashboardEnabled ? '/dashboard' : '/transparency'}
+                className="rounded-lg bg-[#d7ff63] px-4 py-3 text-center text-sm font-bold text-[#06111f]"
+              >
+                {developmentDashboardEnabled ? 'Dashboard Dev' : 'Status Alpha'}
               </Link>
             </div>
           </div>

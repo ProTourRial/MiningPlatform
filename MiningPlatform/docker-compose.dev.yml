@@ -1,0 +1,40 @@
+services:
+  postgres:
+    ports: ["127.0.0.1:5432:5432"]
+  redis:
+    ports: ["127.0.0.1:6379:6379"]
+  minio:
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+  api:
+    environment:
+      NODE_ENV: development
+      ENABLE_DEVELOPMENT_DASHBOARD: "true"
+      ENABLE_SWAGGER: "true"
+      DEVELOPMENT_DASHBOARD_TOKEN: ${DEVELOPMENT_DASHBOARD_TOKEN:-local-development-dashboard}
+      DEVELOPMENT_WORKER_ID: ${DEVELOPMENT_WORKER_ID:-dev-7d9a4df2e77952c0657de069}
+    ports: ["127.0.0.1:4000:4000"]
+  web:
+    build:
+      args:
+        NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD: "true"
+        NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN: ${NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN:-local-development-dashboard}
+        NEXT_PUBLIC_DEVELOPMENT_WORKER_ID: ${NEXT_PUBLIC_DEVELOPMENT_WORKER_ID:-dev-7d9a4df2e77952c0657de069}
+    environment:
+      NODE_ENV: development
+      ENABLE_DEVELOPMENT_DASHBOARD: "true"
+    ports: ["127.0.0.1:3000:3000"]
+  stratum-server:
+    environment:
+      NODE_ENV: development
+      STRATUM_DEV_MODE: "true"
+      STRATUM_DEV_WORKER: ${STRATUM_DEV_WORKER:-demo.worker1}
+      STRATUM_DEV_PASSWORD: ${STRATUM_DEV_PASSWORD:-x}
+      STRATUM_DEV_DIFFICULTY: ${STRATUM_DEV_DIFFICULTY:-0.000001}
+      STRATUM_VERSION_ROLLING_MASK: ${STRATUM_VERSION_ROLLING_MASK:-1fffe000}
+      STRATUM_SOCKET_TIMEOUT_MS: ${STRATUM_SOCKET_TIMEOUT_MS:-120000}
+      STRATUM_MAX_LINE_BYTES: ${STRATUM_MAX_LINE_BYTES:-16384}
+      STRATUM_MAX_SUBMISSIONS_PER_SECOND: ${STRATUM_MAX_SUBMISSIONS_PER_SECOND:-20}
+  prometheus:
+    ports: ["127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"]
+  grafana:
+    ports: ["127.0.0.1:${GRAFANA_PORT:-3001}:3000"]

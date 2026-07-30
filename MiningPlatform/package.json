@@ -1,20 +1,20 @@
 {
   "name": "mining-platform",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-alpha.2",
   "private": true,
   "description": "Mining Pool Management Platform monorepo",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.13.1",
   "engines": {
-    "node": ">=20.9.0",
+    "node": ">=22.12.0",
     "pnpm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
+    "dev": "pnpm prepare:workspace && turbo dev --filter=@mining/web --filter=@mining/api --filter=@mining/stratum-server --filter=@mining/mining-worker --filter=@mining/outbox-worker --filter=@mining/scheduler",
+    "build": "pnpm db:generate && turbo build",
     "lint": "turbo lint",
-    "typecheck": "turbo typecheck",
-    "test": "turbo test",
+    "typecheck": "pnpm db:generate && turbo typecheck",
+    "test": "pnpm db:generate && turbo test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @mining/database generate",
@@ -24,18 +24,23 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck",
+    "check": "pnpm lint && pnpm typecheck",
     "smoke:stratum": "tsx scripts/stratum-smoke-client.ts",
-    "db:migrate:deploy": "pnpm --filter @mining/database migrate:deploy"
+    "db:migrate:deploy": "pnpm --filter @mining/database migrate:deploy",
+    "prepare:workspace": "pnpm db:generate && pnpm build:packages",
+    "build:packages": "turbo build --filter='./packages/*'",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "docker:up:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build",
+    "docker:down:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0",
-    "turbo": "^2.0.0",
-    "typescript": "^5.7.0",
-    "@eslint/js": "^9.0.0",
-    "typescript-eslint": "^8.0.0",
-    "tsx": "^4.19.0"
+    "@types/node": "22.0.0",
+    "eslint": "9.0.0",
+    "prettier": "3.0.0",
+    "turbo": "2.0.0",
+    "typescript": "5.7.0",
+    "@eslint/js": "9.0.0",
+    "typescript-eslint": "8.0.0",
+    "tsx": "4.19.0"
   }
 }

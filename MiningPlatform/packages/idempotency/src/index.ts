@@ -1,4 +1,4 @@
-export type IdempotencyStatus = 'ACQUIRED' | 'COMPLETED' | 'RELEASED' | 'EXPIRED';
+export type IdempotencyStatus = 'ACQUIRED' | 'COMPLETED' | 'FAILED' | 'RELEASED' | 'EXPIRED';
 
 export interface IdempotencyRecord {
   key: string;
@@ -13,27 +13,33 @@ export type AcquireResult =
   | { acquired: true; record: IdempotencyRecord }
   | { acquired: false; reason: 'IN_PROGRESS' | 'COMPLETED' | 'CONFLICT'; record: IdempotencyRecord };
 
+export interface AcquireInput {
+  key: string;
+  owner: string;
+  requestHash: string;
+  ttlMs: number;
+}
+
 export interface IdempotencyService {
-  acquire(input: {
-    key: string;
-    owner: string;
-    requestHash: string;
-    ttlMs: number;
-  }): Promise<AcquireResult>;
+  acquire(input: AcquireInput): Promise<AcquireResult>;
   complete(input: { key: string; owner: string; resultReference?: string }): Promise<void>;
   release(input: { key: string; owner: string }): Promise<void>;
   expire(input: { key: string }): Promise<void>;
 }
 
+export interface TransactionalIdempotencyService<TContext> {
+  acquire(context: TContext, input: AcquireInput): Promise<AcquireResult>;
+  complete(
+    context: TContext,
+    input: { key: string; owner: string; resultReference?: string },
+  ): Promise<void>;
+  fail(context: TContext, input: { key: string; owner: string; resultReference?: string }): Promise<void>;
+}
+
 export class InMemoryIdempotencyService implements IdempotencyService {
   private readonly records = new Map<string, IdempotencyRecord>();
 
-  async acquire(input: {
-    key: string;
-    owner: string;
-    requestHash: string;
-    ttlMs: number;
-  }): Promise<AcquireResult> {
+  async acquire(input: AcquireInput): Promise<AcquireResult> {
     const now = Date.now();
     const existing = this.records.get(input.key);
 
