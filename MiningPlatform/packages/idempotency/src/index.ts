@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export type IdempotencyStatus = 'ACQUIRED' | 'COMPLETED' | 'FAILED' | 'RELEASED' | 'EXPIRED';
 
 export interface IdempotencyRecord {

@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { setTimeout as sleep } from 'node:timers/promises';
 import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';

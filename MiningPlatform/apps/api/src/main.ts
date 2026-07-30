@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import 'reflect-metadata';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -29,7 +35,7 @@ async function bootstrap() {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('MiningPlatform API')
       .setDescription('Mining pool management platform API')
-      .setVersion('0.2.0-alpha.2')
+      .setVersion('0.2.0-alpha.4')
       .addBearerAuth()
       .build();
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swaggerConfig));

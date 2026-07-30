@@ -1,8 +1,19 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { randomUUID } from 'node:crypto';
 import { prisma } from '@mining/database';
 import { RedisStreamEventBus, RedisStreamEventConsumer, type DomainEvent } from '@mining/event-bus';
 import { createLogger } from '@mining/logger';
-import { MiningEvents, type HashrateUpdatedPayload, type ShareAcceptedPayload } from '@mining/shared';
+import {
+  MiningEvents,
+  type HashrateUpdatedPayload,
+  type ShareAcceptedPayload,
+  type ShareUpstreamDecisionPayload,
+} from '@mining/shared';
 import { MiningProjection } from './projection.js';
 
 const logger = createLogger('mining-worker');
@@ -22,7 +33,9 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => abortController.abort());
 }
 
-async function publishHashrate(event: DomainEvent<ShareAcceptedPayload>): Promise<void> {
+async function publishHashrate(
+  event: DomainEvent<ShareAcceptedPayload | ShareUpstreamDecisionPayload>,
+): Promise<void> {
   const snapshot = await prisma.hashrateSnapshot.findFirst({
     where: { workerId: event.payload.workerId, windowSeconds: 300 },
     orderBy: { recordedAt: 'desc' },
@@ -57,7 +70,11 @@ try {
   await consumer.run(async (event) => {
     const result = await projection.handle(event);
     if (result.processed && event.eventName === MiningEvents.shareLocalAccepted) {
-      await publishHashrate(event as DomainEvent<ShareAcceptedPayload>);
+      const accepted = event as DomainEvent<ShareAcceptedPayload>;
+      if (!accepted.payload.upstreamRequired) await publishHashrate(accepted);
+    }
+    if (result.processed && event.eventName === MiningEvents.shareUpstreamAccepted) {
+      await publishHashrate(event as DomainEvent<ShareUpstreamDecisionPayload>);
     }
     logger.debug(
       { eventId: event.eventId, eventName: event.eventName, processed: result.processed },

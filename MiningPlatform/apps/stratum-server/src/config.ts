@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export interface StratumServerConfig {
   host: string;
   port: number;
@@ -15,6 +21,17 @@ export interface StratumServerConfig {
   eventStream: string;
   versionRollingMask: string;
   ipHashKey: string;
+  upstreamDriver: 'development' | 'tcp';
+  upstreamHost: string;
+  upstreamPort: number;
+  upstreamTls: boolean;
+  upstreamServerName?: string;
+  upstreamUsername: string;
+  upstreamPassword: string;
+  upstreamUserAgent: string;
+  upstreamConnectTimeoutMs: number;
+  upstreamResponseTimeoutMs: number;
+  upstreamMaximumAttempts: number;
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {
@@ -41,6 +58,13 @@ export function loadStratumConfig(): StratumServerConfig {
   }
   const ipHashKey = process.env.STRATUM_IP_HASH_KEY ?? (developmentMode ? 'development-only-ip-hash-key' : '');
   if (ipHashKey.length < 16) throw new Error('STRATUM_IP_HASH_KEY must contain at least 16 characters');
+  const upstreamDriver = process.env.UPSTREAM_DRIVER ?? (developmentMode ? 'development' : 'tcp');
+  if (upstreamDriver !== 'development' && upstreamDriver !== 'tcp') {
+    throw new Error('UPSTREAM_DRIVER must be development or tcp');
+  }
+  if (process.env.NODE_ENV === 'production' && upstreamDriver !== 'tcp') {
+    throw new Error('Production Stratum requires UPSTREAM_DRIVER=tcp');
+  }
 
   return {
     host: process.env.STRATUM_HOST ?? '0.0.0.0',
@@ -59,5 +83,16 @@ export function loadStratumConfig(): StratumServerConfig {
     eventStream: process.env.EVENT_STREAM ?? 'mining:domain-events',
     versionRollingMask: process.env.STRATUM_VERSION_ROLLING_MASK ?? '1fffe000',
     ipHashKey,
+    upstreamDriver,
+    upstreamHost: process.env.UPSTREAM_HOST ?? '127.0.0.1',
+    upstreamPort: positiveInteger(process.env.UPSTREAM_PORT, 3334),
+    upstreamTls: process.env.UPSTREAM_TLS === 'true',
+    upstreamServerName: process.env.UPSTREAM_SERVER_NAME,
+    upstreamUsername: process.env.UPSTREAM_USERNAME ?? 'upstream.account',
+    upstreamPassword: process.env.UPSTREAM_PASSWORD ?? 'x',
+    upstreamUserAgent: process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.4',
+    upstreamConnectTimeoutMs: positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000),
+    upstreamResponseTimeoutMs: positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000),
+    upstreamMaximumAttempts: positiveInteger(process.env.UPSTREAM_MAXIMUM_ATTEMPTS, 5),
   };
 }

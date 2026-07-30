@@ -1,6 +1,12 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateHeaderHash, sha256d } from './bitcoin-header.js';
+import { buildBlockHeader, calculateHeaderHash, sha256d } from './bitcoin-header.js';
 import { DIFFICULTY_ONE_TARGET, targetFromCompactBits } from './difficulty.js';
 import { InMemoryDuplicateShareStore } from './duplicate-store.js';
 import { bytesToHex, hexToBytes, reverseBytes } from './hex.js';
@@ -106,4 +112,44 @@ test('calculates hashrate from an aggregated difficulty bucket', async () => {
   assert.equal(result.shareCount, 2);
   assert.equal(result.accumulatedDifficulty, '3');
   assert.equal(result.hashesPerSecond, '214748364');
+});
+
+test('reconstructs the reference Stratum V1 header byte-for-byte', () => {
+  const receivedAt = new Date('2012-09-10T00:00:00.000Z');
+  const job = {
+    id: '4f',
+    previousBlockHash: '4d16b6f85af6e2198f44ae2a6de67f78487ae5611b77c6c0440b921e00000000',
+    coinbase1: '01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff20020862062f503253482f04b8864e5008',
+    coinbase2: '072f736c7573682f000000000100f2052a010000001976a914d23fcdf86f7e756a64a7a9688ef9903327048ed988ac00000000',
+    extranonce1: 'e9695791',
+    extranonce2Size: 4,
+    merkleBranches: [],
+    version: '00000002',
+    networkBits: '1c2ac4af',
+    networkTime: '504e86b9',
+    cleanJobs: false,
+    assignedDifficulty: '1',
+    receivedAt,
+    expiresAt: new Date(receivedAt.getTime() + 600_000),
+  } as const;
+  const submission: BitcoinShareSubmission = {
+    workerName: 'username',
+    jobId: '4f',
+    extranonce2: 'fe36a31b',
+    networkTime: '504e86ed',
+    nonce: 'e9695791',
+    submittedAt: receivedAt,
+  };
+  const header = bytesToHex(buildBlockHeader(job, submission));
+  assert.equal(
+    header,
+    '020000004d16b6f85af6e2198f44ae2a6de67f78487ae5611b77c6c0440b921e00000000a928a1029b850493f969192a4e7f19b9106c46735938bc204ce5c58436d00259ed864e50afc42a1c915769e9',
+  );
+  assert.equal(calculateHeaderHash(job, submission).displayHash, '74b28b49a01a178842f32039b9f03278a60c68827edb2e94347b7a9eb81301ec');
+});
+
+
+test('adds decimal difficulty buckets that begin at zero', async () => {
+  const { addDecimalStrings } = await import('./difficulty.js');
+  assert.equal(addDecimalStrings(['0', '0.000001'], 12), '0.000001');
 });

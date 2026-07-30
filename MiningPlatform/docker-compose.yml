@@ -1,3 +1,7 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 name: mining-platform
 
 services:
@@ -100,6 +104,17 @@ services:
       STRATUM_PORT: 3333
       STRATUM_DEV_MODE: "false"
       STRATUM_IP_HASH_KEY: ${STRATUM_IP_HASH_KEY:?Set STRATUM_IP_HASH_KEY in .env}
+      UPSTREAM_DRIVER: tcp
+      UPSTREAM_HOST: ${UPSTREAM_HOST:?Set UPSTREAM_HOST in .env}
+      UPSTREAM_PORT: ${UPSTREAM_PORT:-3333}
+      UPSTREAM_TLS: ${UPSTREAM_TLS:-false}
+      UPSTREAM_SERVER_NAME: ${UPSTREAM_SERVER_NAME:-}
+      UPSTREAM_USERNAME: ${UPSTREAM_USERNAME:?Set UPSTREAM_USERNAME in .env}
+      UPSTREAM_PASSWORD: ${UPSTREAM_PASSWORD:?Set UPSTREAM_PASSWORD in .env}
+      UPSTREAM_USER_AGENT: ${UPSTREAM_USER_AGENT:-MiningPlatform/0.2.0-alpha.4}
+      UPSTREAM_CONNECT_TIMEOUT_MS: ${UPSTREAM_CONNECT_TIMEOUT_MS:-5000}
+      UPSTREAM_RESPONSE_TIMEOUT_MS: ${UPSTREAM_RESPONSE_TIMEOUT_MS:-10000}
+      UPSTREAM_MAXIMUM_ATTEMPTS: ${UPSTREAM_MAXIMUM_ATTEMPTS:-5}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }

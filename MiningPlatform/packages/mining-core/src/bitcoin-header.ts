@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { createHash } from 'node:crypto';
 import { bytesToHex, concatBytes, hexToBytes, reverseBytes, uint32LittleEndian } from './hex.js';
 import type { BitcoinMiningJob, BitcoinShareSubmission } from './types.js';
@@ -17,7 +23,7 @@ export function buildCoinbase(job: BitcoinMiningJob, submission: BitcoinShareSub
 export function buildMerkleRoot(job: BitcoinMiningJob, submission: BitcoinShareSubmission): Uint8Array {
   let current = sha256d(buildCoinbase(job, submission));
   for (const branch of job.merkleBranches) {
-    const branchInternal = reverseBytes(hexToBytes(branch));
+    const branchInternal = hexToBytes(branch);
     current = sha256d(concatBytes(current, branchInternal));
   }
   return current;
@@ -37,7 +43,7 @@ export function resolveVersion(job: BitcoinMiningJob, submittedVersionBits?: str
 
 export function buildBlockHeader(job: BitcoinMiningJob, submission: BitcoinShareSubmission): Uint8Array {
   const version = resolveVersion(job, submission.versionBits);
-  const previousBlockHashInternal = reverseBytes(hexToBytes(job.previousBlockHash));
+  const previousBlockHashInternal = hexToBytes(job.previousBlockHash);
   const merkleRootInternal = buildMerkleRoot(job, submission);
 
   return concatBytes(

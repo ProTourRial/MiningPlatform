@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { setTimeout as sleep } from 'node:timers/promises';
 import { prisma } from '@mining/database';
 import { RedisStreamEventBus, type DomainEvent } from '@mining/event-bus';

@@ -1,7 +1,18 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+
+interface MiningSocket {
+  on(event: string, listener: (payload: any) => void): MiningSocket;
+  disconnect(): void;
+}
 import type {
   HashrateUpdatedPayload,
   MinerSessionAuthorizedPayload,
@@ -62,10 +73,9 @@ export function RealtimeMiningPanel() {
 
     const socket = io('/mining', {
       path: '/socket.io',
-      transports: ['websocket'],
       withCredentials: true,
       auth: { token: DEVELOPMENT_TOKEN },
-    });
+    } as never) as unknown as MiningSocket;
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('hashrate.updated', (payload: HashrateUpdatedPayload) => {
@@ -81,7 +91,9 @@ export function RealtimeMiningPanel() {
     socket.on('worker.offline', (payload: MinerSessionDisconnectedPayload) => {
       if (payload.workerId === DEVELOPMENT_WORKER_ID) setWorkerStatus('OFFLINE');
     });
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const cards = [

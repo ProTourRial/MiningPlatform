@@ -16,26 +16,28 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.2.0-alpha.2
+## Current Checkpoint: v0.2.0-alpha.4
 
 Implemented:
 
-- Development Stratum handshake and local submission flow.
-- Local Bitcoin SHA-256d share validation.
-- Redis duplicate reservation and PostgreSQL durable outbox.
-- Outbox dispatcher, Redis pending recovery, retry, and dead-letter stream.
-- Mining domain schema, baseline migration, and hardening migration.
-- Idempotent PostgreSQL projection with finite state transitions.
+- Downstream Stratum handshake, authorization, notification, and submission flow.
+- Upstream Stratum TCP/TLS client and local simulator.
+- Reference fixture header reconstruction and byte-order test.
+- Upstream session state machine and initial reconnect backoff.
+- Job normalization, multi-job registry, and `clean_jobs` invalidation.
+- Local validation followed by upstream submit and response correlation.
+- Separate local and upstream share lifecycle events.
+- Redis duplicate reservation and PostgreSQL durable outbox foundation.
 - Rolling 1m, 5m, 15m, 1h, and 24h hashrate snapshots.
 - Development-only authorized WebSocket room and dashboard panel.
-- Centralized retention scheduler.
-- Hardened Docker and Nginx boundaries.
+- Universal CPU, GPU, FPGA, ASIC, hybrid, other, and unknown worker profiles.
+- Evidence-based Stratum, user, agent, and miner API detection.
+- Per-device telemetry model and universal worker review interface.
 
 Release blockers:
 
-- Real upstream Stratum fixtures and byte-order validation.
-- Upstream session state machine and multi-job registry.
-- Job normalization, relay, share submit, and response correlation.
+- Captured compatibility fixture from the selected production upstream pool.
+- Transparent active-session reconnect or explicit failover policy.
 - Production worker authentication and tenant authorization.
 - Full PostgreSQL and Redis integration tests.
 - Load and soak tests.

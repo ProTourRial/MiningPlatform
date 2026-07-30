@@ -1,3 +1,7 @@
+-- MiningPlatform
+-- Author: Abia Nugrahanto
+-- Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 -- Core hardening for v0.2.0-alpha.2.
 ALTER TYPE "StratumJobStatus" ADD VALUE IF NOT EXISTS 'SUPERSEDED';
 ALTER TYPE "StratumJobStatus" ADD VALUE IF NOT EXISTS 'INVALIDATED';

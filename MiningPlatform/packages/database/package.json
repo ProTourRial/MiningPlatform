@@ -1,12 +1,12 @@
 {
   "name": "@mining/database",
-  "version": "0.2.0-alpha.2",
+  "version": "0.2.0-alpha.4",
   "private": true,
   "type": "module",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
-    "generate": "prisma generate",
+    "generate": "prisma generate && node ../../scripts/add-author-headers.mjs packages/database/src/generated",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
@@ -36,5 +36,6 @@
       "import": "./dist/src/index.js",
       "default": "./dist/src/index.js"
     }
-  }
+  },
+  "author": "Abia Nugrahanto"
 }

@@ -1,11 +1,14 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { open, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { prisma, type Prisma } from '@mining/database';
-import type { DomainEvent } from '@mining/event-bus';
-
-export interface MiningEventStore {
-  append(event: DomainEvent): Promise<void>;
-}
+import type { DomainEvent } from '@mining/event-bus/core';
+import type { MiningEventStore } from './event-store.js';
 
 export class DevelopmentJsonlEventStore implements MiningEventStore {
   constructor(private readonly directory: string) {}

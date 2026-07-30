@@ -1,3 +1,7 @@
+-- MiningPlatform
+-- Author: Abia Nugrahanto
+-- Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 -- MiningPlatform baseline schema generated from schema.prisma
 -- Review before production deployment. Prisma remains the schema authority.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

@@ -1,13 +1,50 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
+import { detectMinerIdentity, type ComputeDeviceObservation, type HardwareType } from '@mining/miner-detection';
 import { createLogger } from '@mining/logger';
 
 const logger = createLogger('monitoring-agent');
+
+interface AgentDeviceReport {
+  workerId?: string;
+  declaredType?: HardwareType;
+  userAgent?: string;
+  algorithm?: string;
+  devices?: ComputeDeviceObservation[];
+}
+
+function loadDevelopmentReport(): AgentDeviceReport | undefined {
+  const raw = process.env.MINER_AGENT_DEVICE_REPORT_JSON;
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as AgentDeviceReport;
+  } catch (error) {
+    logger.error({ error }, 'MINER_AGENT_DEVICE_REPORT_JSON is invalid JSON');
+    return undefined;
+  }
+}
+
+const report = loadDevelopmentReport();
+const detection = detectMinerIdentity({
+  userAgent: report?.userAgent,
+  declaredType: report?.declaredType,
+  algorithm: report?.algorithm,
+  observations: report?.devices,
+});
 
 logger.info(
   {
     mode: 'outbound-only',
     access: 'no-wallet-no-ledger',
+    workerId: report?.workerId,
+    detection,
   },
-  'monitoring agent scaffold started',
+  'universal monitoring agent scaffold started',
 );
 
-// Vendor-specific miner API adapters will be added after supported hardware is selected.
+// Production adapters will report CPU, GPU, FPGA, ASIC, and hybrid rigs through
+// outbound authenticated telemetry. No local shell command is executed by default.

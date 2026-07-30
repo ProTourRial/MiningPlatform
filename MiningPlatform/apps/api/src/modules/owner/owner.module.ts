@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { Module } from '@nestjs/common';
 
 // Owner operations are intentionally not exposed until private-network access,

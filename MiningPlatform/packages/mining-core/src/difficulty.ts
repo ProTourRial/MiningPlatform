@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export const MAX_UINT256 = (1n << 256n) - 1n;
 export const DIFFICULTY_ONE_TARGET = BigInt(
   '0x00000000ffff0000000000000000000000000000000000000000000000000000',
@@ -19,6 +25,17 @@ export function parsePositiveDecimal(value: string): Rational {
   const numerator = BigInt(`${whole}${fraction}`);
   if (numerator <= 0n) throw new Error('Difficulty must be greater than zero');
   return { numerator, denominator };
+}
+
+
+function parseNonNegativeDecimal(value: string): Rational {
+  const normalized = value.trim();
+  const match = /^(\d+)(?:\.(\d+))?$/.exec(normalized);
+  if (!match) throw new Error('Value must be a non-negative decimal string');
+  const whole = match[1] ?? '0';
+  const fraction = match[2] ?? '';
+  const denominator = 10n ** BigInt(fraction.length);
+  return { numerator: BigInt(`${whole}${fraction}`), denominator };
 }
 
 export function targetFromDifficulty(difficulty: string): bigint {
@@ -56,7 +73,7 @@ export function addDecimalStrings(values: readonly string[], decimalPlaces = 12)
   const scale = 10n ** BigInt(decimalPlaces);
   let total = 0n;
   for (const value of values) {
-    const { numerator, denominator } = parsePositiveDecimal(value);
+    const { numerator, denominator } = parseNonNegativeDecimal(value);
     total += (numerator * scale) / denominator;
   }
   const whole = total / scale;

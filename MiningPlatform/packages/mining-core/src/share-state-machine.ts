@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import type { ShareState } from './types.js';
 
 const transitions: Readonly<Record<ShareState, readonly ShareState[]>> = {

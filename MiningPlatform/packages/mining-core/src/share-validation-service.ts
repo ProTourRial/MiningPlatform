@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { calculateHeaderHash, resolveVersion } from './bitcoin-header.js';
 import { transitionShareState } from './share-state-machine.js';
 import { formatDifficultyForHash, targetFromCompactBits, targetFromDifficulty } from './difficulty.js';

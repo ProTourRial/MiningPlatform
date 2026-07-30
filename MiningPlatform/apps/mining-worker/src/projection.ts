@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { createHash } from 'node:crypto';
 import { prisma, type Prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
@@ -11,6 +17,9 @@ import {
   type MiningJobReceivedPayload,
   type ShareAcceptedPayload,
   type ShareRejectedPayload,
+  type ShareUpstreamDecisionPayload,
+  type ShareUpstreamPendingPayload,
+  type WorkerDeviceDetectedPayload,
 } from '@mining/shared';
 import { PrismaTransactionalIdempotencyService } from './prisma-idempotency.js';
 
@@ -25,6 +34,9 @@ const supportedEvents = new Set<string>([
   MiningEvents.jobReceived,
   MiningEvents.shareLocalAccepted,
   MiningEvents.shareLocalRejected,
+  MiningEvents.shareUpstreamPending,
+  MiningEvents.shareUpstreamAccepted,
+  MiningEvents.shareUpstreamRejected,
 ]);
 
 export type ProjectionResult =
@@ -84,6 +96,9 @@ export class MiningProjection {
         case MiningEvents.sessionDisconnected:
           await this.sessionDisconnected(tx, event as DomainEvent<MinerSessionDisconnectedPayload>);
           break;
+        case MiningEvents.workerDeviceDetected:
+          await this.workerDeviceDetected(tx, event as DomainEvent<WorkerDeviceDetectedPayload>);
+          break;
         case MiningEvents.jobReceived:
           await this.jobReceived(tx, event as DomainEvent<MiningJobReceivedPayload>);
           break;
@@ -92,6 +107,13 @@ export class MiningProjection {
           break;
         case MiningEvents.shareLocalRejected:
           await this.shareRejected(tx, event as DomainEvent<ShareRejectedPayload>);
+          break;
+        case MiningEvents.shareUpstreamPending:
+          await this.shareUpstreamPending(tx, event as DomainEvent<ShareUpstreamPendingPayload>);
+          break;
+        case MiningEvents.shareUpstreamAccepted:
+        case MiningEvents.shareUpstreamRejected:
+          await this.shareUpstreamDecision(tx, event as DomainEvent<ShareUpstreamDecisionPayload>);
           break;
       }
 
@@ -196,6 +218,54 @@ export class MiningProjection {
     }
   }
 
+
+  private async workerDeviceDetected(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<WorkerDeviceDetectedPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const workerDeviceProfile = (tx as unknown as {
+      workerDeviceProfile: { upsert(args: unknown): Promise<unknown> };
+    }).workerDeviceProfile;
+    await workerDeviceProfile.upsert({
+      where: { workerId: payload.workerId },
+      update: {
+        detectedType: payload.detectedType,
+        possibleTypes: [...payload.possibleTypes],
+        detectionSource: payload.detectionSource,
+        detectionConfidence: payload.confidence,
+        minerSoftware: payload.minerSoftware,
+        softwareVersion: payload.softwareVersion,
+        vendor: payload.vendor,
+        model: payload.model,
+        architecture: payload.architecture,
+        operatingSystem: payload.operatingSystem,
+        deviceCount: payload.deviceCount,
+        algorithmCapabilities: [...payload.algorithmCapabilities],
+        evidence: [...payload.evidence],
+        lastDetectedAt: new Date(payload.detectedAt),
+      },
+      create: {
+        workerId: payload.workerId,
+        detectedType: payload.detectedType,
+        possibleTypes: [...payload.possibleTypes],
+        detectionSource: payload.detectionSource,
+        detectionConfidence: payload.confidence,
+        minerSoftware: payload.minerSoftware,
+        softwareVersion: payload.softwareVersion,
+        vendor: payload.vendor,
+        model: payload.model,
+        architecture: payload.architecture,
+        operatingSystem: payload.operatingSystem,
+        deviceCount: payload.deviceCount,
+        algorithmCapabilities: [...payload.algorithmCapabilities],
+        evidence: [...payload.evidence],
+        firstDetectedAt: new Date(payload.detectedAt),
+        lastDetectedAt: new Date(payload.detectedAt),
+      },
+    });
+  }
+
   private async jobReceived(
     tx: Prisma.TransactionClient,
     event: DomainEvent<MiningJobReceivedPayload>,
@@ -278,13 +348,15 @@ export class MiningProjection {
       data: { status: 'ONLINE', lastShareAt: new Date(payload.submittedAt) },
     });
 
-    await this.updateHashrateBuckets(tx, {
-      workerId: payload.workerId,
-      submittedAt: new Date(payload.submittedAt),
-      acceptedDifficulty: payload.assignedDifficulty,
-      rejected: false,
-      invalid: false,
-    });
+    if (!payload.upstreamRequired) {
+      await this.updateHashrateBuckets(tx, {
+        workerId: payload.workerId,
+        submittedAt: new Date(payload.submittedAt),
+        acceptedDifficulty: payload.assignedDifficulty,
+        rejected: false,
+        invalid: false,
+      });
+    }
   }
 
   private async shareRejected(
@@ -349,6 +421,48 @@ export class MiningProjection {
       acceptedDifficulty: '0',
       rejected: true,
       invalid: isInvalidRejection(payload.code),
+    });
+  }
+
+  private async shareUpstreamPending(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<ShareUpstreamPendingPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const share = await tx.share.findUniqueOrThrow({ where: { fingerprint: payload.fingerprint } });
+    const state = transitionShareState(share.status, 'UPSTREAM_PENDING');
+    await tx.share.update({
+      where: { id: share.id },
+      data: {
+        status: state,
+        upstreamSubmittedAt: new Date(event.occurredAt),
+      },
+    });
+  }
+
+  private async shareUpstreamDecision(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<ShareUpstreamDecisionPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const share = await tx.share.findUniqueOrThrow({ where: { fingerprint: payload.fingerprint } });
+    const next = payload.upstreamAccepted ? 'UPSTREAM_ACCEPTED' : 'UPSTREAM_REJECTED';
+    const state = transitionShareState(share.status, next);
+    await tx.share.update({
+      where: { id: share.id },
+      data: {
+        status: state,
+        upstreamAccepted: payload.upstreamAccepted,
+        upstreamReason: payload.errorMessage,
+        upstreamRespondedAt: new Date(payload.decidedAt),
+      },
+    });
+    await this.updateHashrateBuckets(tx, {
+      workerId: payload.workerId,
+      submittedAt: new Date(payload.submittedAt),
+      acceptedDifficulty: payload.upstreamAccepted ? share.assignedDifficulty.toString() : '0',
+      rejected: !payload.upstreamAccepted,
+      invalid: false,
     });
   }
 

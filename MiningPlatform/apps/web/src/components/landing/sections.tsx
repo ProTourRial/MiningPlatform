@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -47,7 +53,7 @@ const platformFeatures: Array<{ icon: LucideIcon; title: string; description: st
 ];
 
 const pipelineSteps = [
-  ['01', 'Miner Connect', 'ASIC menghubungkan worker melalui Stratum V1 dan membentuk sesi terautentikasi.'],
+  ['01', 'Miner Connect', 'ASIC, GPU, CPU, FPGA, atau rig hybrid menghubungkan worker melalui Stratum V1.'],
   ['02', 'Validate Share', 'Server memeriksa job, target difficulty, nonce, duplicate, stale state, dan format submission.'],
   ['03', 'Durable Intake', 'Share dan outbox event harus tersimpan secara atomik sebelum dianggap aman untuk diproses ulang.'],
   ['04', 'Relay Upstream', 'Share diteruskan ke pool upstream dan dikorelasikan dengan respons accepted atau rejected.'],
@@ -58,7 +64,7 @@ const pipelineSteps = [
 const monitoringMetrics = [
   { icon: Gauge, label: 'Accepted-share hashrate', value: '0 TH/s', note: 'rolling 5 menit' },
   { icon: Activity, label: 'Worker state', value: 'Offline', note: 'belum ada koneksi' },
-  { icon: Thermometer, label: 'ASIC temperature', value: 'N/A', note: 'membutuhkan agent' },
+  { icon: Thermometer, label: 'Device temperature', value: 'N/A', note: 'agent / miner API' },
   { icon: Zap, label: 'Power efficiency', value: 'N/A', note: 'J/TH' },
 ];
 
@@ -97,6 +103,33 @@ export function LandingSections() {
                 <p className="mt-4 text-sm leading-7 text-[#aabcca]">{description}</p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="hardware" className="relative border-b border-white/10 bg-[#07131f] py-24 sm:py-30">
+        <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
+          <SectionHeading
+            eyebrow="Universal Miner Detection"
+            title="Kenali perangkat tanpa mengunci platform ke ASIC."
+            description="Stratum tidak selalu menyatakan jenis hardware secara pasti. Platform menggabungkan signature software, deklarasi user, monitoring agent, dan miner API agar hasil deteksi memiliki sumber serta tingkat keyakinan yang jelas."
+          />
+          <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['ASIC', 'High confidence', 'Firmware vendor, Stratum signature, suhu, fan, daya, dan hashboard.'],
+              ['GPU', 'Agent verified', 'Inventory NVIDIA, AMD, atau Intel serta software miner yang digunakan.'],
+              ['CPU', 'Agent verified', 'Arsitektur, jumlah core/thread, OS, dan software miner.'],
+              ['FPGA / Hybrid', 'Evidence based', 'Perangkat campuran tetap tercatat tanpa dipaksa menjadi satu tipe yang salah.'],
+            ].map(([type, confidence, description]) => (
+              <article key={type} className="rounded-2xl border border-white/9 bg-[#0a1928]/74 p-6">
+                <p className="mono-font text-[9px] font-bold uppercase tracking-[0.16em] text-[#98f5ff]">{confidence}</p>
+                <h3 className="display-font mt-5 text-2xl font-black text-white">{type}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#a8bac8]">{description}</p>
+              </article>
+            ))}
+          </div>
+          <div className="mt-5 rounded-2xl border border-amber-300/16 bg-amber-300/5 p-5 text-sm leading-7 text-amber-100/80">
+            Universal hardware tidak berarti seluruh algoritma sudah aktif. Rilis ini memvalidasi BTC/SHA-256; algoritma lain ditambahkan melalui adapter terpisah agar perhitungan share tidak dicampur.
           </div>
         </div>
       </section>
@@ -336,8 +369,9 @@ export function LandingSections() {
           />
           <div className="space-y-3">
             {[
-              ['Apakah ini layanan cloud mining?', 'Tidak. Platform tidak menjual kontrak hashrate. Mining dilakukan oleh ASIC atau GPU fisik yang terhubung melalui Stratum.'],
-              ['Apakah ASIC produksi sudah dapat dihubungkan?', 'Belum. Rilis saat ini masih development alpha dan belum memiliki upstream connector serta durable event recovery yang lengkap.'],
+              ['Apakah ini layanan cloud mining?', 'Tidak. Platform tidak menjual kontrak hashrate. Mining dilakukan oleh perangkat fisik yang terhubung melalui Stratum.'],
+              ['Apakah hardware dibatasi ke ASIC?', 'Tidak. Model worker mendukung CPU, GPU, FPGA, ASIC, rig hybrid, dan perangkat lain. Pipeline aktif saat ini tetap BTC/SHA-256, sehingga miner harus mendukung algoritma tersebut.'],
+              ['Apakah perangkat produksi sudah dapat dihubungkan?', 'Belum. Upstream gateway lokal sudah tersedia, tetapi provider fixture, autentikasi produksi, integration test, load test, dan deployment verification masih menjadi blocker.'],
               ['Apakah reward dan payout sudah aktif?', 'Belum. Reward final, ledger settlement, Bitcoin wallet, dan payout nyata tetap dinonaktifkan sampai pipeline share tervalidasi.'],
               ['Apa fungsi simulator?', 'Simulator memperkirakan reward, listrik, fee, dan profit bersih. Hasilnya tidak memengaruhi saldo atau proses mining nyata.'],
               ['Data apa yang akan tampil di dashboard?', 'Hashrate, status worker, accepted dan rejected share, uptime, serta telemetry perangkat jika agent monitoring tersedia.'],

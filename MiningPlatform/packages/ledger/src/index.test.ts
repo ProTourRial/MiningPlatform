@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { assertBalanced } from './index.js';

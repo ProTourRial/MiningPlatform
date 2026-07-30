@@ -1,6 +1,6 @@
 {
   "name": "@mining/outbox-worker",
-  "version": "0.2.0-alpha.2",
+  "version": "0.2.0-alpha.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,6 +20,12 @@
     "@types/node": "22.0.0",
     "eslint": "9.0.0",
     "tsx": "4.19.0",
+<<<<<<< Updated upstream
     "typescript": "5.7.0"
   }
+=======
+    "typescript": "5.6.3"
+  },
+  "author": "Abia Nugrahanto"
+>>>>>>> Stashed changes
 }

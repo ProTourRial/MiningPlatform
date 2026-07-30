@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 const HEX_PATTERN = /^[0-9a-f]+$/i;
 
 export function assertHex(value: string, bytes?: number, field = 'hex value'): void {

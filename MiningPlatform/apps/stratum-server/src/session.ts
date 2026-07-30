@@ -1,5 +1,12 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import type { Socket } from 'node:net';
 import type { BitcoinMiningJob } from '@mining/mining-core';
+import type { UpstreamStratumClient } from '@mining/upstream-stratum';
 
 export type MinerSessionState = 'CONNECTED' | 'SUBSCRIBED' | 'AUTHORIZED' | 'ACTIVE' | 'DISCONNECTED';
 
@@ -21,6 +28,7 @@ export interface MinerSession {
   assignedDifficulty: string;
   versionRollingMask?: string;
   currentJob?: BitcoinMiningJob;
+  upstream?: UpstreamStratumClient;
   acceptedDifficultyBuckets: Map<number, DifficultyBucket>;
   submissionWindowStartedAt: number;
   submissionsInWindow: number;

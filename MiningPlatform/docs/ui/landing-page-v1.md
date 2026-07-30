@@ -2,7 +2,7 @@
 
 ## Tujuan
 
-Landing page menjelaskan MiningPlatform sebagai mining pool management platform dan upstream gateway. Halaman tidak boleh memberi kesan bahwa platform menjual kontrak hashrate, menjamin keuntungan, menerima dana nyata, atau telah siap digunakan oleh ASIC produksi.
+Landing page menjelaskan MiningPlatform sebagai mining pool management platform dan upstream gateway. Halaman tidak boleh memberi kesan bahwa platform menjual kontrak hashrate, menjamin keuntungan, menerima dana nyata, atau telah siap digunakan oleh perangkat mining produksi.
 
 ## Sumber Desain
 

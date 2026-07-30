@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.2.0-alpha.4] - 2026-07-31
+
+- Added universal CPU, GPU, FPGA, ASIC, and hybrid worker profiles.
+- Added evidence-based miner detection and persistence.
+- Added universal hardware website review surfaces.
+- Added Abia Nugrahanto author attribution headers across code files.
+- Removed packaged build and dependency artifacts from the release archive.
+- Included and synchronized `pnpm-lock.yaml` for reproducible workspace installation.
+- Fixed legacy ESM logger import and frontend type errors found during universal-hardware validation.
+
+## 0.2.0-alpha.3 - 2026-07-31
+
+### Added
+
+- Upstream Stratum V1 TCP/TLS client with request-response correlation.
+- Parsers for upstream subscribe results, difficulty, extranonce, and notify messages.
+- Upstream session finite state machine and exponential initial reconnect backoff.
+- Multi-job registry with active, superseded, expired, and invalidated states.
+- `clean_jobs` generation invalidation.
+- Job normalization into Bitcoin header byte order.
+- Local upstream Stratum simulator application.
+- Downstream gateway integration that waits for upstream acceptance before replying `true`.
+- Separate `UPSTREAM_PENDING`, `UPSTREAM_ACCEPTED`, and `UPSTREAM_REJECTED` events.
+- Mining projection handlers for the upstream share lifecycle.
+- Reference Stratum V1 fixture with byte-for-byte header and hash expectations.
+- End-to-end TCP gateway test from downstream miner through upstream simulator.
+
+### Changed
+
+- Corrected Bitcoin job representation so normalized prevhash and Merkle branches are not reversed twice.
+- Hashrate contribution is recorded after upstream acceptance when upstream is required.
+- Zero-valued aggregate difficulty buckets are now valid inputs to decimal summation.
+- Redis event transport and PostgreSQL adapters are loaded lazily by the Stratum server, improving local test isolation.
+- Development and upstream TCP modes are selected explicitly through `UPSTREAM_DRIVER`.
+
+### Known gaps
+
+- The compatibility fixture is a public Stratum V1 reference example, not yet a captured fixture from the selected production pool.
+- A live upstream disconnect currently closes the downstream miner session; transparent session recovery is not complete.
+- Production worker authentication is not implemented.
+- PostgreSQL, Redis, Docker, load, and soak integration tests remain pending.
+- A registry-generated `pnpm-lock.yaml` still requires the first networked installation.
+
 ## 0.2.0-alpha.2 - 2026-07-30
 
 ### Added

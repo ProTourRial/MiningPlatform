@@ -1,3 +1,7 @@
+// MiningPlatform
+// Author: Abia Nugrahanto
+// Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 generator client {
   provider               = "prisma-client"
   output                 = "../src/generated/prisma"
@@ -34,6 +38,34 @@ enum WorkerStatus {
   OFFLINE
   DISABLED
   UNKNOWN
+}
+
+
+enum HardwareType {
+  CPU
+  GPU
+  FPGA
+  ASIC
+  HYBRID
+  OTHER
+  UNKNOWN
+}
+
+enum HardwareDetectionSource {
+  USER_DECLARED
+  STRATUM_USER_AGENT
+  MONITORING_AGENT
+  MINER_API
+  COMBINED
+  UNKNOWN
+}
+
+enum HardwareDetectionConfidence {
+  UNKNOWN
+  LOW
+  MEDIUM
+  HIGH
+  CONFIRMED
 }
 
 enum MinerSessionStatus {
@@ -302,9 +334,68 @@ model Worker {
   minerSessions         MinerSession[]
   difficultyAssignments DifficultyAssignment[]
   shareFingerprints     ShareFingerprint[]
+  deviceProfile         WorkerDeviceProfile?
+  deviceTelemetry       WorkerDeviceTelemetry[]
 
   @@unique([miningAccountId, name])
   @@index([userId, status])
+}
+
+
+model WorkerDeviceProfile {
+  id                    String                      @id @default(cuid())
+  workerId              String                      @unique
+  declaredType          HardwareType?
+  detectedType          HardwareType                @default(UNKNOWN)
+  possibleTypes         HardwareType[]
+  detectionSource       HardwareDetectionSource     @default(UNKNOWN)
+  detectionConfidence   HardwareDetectionConfidence @default(UNKNOWN)
+  minerSoftware         String?
+  softwareVersion       String?
+  vendor                String?
+  model                 String?
+  architecture          String?
+  operatingSystem       String?
+  deviceCount           Int                         @default(1)
+  algorithmCapabilities String[]
+  evidence              Json?
+  firstDetectedAt       DateTime                    @default(now())
+  lastDetectedAt        DateTime                    @default(now())
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  worker                Worker                      @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  telemetry             WorkerDeviceTelemetry[]
+
+  @@index([detectedType, detectionConfidence])
+  @@index([lastDetectedAt])
+}
+
+model WorkerDeviceTelemetry {
+  id                       String              @id @default(cuid())
+  workerId                 String
+  profileId                String
+  deviceKey                String
+  hardwareType             HardwareType
+  recordedAt               DateTime            @default(now())
+  temperatureC             Decimal?            @db.Decimal(8, 3)
+  fanRpm                    Int?
+  powerWatts               Decimal?            @db.Decimal(14, 3)
+  utilizationPercent       Decimal?            @db.Decimal(7, 3)
+  memoryUtilizationPercent Decimal?            @db.Decimal(7, 3)
+  memoryUsedBytes          BigInt?
+  memoryTotalBytes         BigInt?
+  coreClockMhz             Int?
+  memoryClockMhz           Int?
+  hashrate                 Decimal?            @db.Decimal(38, 8)
+  efficiency               Decimal?            @db.Decimal(18, 8)
+  hardwareErrors           Int?
+  raw                      Json?
+  worker                   Worker              @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  profile                  WorkerDeviceProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, deviceKey, recordedAt])
+  @@index([profileId, recordedAt])
+  @@index([hardwareType, recordedAt])
 }
 
 model WorkerTelemetry {

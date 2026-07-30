@@ -1,6 +1,6 @@
 {
   "name": "@mining/api",
-  "version": "0.2.0-alpha.2",
+  "version": "0.2.0-alpha.4",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
@@ -13,30 +13,36 @@
   "dependencies": {
     "@mining/config": "workspace:*",
     "@mining/database": "workspace:*",
+    "@mining/event-bus": "workspace:*",
+    "@mining/logger": "workspace:*",
+    "@mining/security": "workspace:*",
     "@mining/shared": "workspace:*",
     "@nestjs/common": "11.0.0",
     "@nestjs/config": "4.0.0",
     "@nestjs/core": "11.0.0",
     "@nestjs/platform-express": "11.0.0",
+    "@nestjs/platform-socket.io": "11.0.0",
     "@nestjs/swagger": "11.0.0",
+    "@nestjs/websockets": "11.0.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
     "helmet": "8.0.0",
+    "redis": "5.0.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.0",
-    "@mining/event-bus": "workspace:*",
-    "@nestjs/platform-socket.io": "11.0.0",
-    "@nestjs/websockets": "11.0.0",
-    "socket.io": "4.8.0",
-    "redis": "5.0.0",
-    "@mining/logger": "workspace:*",
-    "@mining/security": "workspace:*"
+    "socket.io": "4.8.0"
   },
   "devDependencies": {
     "@nestjs/cli": "11.0.0",
     "@types/express": "5.0.0",
     "@types/node": "22.0.0",
     "eslint": "9.0.0",
+<<<<<<< Updated upstream
     "typescript": "5.7.0"
   }
+=======
+    "typescript": "5.6.3"
+  },
+  "author": "Abia Nugrahanto"
+>>>>>>> Stashed changes
 }

@@ -1,6 +1,6 @@
 {
   "name": "@mining/stratum-server",
-  "version": "0.2.0-alpha.2",
+  "version": "0.2.0-alpha.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,22 +9,30 @@
     "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('Run @mining/mining-core and @mining/stratum-protocol tests')\""
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
-    "@mining/logger": "workspace:*",
-    "@mining/security": "workspace:*",
-    "@mining/stratum-protocol": "workspace:*",
+    "@mining/database": "workspace:*",
     "@mining/event-bus": "workspace:*",
+    "@mining/logger": "workspace:*",
+    "@mining/miner-detection": "workspace:*",
     "@mining/mining-core": "workspace:*",
+    "@mining/security": "workspace:*",
     "@mining/shared": "workspace:*",
-    "redis": "5.0.0",
-    "@mining/database": "workspace:*"
+    "@mining/stratum-protocol": "workspace:*",
+    "@mining/upstream-stratum": "workspace:*",
+    "redis": "5.0.0"
   },
   "devDependencies": {
     "@types/node": "22.0.0",
     "eslint": "9.0.0",
     "tsx": "4.19.0",
+<<<<<<< Updated upstream
     "typescript": "5.7.0"
   }
+=======
+    "typescript": "5.6.3"
+  },
+  "author": "Abia Nugrahanto"
+>>>>>>> Stashed changes
 }

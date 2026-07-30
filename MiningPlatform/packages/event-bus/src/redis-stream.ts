@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { createClient, type RedisClientType } from 'redis';
 import type { DomainEvent, EventBus, EventHandler } from './core.js';
 import { InMemoryEventBus } from './core.js';

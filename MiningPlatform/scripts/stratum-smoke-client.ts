@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import net from 'node:net';
 import { calculateHeaderHash, targetFromDifficulty, type BitcoinMiningJob, type BitcoinShareSubmission } from '@mining/mining-core';
 
@@ -69,16 +75,21 @@ async function main(): Promise<void> {
   const configure = await responseFor(1);
   if (configure.error) throw new Error(`Configure failed: ${JSON.stringify(configure.error)}`);
 
-  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.2']);
+  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.2.0-alpha.4']);
   const subscribe = await responseFor(2);
   if (subscribe.error) throw new Error(`Subscribe failed: ${JSON.stringify(subscribe.error)}`);
   const subscribeResult = subscribe.result as [unknown, string, number];
-  const extranonce1 = subscribeResult[1];
-  const extranonce2Size = subscribeResult[2];
+  let extranonce1 = subscribeResult[1];
+  let extranonce2Size = subscribeResult[2];
 
   send(3, 'mining.authorize', [workerName, password]);
   const authorize = await responseFor(3);
   if (authorize.result !== true) throw new Error(`Authorize failed: ${JSON.stringify(authorize.error)}`);
+
+  const extranonceMessage = await notification('mining.set_extranonce');
+  extranonce1 = String(extranonceMessage.params?.[0]);
+  extranonce2Size = Number(extranonceMessage.params?.[1]);
+  if (!Number.isInteger(extranonce2Size) || extranonce2Size <= 0) throw new Error('Invalid extranonce assignment');
 
   const difficultyMessage = await notification('mining.set_difficulty');
   const difficulty = String(difficultyMessage.params?.[0]);

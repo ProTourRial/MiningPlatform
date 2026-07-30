@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export function hashSensitiveValue(value: string): string {

@@ -2,59 +2,53 @@
 
 MiningPlatform adalah monorepo TypeScript untuk pengelolaan mining pool berbasis upstream gateway, validasi share, monitoring worker, akuntansi reward, double-entry ledger, wallet orchestration, payout, dan transparansi operasional.
 
-Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivitas mining berasal dari ASIC atau GPU fisik yang terhubung melalui Stratum.
+Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivitas mining berasal dari ASIC, GPU, CPU, FPGA, rig hybrid, atau perangkat fisik lain yang terhubung melalui Stratum.
 
 ## Status rilis
 
-Versi saat ini: `0.2.0-alpha.2`
+Versi saat ini: `0.2.0-alpha.4`
 
-Rilis ini merupakan **development mining pipeline yang diperkeras**, bukan mining pool produksi. Landing page, Stratum development flow, local share validation, durable event intake, Redis Stream recovery, PostgreSQL projection, multi-window hashrate, dan dashboard development sudah tersedia.
+Rilis ini merupakan **upstream gateway development alpha**, bukan mining pool produksi. Landing page, Stratum downstream server, upstream TCP/TLS client, local upstream simulator, job normalization, multi-job registry, local share validation, upstream response correlation, durable event foundation, multi-window hashrate, dan dashboard development sudah tersedia.
 
-Bagian berikut belum aktif:
+Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
-- upstream Stratum connector nyata;
-- job normalization dari upstream pool;
-- upstream share submission dan response correlation;
-- autentikasi pengguna produksi;
+- fixture tangkapan dari upstream pool yang benar-benar dipilih;
+- transparent reconnect setelah koneksi upstream aktif terputus;
+- production worker authentication dan tenant isolation penuh;
+- PostgreSQL dan Redis integration test pada lingkungan Docker;
 - reward settlement;
 - ledger posting reward;
 - Bitcoin wallet signing;
 - payout nyata.
 
-Jangan menghubungkan ASIC produksi atau dana nyata ke rilis ini.
+Jangan menghubungkan perangkat mining produksi atau dana nyata ke rilis ini.
 
 ## Pipeline alpha
 
 ```text
-Stratum development miner
+Downstream test miner
     ↓
-mining.configure
+MiningPlatform Stratum gateway
     ↓
-mining.subscribe
+mining.subscribe / mining.authorize
     ↓
-mining.authorize
+Upstream Stratum simulator melalui TCP
     ↓
-mining.notify
+mining.set_difficulty / mining.set_extranonce / mining.notify
     ↓
-mining.submit
+job normalization dan multi-job registry
+    ↓
+downstream mining.submit
     ↓
 local SHA-256d validation
     ↓
-Redis duplicate reservation
+UPSTREAM_PENDING
     ↓
-PostgreSQL durable outbox
+upstream mining.submit dan response correlation
     ↓
-outbox dispatcher
+UPSTREAM_ACCEPTED atau UPSTREAM_REJECTED
     ↓
-Redis Stream
-    ↓
-PostgreSQL projection
-    ↓
-1m / 5m / 15m / 1h / 24h hashrate
-    ↓
-authorized development WebSocket room
-    ↓
-Next.js development dashboard
+event projection dan hashrate foundation
 ```
 
 ## Baseline arsitektur
@@ -64,7 +58,7 @@ Next.js development dashboard
 - Model awal: upstream pool gateway
 - Reward awal: `FOLLOW_UPSTREAM`
 - Fee platform: 2%
-- Hardware awal: ASIC
+- Hardware: CPU, GPU, FPGA, ASIC, HYBRID, OTHER, dan UNKNOWN
 - Ledger: immutable double-entry journal
 - Monitoring: Stratum dan agent opsional
 - Role: Guest, User, Owner
@@ -81,15 +75,18 @@ Wallet tidak boleh mengubah saldo pengguna secara langsung. Perubahan saldo hany
 apps/
   web/                 Next.js landing page dan dashboard development
   api/                 NestJS REST API, health, metrics, dan WebSocket
-  stratum-server/      TCP Stratum development gateway
+  stratum-server/      TCP Stratum gateway dan upstream decision flow
+  upstream-simulator/  Local Stratum V1 upstream simulator
   outbox-worker/       PostgreSQL outbox dispatcher ke Redis Stream
   mining-worker/       Event projection dan hashrate aggregation
   wallet-worker/       Boundary wallet, tetap nonaktif
   scheduler/           Central scheduler foundation
-  monitoring-agent/    Optional telemetry agent foundation
+  monitoring-agent/    Universal inventory dan telemetry agent foundation
 packages/
+  miner-detection/     Evidence-based CPU/GPU/FPGA/ASIC/hybrid detection
   mining-core/         Bitcoin header, target, validation, duplicate, hashrate
-  stratum-protocol/    Stratum parser dan serializer
+  stratum-protocol/    Downstream dan upstream Stratum codec
+  upstream-stratum/    Upstream client, state machine, job registry, simulator
   event-bus/           In-memory bus dan Redis Stream transport
   database/            Prisma schema, migrations, seed, dan client
   shared/              Event contracts dan domain types
@@ -103,7 +100,7 @@ packages/
 
 - Node.js 22 direkomendasikan
 - pnpm 10.13.1
-- Docker dan Docker Compose untuk PostgreSQL serta Redis
+- Docker dan Docker Compose hanya diperlukan untuk integration test PostgreSQL/Redis dan staging
 
 ## Instalasi pertama
 
@@ -111,17 +108,66 @@ packages/
 cp .env.example .env
 corepack enable
 corepack prepare pnpm@10.13.1 --activate
-pnpm install
+pnpm install --frozen-lockfile
+pnpm db:generate
 ```
 
-Lingkungan pembuatan arsip ini tidak memiliki akses registry, sehingga `pnpm-lock.yaml` tidak dapat dihasilkan di sini. Seluruh dependency langsung sudah dipatok ke versi exact. Setelah instalasi pertama pada mesin yang memiliki akses registry, commit file berikut ke GitHub:
+`pnpm-lock.yaml` sudah tersedia dan seluruh importer workspace telah disinkronkan. CI serta Docker menggunakan lockfile sebagai sumber dependency yang reproducible.
+
+
+## Review website tanpa Docker
+
+Review visual universal worker dapat dibuka langsung tanpa Node.js atau Docker:
+
+```text
+docs/ui/universal-miner-review.html
+```
+
+Untuk meninjau aplikasi Next.js:
 
 ```bash
-git add pnpm-lock.yaml
-git commit -m "chore: lock dependencies"
+pnpm --filter @mining/web dev
 ```
 
-Setelah lockfile tersedia, ubah CI dan Docker dari `--no-frozen-lockfile` menjadi `--frozen-lockfile`.
+Buka `http://localhost:3000`, lalu lihat landing page dan route `/dashboard/workers`. Dashboard development tetap dibatasi untuk lingkungan non-production.
+
+## Universal miner detection
+
+- Jenis hardware: CPU, GPU, FPGA, ASIC, HYBRID, OTHER, dan UNKNOWN.
+- Sumber deteksi: deklarasi user, signature `mining.subscribe`, monitoring agent, dan miner API.
+- Hasil menyimpan confidence, possible types, evidence, software, vendor, model, OS, jumlah perangkat, dan kemampuan algoritma.
+- Signature ambigu seperti XMRig, CGMiner, dan BFGMiner tidak dianggap sebagai bukti satu tipe hardware.
+- Pipeline share aktif masih BTC/SHA-256. Universal hardware tidak berarti semua algoritma telah diimplementasikan.
+
+## Upstream gateway lokal tanpa Docker
+
+Tahap codec, simulator, state machine, registry, dan TCP gateway dapat dijalankan tanpa PostgreSQL atau Redis.
+
+Terminal pertama:
+
+```bash
+pnpm --filter @mining/upstream-simulator dev
+```
+
+Terminal kedua:
+
+```bash
+STRATUM_DEV_MODE=true \
+EVENT_BUS_DRIVER=memory \
+EVENT_STORE_DRIVER=jsonl \
+UPSTREAM_DRIVER=tcp \
+UPSTREAM_HOST=127.0.0.1 \
+UPSTREAM_PORT=3334 \
+pnpm --filter @mining/stratum-server dev
+```
+
+Jalankan pengujian upstream:
+
+```bash
+pnpm test:upstream
+```
+
+Mode `UPSTREAM_DRIVER=development` tetap tersedia untuk job lokal lama. Mode `tcp` memakai satu koneksi upstream per downstream session pada alpha ini. Desain tersebut memudahkan verifikasi protokol, tetapi belum menjadi model scaling final.
 
 ## Development dengan Docker
 
@@ -211,22 +257,28 @@ GET /api/v1/metrics
 
 ## Blocker sebelum upstream staging
 
-1. Fixture Stratum nyata dan validasi byte order.
-2. Upstream session state machine.
-3. Multi-job registry dan `clean_jobs` invalidation.
-4. Job normalization.
-5. Upstream submit dan response correlation.
-6. PostgreSQL dan Redis integration tests.
-7. Load test serta soak test.
+1. Tambahkan fixture tangkapan dan expected hash dari upstream pool yang dipilih.
+2. Uji TLS, authorization policy, dan error code khusus provider tersebut.
+3. Implementasikan transparent reconnect atau explicit failover policy setelah sesi aktif terputus.
+4. Ganti development worker authenticator dengan PostgreSQL-backed authenticator.
+5. Jalankan PostgreSQL dan Redis integration tests.
+6. Jalankan load test serta soak test.
+7. Audit isolation untuk banyak user, banyak worker, dan banyak replica.
 8. Production worker authentication dan tenant isolation.
 
 ## Dokumen utama
 
 - `docs/adr/0001-core-mining-foundation.md`
+- `docs/architecture/upstream-stratum-alpha-3.md`
 - `docs/architecture/hardening-alpha-2.md`
 - `docs/architecture/share-validation.md`
 - `docs/architecture/event-driven-core.md`
 - `docs/database/time-series-monitoring.md`
-- `docs/releases/v0.2.0-alpha.2-validation.md`
+- `docs/releases/v0.2.0-alpha.4.md`
+- `docs/releases/v0.2.0-alpha.4-validation.md`
 - `docs/releases/v0.2.0-definition-of-done.md`
 - `docs/ui/landing-page-v1.md`
+
+## Universal Miner Detection
+
+Worker dapat mewakili CPU, GPU, FPGA, ASIC, rig hybrid, atau hardware lain. Deteksi menggunakan user-agent Stratum, deklarasi user, monitoring agent, dan miner API dengan confidence level yang eksplisit. Pipeline share aktif tetap BTC/SHA-256.

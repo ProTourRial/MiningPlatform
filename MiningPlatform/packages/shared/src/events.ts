@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export const MiningEvents = {
   sessionConnected: 'mining.session.connected.v1',
   sessionSubscribed: 'mining.session.subscribed.v1',
@@ -12,6 +18,7 @@ export const MiningEvents = {
   shareUpstreamRejected: 'mining.share.upstream-rejected.v1',
   hashrateUpdated: 'mining.hashrate.updated.v1',
   workerStateChanged: 'mining.worker.state-changed.v1',
+  workerDeviceDetected: 'mining.worker.device-detected.v1',
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
@@ -66,6 +73,23 @@ export interface ShareAcceptedPayload {
   versionBits?: string;
   submittedAt: string;
   blockCandidate: boolean;
+  upstreamRequired: boolean;
+}
+
+
+export interface ShareUpstreamPendingPayload {
+  sessionId: string;
+  workerId: string;
+  jobId: string;
+  fingerprint: string;
+  submittedAt: string;
+}
+
+export interface ShareUpstreamDecisionPayload extends ShareUpstreamPendingPayload {
+  decidedAt: string;
+  upstreamAccepted: boolean;
+  errorCode?: number;
+  errorMessage?: string;
 }
 
 export interface ShareRejectedPayload {
@@ -82,6 +106,26 @@ export interface ShareRejectedPayload {
   submittedAt: string;
   code: ShareRejectionCode;
   safeReason: string;
+}
+
+export interface WorkerDeviceDetectedPayload {
+  sessionId: string;
+  workerId: string;
+  workerName: string;
+  detectedType: 'CPU' | 'GPU' | 'FPGA' | 'ASIC' | 'HYBRID' | 'OTHER' | 'UNKNOWN';
+  possibleTypes: readonly ('CPU' | 'GPU' | 'FPGA' | 'ASIC' | 'HYBRID' | 'OTHER' | 'UNKNOWN')[];
+  detectionSource: 'USER_DECLARED' | 'STRATUM_USER_AGENT' | 'MONITORING_AGENT' | 'MINER_API' | 'COMBINED' | 'UNKNOWN';
+  confidence: 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CONFIRMED';
+  minerSoftware?: string;
+  softwareVersion?: string;
+  vendor?: string;
+  model?: string;
+  architecture?: string;
+  operatingSystem?: string;
+  deviceCount: number;
+  algorithmCapabilities: readonly string[];
+  evidence: readonly string[];
+  detectedAt: string;
 }
 
 export interface MinerSessionConnectedPayload {

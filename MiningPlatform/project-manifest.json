@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.2",
-  "generated_files": 241,
+  "version": "0.2.0-alpha.4",
+  "generated_files": 276,
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
@@ -18,31 +18,42 @@
   },
   "target_release": "0.2.0",
   "architecture_baseline": "ADR-0001",
-  "release_status": "hardened-development-alpha",
+  "release_status": "universal-hardware-local-upstream-gateway-alpha",
   "implemented": {
     "landing_page": [
       "responsive-mining-design",
       "alpha-boundary-copy",
       "production-dashboard-disabled"
     ],
-    "stratum_methods": [
-      "mining.configure",
-      "mining.subscribe",
-      "mining.authorize",
-      "mining.notify",
-      "mining.submit"
+    "stratum_gateway": [
+      "downstream-configure-subscribe-authorize-submit",
+      "upstream-tcp-tls-client",
+      "upstream-subscribe-authorize",
+      "difficulty-and-extranonce-relay",
+      "notify-job-relay",
+      "submit-response-correlation"
+    ],
+    "upstream_domain": [
+      "session-state-machine",
+      "initial-reconnect-backoff",
+      "job-normalization",
+      "multi-job-registry",
+      "clean-jobs-invalidation",
+      "local-upstream-simulator",
+      "reference-byte-order-fixture"
     ],
     "share_validation": [
       "sha256d",
-      "difficulty_target",
+      "difficulty-target",
       "duplicate",
       "stale",
       "malformed",
       "unauthorized",
       "time",
-      "version"
+      "version",
+      "local-upstream-lifecycle"
     ],
-    "durability": [
+    "durability_foundation": [
       "postgres-outbox",
       "outbox-dispatcher",
       "redis-pending-recovery",
@@ -57,9 +68,10 @@
       "development-websocket-room"
     ],
     "database": [
-      "31-model-prisma-schema",
+      "33-model-prisma-schema",
       "baseline-migration",
       "hardening-migration",
+      "universal-miner-detection-migration",
       "ledger-database-constraints"
     ],
     "operations": [
@@ -67,19 +79,54 @@
       "prometheus-metrics",
       "central-retention-scheduler",
       "service-env-isolation"
+    ],
+    "universal_hardware": [
+      "cpu-gpu-fpga-asic-hybrid-other-unknown-types",
+      "evidence-based-miner-detection",
+      "stratum-user-agent-observation",
+      "user-declared-device-profile",
+      "monitoring-agent-and-miner-api-evidence",
+      "per-device-telemetry-schema",
+      "universal-worker-review-ui"
     ]
   },
   "release_blockers": [
-    "upstream-fixtures",
-    "upstream-session",
-    "job-normalization",
-    "multi-job-registry",
-    "upstream-submit-correlation",
+    "selected-provider-captured-fixture",
+    "provider-specific-version-rolling",
+    "active-session-transparent-reconnect-or-failover",
     "production-worker-auth",
     "postgres-redis-integration-tests",
+    "multi-replica-tests",
     "load-and-soak-tests"
   ],
   "known_environment_limitations": [
-    "pnpm-lock.yaml requires first networked pnpm install"
-  ]
+    "prisma-engine-validation-requires-platform-engine-download",
+    "docker-backed-integration-tests-deferred",
+    "postgres-redis-load-and-soak-tests-deferred"
+  ],
+  "author": "Abia Nugrahanto",
+  "universal_hardware": {
+    "types": [
+      "CPU",
+      "GPU",
+      "FPGA",
+      "ASIC",
+      "HYBRID",
+      "OTHER",
+      "UNKNOWN"
+    ],
+    "detection": [
+      "STRATUM_USER_AGENT",
+      "USER_DECLARED",
+      "MONITORING_AGENT",
+      "MINER_API"
+    ],
+    "active_algorithm": "SHA256",
+    "universal_algorithms": false
+  },
+  "dependency_reproducibility": {
+    "pnpm_lockfile": "included",
+    "lockfile_version": "9.0",
+    "install_command": "pnpm install --frozen-lockfile"
+  }
 }

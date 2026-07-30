@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import type { ReactNode } from 'react';
 
 export function PageShell({ title, description, children }: { title: string; description: string; children?: ReactNode }) {

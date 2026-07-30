@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 'use client';
 
 import { Activity, ArrowRight, CheckCircle2, CircleDashed, Server, ShieldCheck } from 'lucide-react';
@@ -39,7 +45,7 @@ export function Hero() {
 
           <p className="mt-8 max-w-2xl text-base leading-8 text-[#b8c8d5] sm:text-lg">
             Satu control plane untuk koneksi worker, validasi share, monitoring farm, rekonsiliasi reward,
-            dan payout yang dapat diaudit. Mining tetap berlangsung pada ASIC atau GPU fisik, bukan di browser.
+            dan payout yang dapat diaudit. Mining tetap berlangsung pada ASIC, GPU, CPU, FPGA, atau rig hybrid fisik—bukan di browser.
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -61,7 +67,7 @@ export function Hero() {
 
           <div className="mt-10 grid max-w-2xl grid-cols-2 gap-4 border-t border-white/10 pt-7 sm:grid-cols-4">
             {[
-              ['Model', 'Upstream'],
+              ['Hardware', 'Universal'],
               ['Aset awal', 'BTC'],
               ['Ledger', 'Double-entry'],
               ['Payout', 'Dinonaktifkan'],

@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export * from './bitcoin-header.js';
 export * from './difficulty.js';
 export * from './duplicate-store.js';

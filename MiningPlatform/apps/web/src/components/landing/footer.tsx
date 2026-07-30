@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { Github, Network } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,7 +32,7 @@ export function Footer() {
 
         <div className="flex flex-col gap-4 pt-7 text-xs leading-5 text-[#71899b] md:flex-row md:items-center md:justify-between">
           <p>© 2026 Abia Nugrahanto. All rights reserved.</p>
-          <p>Platform bukan layanan cloud mining dan belum menerima ASIC produksi atau dana nyata.</p>
+          <p>Platform bukan layanan cloud mining dan belum menerima perangkat produksi atau dana nyata.</p>
           <span className="inline-flex items-center gap-2"><Github size={14} /> Private development repository</span>
         </div>
       </div>

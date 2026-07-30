@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import type { AcquireInput, AcquireResult, TransactionalIdempotencyService } from '@mining/idempotency';
 import type { Prisma } from '@mining/database';
 

@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 export type TransitionMap<TState extends string> = Readonly<Record<TState, readonly TState[]>>;
 
 export class FiniteStateMachine<TState extends string> {

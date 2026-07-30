@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 set -eu
 
 if [ ! -f .env ]; then

@@ -1,3 +1,7 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.13.1 --activate
 WORKDIR /app

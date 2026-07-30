@@ -4,7 +4,7 @@
 
 MiningPlatform merupakan Mining Pool Management Platform. Sistem mengelola operasional mining, monitoring perangkat, akuntansi reward, payout, analytics, dan transparansi.
 
-Platform bukan marketplace hashrate, penyedia kontrak cloud mining, atau layanan investasi. Seluruh mining berasal dari ASIC atau GPU fisik yang terhubung melalui Stratum.
+Platform bukan marketplace hashrate, penyedia kontrak cloud mining, atau layanan investasi. Seluruh mining berasal dari ASIC, GPU, CPU, FPGA, rig hybrid, atau perangkat fisik lain yang terhubung melalui Stratum.
 
 ## Fungsi utama
 

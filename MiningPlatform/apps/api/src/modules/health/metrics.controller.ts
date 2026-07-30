@@ -1,3 +1,9 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
 import { Controller, Get, Header } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 
@@ -17,7 +23,7 @@ export class MetricsController {
       `mining_api_process_resident_memory_bytes ${memory.rss}`,
       '# HELP mining_api_build_info Static build information.',
       '# TYPE mining_api_build_info gauge',
-      'mining_api_build_info{version="0.2.0-alpha.2"} 1',
+      'mining_api_build_info{version="0.2.0-alpha.4"} 1',
       '',
     ].join('\n');
   }
