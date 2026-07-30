@@ -1,6 +1,6 @@
 {
   "name": "@mining/stratum-server",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,12 +9,15 @@
     "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('stratum tests not configured')\""
+    "test": "node -e \"console.log('Run @mining/mining-core and @mining/stratum-protocol tests')\""
   },
   "dependencies": {
     "@mining/logger": "workspace:*",
     "@mining/security": "workspace:*",
-    "@mining/stratum-protocol": "workspace:*"
+    "@mining/stratum-protocol": "workspace:*",
+    "@mining/event-bus": "workspace:*",
+    "@mining/mining-core": "workspace:*",
+    "@mining/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

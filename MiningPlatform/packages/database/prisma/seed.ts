@@ -32,6 +32,45 @@ async function main() {
     ],
     skipDuplicates: true,
   });
+  if (process.env.SEED_DEVELOPMENT_DATA === 'true') {
+    const user = await prisma.user.upsert({
+      where: { email: 'dev@local.invalid' },
+      update: {},
+      create: {
+        id: 'dev-user-0000000000000001',
+        email: 'dev@local.invalid',
+        passwordHash: 'DEVELOPMENT_ONLY_NOT_FOR_LOGIN',
+        displayName: 'Development Miner',
+        status: 'ACTIVE',
+        emailVerifiedAt: new Date(),
+      },
+    });
+    const miningAccount = await prisma.miningAccount.upsert({
+      where: { userId_assetId: { userId: user.id, assetId: btc.id } },
+      update: {},
+      create: {
+        id: 'dev-mining-account-btc',
+        userId: user.id,
+        assetId: btc.id,
+        username: 'demo',
+        rewardMethod: 'FOLLOW_UPSTREAM',
+        platformFeePercent: '2',
+      },
+    });
+    await prisma.worker.upsert({
+      where: { miningAccountId_name: { miningAccountId: miningAccount.id, name: 'worker1' } },
+      update: {},
+      create: {
+        id: 'dev-7d9a4df2e77952c0657de069',
+        userId: user.id,
+        miningAccountId: miningAccount.id,
+        name: 'worker1',
+        passwordHash: 'DEVELOPMENT_STRATUM_AUTH_IS_ENV_BASED',
+        status: 'OFFLINE',
+      },
+    });
+  }
+
 }
 
 main()

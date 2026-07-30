@@ -7,8 +7,10 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
-      <Hero />
-      <LandingSections />
+      <main>
+        <Hero />
+        <LandingSections />
+      </main>
       <Footer />
     </>
   );

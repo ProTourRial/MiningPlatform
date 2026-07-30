@@ -1,13 +1,58 @@
 {
   "project": "MiningPlatform",
-  "version": "0.1.0",
-  "generated_files": 161,
+  "version": "0.2.0-alpha.1",
+  "generated_files": 217,
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
     "reward_method": "FOLLOW_UPSTREAM",
     "platform_fee_percent": 2,
     "user_deposit": false,
-    "ledger": "double-entry"
-  }
+    "ledger": "double-entry",
+    "event_delivery": "at-least-once",
+    "idempotency": "mandatory",
+    "state_machines": "mandatory",
+    "scheduler": "centralized"
+  },
+  "target_release": "0.2.0",
+  "architecture_baseline": "ADR-0001",
+  "release_status": "development-alpha",
+  "implemented": {
+    "stratum_methods": [
+      "mining.configure",
+      "mining.subscribe",
+      "mining.authorize",
+      "mining.notify",
+      "mining.submit"
+    ],
+    "share_validation": [
+      "sha256d",
+      "difficulty_target",
+      "duplicate",
+      "stale",
+      "malformed",
+      "unauthorized",
+      "time",
+      "version"
+    ],
+    "event_transport": [
+      "memory",
+      "redis-stream"
+    ],
+    "monitoring": [
+      "five-minute-hashrate",
+      "websocket-development-panel"
+    ],
+    "database": [
+      "expanded-prisma-schema",
+      "baseline-core-mining-migration"
+    ]
+  },
+  "release_blockers": [
+    "upstream-relay",
+    "transactional-outbox",
+    "pending-recovery-and-dead-letter",
+    "full-integration-tests",
+    "load-tests"
+  ]
 }

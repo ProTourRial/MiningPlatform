@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #071018;
-  --surface: #0d1822;
-  --surface-muted: #122331;
-  --foreground: #f2f7fa;
-  --muted: #9db0bc;
-  --border: #243744;
-  --accent: #43d8a0;
-  --accent-strong: #23b982;
+  --background: #06111f;
+  --surface: #0a1628;
+  --surface-muted: #122238;
+  --foreground: #f5fbff;
+  --muted: #aebfcb;
+  --border: rgba(219, 232, 244, 0.1);
+  --accent: #d7ff63;
+  --accent-strong: #c6f044;
+  --signal: #98f5ff;
   --danger: #fb7185;
+  --font-display: "Space Grotesk", "Aptos Display", "Segoe UI", Arial, sans-serif;
+  --font-body: Inter, Aptos, "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 * {
@@ -18,13 +22,28 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--background);
 }
 
 body {
   margin: 0;
-  background: var(--background);
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 82% 6%, rgba(152, 245, 255, 0.045), transparent 24rem),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 a {
@@ -35,4 +54,59 @@ a {
 ::selection {
   background: var(--accent);
   color: #04110c;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #071320;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid #071320;
+  border-radius: 999px;
+  background: #29485d;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a7087;
+}
+
+.display-font {
+  font-family: var(--font-display);
+}
+
+.mono-font {
+  font-family: var(--font-mono);
+}
+
+.landing-hero {
+  background:
+    linear-gradient(180deg, rgba(6, 17, 31, 0.15), rgba(6, 17, 31, 0.92)),
+    #06111f;
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(219, 232, 244, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(219, 232, 244, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, transparent, black 13%, black 85%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

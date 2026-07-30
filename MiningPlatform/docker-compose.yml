@@ -87,6 +87,8 @@ services:
         condition: service_healthy
     ports:
       - "3333:3333"
+    volumes:
+      - stratum_data:/app/data/stratum
     networks: [mining-network]
 
   mining-worker:
@@ -151,6 +153,7 @@ volumes:
   redis_data:
   minio_data:
   grafana_data:
+  stratum_data:
 
 networks:
   mining-network:

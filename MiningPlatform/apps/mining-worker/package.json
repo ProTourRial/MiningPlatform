@@ -1,6 +1,6 @@
 {
   "name": "@mining/mining-worker",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,11 @@
     "test": "node -e \"console.log('mining-worker tests not configured')\""
   },
   "dependencies": {
-    "@mining/logger": "workspace:*"
+    "@mining/logger": "workspace:*",
+    "@mining/database": "workspace:*",
+    "@mining/event-bus": "workspace:*",
+    "@mining/mining-core": "workspace:*",
+    "@mining/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

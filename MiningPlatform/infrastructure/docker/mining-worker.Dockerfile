@@ -6,5 +6,5 @@ COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --no-frozen-lockfile
 
-RUN pnpm turbo build --filter=@mining/mining-worker...
+RUN pnpm --filter @mining/database generate && pnpm turbo build --filter=@mining/mining-worker...
 CMD ["pnpm", "--filter", "@mining/mining-worker", "start"]
