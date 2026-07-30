@@ -1,26 +1,21 @@
 # Changelog
 
-## 0.1.1 - 2026-07-30
+## Unreleased
 
 ### Added
 
-- ADR-0001 as the official core mining architecture baseline.
-- v0.2.0 Definition of Done for the end-to-end Stratum and monitoring pipeline.
-- Internal event bus contract with at-least-once delivery rules.
-- Transactional outbox requirement for durable event publication.
-- Shared idempotency contract and in-memory test implementation.
-- Generic finite state machine transition guard.
-- Repository and domain service separation rules.
-- PostgreSQL and TimescaleDB-compatible time-series retention strategy.
-- Central scheduler responsibility document.
-- Expanded mining and monitoring event catalog.
+- Mining-focused landing page adapted from the owner-provided visual template.
+- Responsive fixed navigation and mobile menu.
+- Hero pipeline status board for the current development boundary.
+- Platform, pipeline, monitoring, simulator, transparency, security, FAQ, and dashboard CTA sections.
+- Landing page typography and content specification in `docs/ui/landing-page-v1.md`.
+- SEO metadata baseline with indexing disabled during internal alpha.
 
 ### Changed
 
-- Renumbered the existing ADR documents after inserting the architecture baseline.
-- Revised the roadmap into v0.2.0 through v1.0.0 release stages.
-- Clarified that reward, ledger settlement, wallet RPC, and real payout are outside v0.2.0.
-- Clarified that wallet services never mutate user balances directly.
+- Replaced the initial generic landing page with an alpine-dark technical interface.
+- Replaced Arial-only typography with display, body, and technical font stacks.
+- Revised public copy to avoid cloud-mining, guaranteed-profit, production-ready, and live-payout claims.
 
 ## 0.2.0-alpha.1 - 2026-07-30
 
@@ -50,3 +45,25 @@
 - Upstream Stratum relay and submission results are not implemented.
 - Transactional outbox, pending message recovery, and dead-letter handling are not implemented.
 - Full integration, container, load, and production security tests are not complete.
+
+## 0.1.1 - 2026-07-30
+
+### Added
+
+- ADR-0001 as the official core mining architecture baseline.
+- v0.2.0 Definition of Done for the end-to-end Stratum and monitoring pipeline.
+- Internal event bus contract with at-least-once delivery rules.
+- Transactional outbox requirement for durable event publication.
+- Shared idempotency contract and in-memory test implementation.
+- Generic finite state machine transition guard.
+- Repository and domain service separation rules.
+- PostgreSQL and TimescaleDB-compatible time-series retention strategy.
+- Central scheduler responsibility document.
+- Expanded mining and monitoring event catalog.
+
+### Changed
+
+- Renumbered the existing ADR documents after inserting the architecture baseline.
+- Revised the roadmap into v0.2.0 through v1.0.0 release stages.
+- Clarified that reward, ledger settlement, wallet RPC, and real payout are outside v0.2.0.
+- Clarified that wallet services never mutate user balances directly.
