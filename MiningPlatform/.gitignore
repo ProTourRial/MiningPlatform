@@ -1,0 +1,16 @@
+node_modules
+.pnpm-store
+.next
+dist
+coverage
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+*.pem
+*.key
+*.crt
+packages/database/src/generated
+backups/*
+!backups/.gitkeep

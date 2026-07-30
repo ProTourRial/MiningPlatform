@@ -1,0 +1,40 @@
+{
+  "name": "@mining/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "seed": "tsx prisma/seed.ts",
+    "studio": "prisma studio",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src prisma/*.ts prisma.config.ts --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"console.log('database tests not configured')\""
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "dotenv": "^16.4.0",
+    "eslint": "^9.0.0",
+    "prisma": "^7.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "default": "./dist/src/index.js"
+    }
+  }
+}

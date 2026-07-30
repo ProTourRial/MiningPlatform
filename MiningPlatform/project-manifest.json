@@ -1,0 +1,13 @@
+{
+  "project": "MiningPlatform",
+  "version": "0.1.0",
+  "generated_files": 161,
+  "baseline": {
+    "asset": "BTC",
+    "algorithm": "SHA256",
+    "reward_method": "FOLLOW_UPSTREAM",
+    "platform_fee_percent": 2,
+    "user_deposit": false,
+    "ledger": "double-entry"
+  }
+}

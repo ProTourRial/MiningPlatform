@@ -1,0 +1,16 @@
+import Link from 'next/link';
+import { AuthCard } from '@/components/ui/auth-card';
+
+export default function RegisterPage() {
+  return (
+    <AuthCard title="Buat akun" description="Akun digunakan untuk mendaftarkan worker dan alamat payout.">
+      <form className="space-y-4">
+        <label className="block text-sm">Nama<input className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--accent)]" /></label>
+        <label className="block text-sm">Email<input type="email" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--accent)]" /></label>
+        <label className="block text-sm">Password<input type="password" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-[var(--accent)]" /></label>
+        <button type="button" className="w-full rounded-xl bg-[var(--accent)] px-4 py-3 font-semibold text-[#04110c]">Daftar</button>
+      </form>
+      <p className="mt-5 text-sm text-[var(--muted)]">Sudah punya akun? <Link href="/login" className="text-white">Masuk</Link></p>
+    </AuthCard>
+  );
+}
