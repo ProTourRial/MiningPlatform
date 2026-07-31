@@ -130,6 +130,10 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
     developmentWorker: 'demo.worker1',
     developmentPassword: 'x',
     developmentDifficulty: '0.000001',
+    workerAuthDriver: 'development',
+    workerAuthMaximumFailures: 5,
+    workerAuthWindowMs: 60_000,
+    workerAuthLockMs: 900_000,
     socketTimeoutMs: 30_000,
     maximumLineBytes: 65_536,
     maximumSubmissionsPerSecond: 20,
@@ -146,7 +150,7 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
     upstreamTls: false,
     upstreamUsername: 'upstream.account',
     upstreamPassword: 'x',
-    upstreamUserAgent: 'MiningPlatform-gateway-test/0.2.0-alpha.4',
+    upstreamUserAgent: 'MiningPlatform-gateway-test/0.2.0-alpha.5',
     upstreamConnectTimeoutMs: 2_000,
     upstreamResponseTimeoutMs: 2_000,
     upstreamMaximumAttempts: 2,
@@ -155,8 +159,8 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
     authenticator: {
       authenticate: async (workerName, password) =>
         workerName === 'demo.worker1' && password === 'x'
-          ? { workerId: 'worker-test-1', workerName }
-          : null,
+          ? { authenticated: true as const, worker: { workerId: 'worker-test-1', workerName } }
+          : { authenticated: false as const, code: 'INVALID_CREDENTIALS' as const },
     },
     eventBus: new InMemoryEventBus(),
     eventStore,

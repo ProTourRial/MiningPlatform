@@ -7,7 +7,7 @@ Target release: v0.2.0
 
 ## Context
 
-MiningPlatform is a Mining Pool Management Platform. It is not a cloud-mining marketplace and does not sell hashrate contracts. Physical ASIC miners connect to the platform through Stratum, while the platform relays work to an upstream pool during the first production phase.
+MiningPlatform is a Mining Pool Management Platform. It is not a cloud-mining marketplace and does not sell hashrate contracts. Physical CPU, GPU, FPGA, ASIC, hybrid, or other compatible miners connect to the platform through Stratum, while the platform relays work to an upstream pool during the first production phase.
 
 A valid reward, ledger, wallet, and payout pipeline depends on trusted mining data. Building downstream financial features before share validation would create balances and payment obligations from unverified data.
 
@@ -44,7 +44,7 @@ The following architectural rules are mandatory.
 The first production model is:
 
 ```text
-ASIC
+Compatible miner
   ↓
 MiningPlatform Stratum Gateway
   ↓

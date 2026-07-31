@@ -5,14 +5,14 @@
 - Mining Pool Management Platform.
 - BTC dengan algoritma SHA-256 pada fase pertama.
 - Upstream pool gateway.
-- ASIC sebagai perangkat utama.
+- Hardware universal: CPU, GPU, FPGA, ASIC, hybrid, other, dan unknown; validator aktif tetap BTC/SHA-256.
 - Dashboard dan monitoring berdasarkan data mining nyata.
 - Double-entry ledger sebagai satu-satunya sumber saldo pengguna.
 - Tidak menjual hashrate atau kontrak cloud mining.
 
 ## Termasuk dalam v0.2.0
 
-- Worker registration dan credential dasar.
+- Worker identity dan production credential foundation.
 - Miner session dan Stratum job.
 - `mining.configure`, `mining.subscribe`, `mining.authorize`, dan `mining.submit`.
 - Relay `mining.set_difficulty`, `mining.set_extranonce`, dan `mining.notify` dari upstream.

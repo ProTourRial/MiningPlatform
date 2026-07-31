@@ -41,6 +41,12 @@ enum WorkerStatus {
 }
 
 
+enum WorkerCredentialStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
 enum HardwareType {
   CPU
   GPU
@@ -336,11 +342,34 @@ model Worker {
   shareFingerprints     ShareFingerprint[]
   deviceProfile         WorkerDeviceProfile?
   deviceTelemetry       WorkerDeviceTelemetry[]
+  credentials           WorkerCredential[]
 
   @@unique([miningAccountId, name])
   @@index([userId, status])
 }
 
+
+model WorkerCredential {
+  id             String                 @id @default(cuid())
+  workerId       String
+  credentialId   String                 @unique
+  secretHash     String
+  status         WorkerCredentialStatus @default(ACTIVE)
+  failedAttempts Int                    @default(0)
+  lockedUntil    DateTime?
+  expiresAt      DateTime?
+  lastUsedAt     DateTime?
+  lastIpHash     String?
+  rotatedAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  worker         Worker                 @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId, status])
+  @@index([status, expiresAt])
+  @@index([lockedUntil])
+}
 
 model WorkerDeviceProfile {
   id                    String                      @id @default(cuid())

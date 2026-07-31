@@ -47,6 +47,9 @@ MiningPlatform/
 │   │   │   │   ├── users/
 │   │   │   │   │   ├── users.controller.ts
 │   │   │   │   │   └── users.module.ts
+│   │   │   │   ├── version/
+│   │   │   │   │   ├── version.controller.ts
+│   │   │   │   │   └── version.module.ts
 │   │   │   │   ├── wallets/
 │   │   │   │   │   ├── wallets.controller.ts
 │   │   │   │   │   └── wallets.module.ts
@@ -55,7 +58,8 @@ MiningPlatform/
 │   │   │   │   │   └── workers.module.ts
 │   │   │   │   └── domain-modules.ts
 │   │   │   ├── app.module.ts
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── nest-cli.json
 │   │   ├── package.json
 │   │   └── tsconfig.json
@@ -63,45 +67,58 @@ MiningPlatform/
 │   │   ├── src/
 │   │   │   ├── main.ts
 │   │   │   ├── prisma-idempotency.ts
-│   │   │   └── projection.ts
+│   │   │   ├── projection.ts
+│   │   │   ├── runtime.ts
+│   │   │   ├── supported-events.test.ts
+│   │   │   └── supported-events.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── monitoring-agent/
 │   │   ├── src/
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── outbox-worker/
 │   │   ├── src/
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── scheduler/
 │   │   ├── src/
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── stratum-server/
 │   │   ├── src/
+│   │   │   ├── auth-rate-limiter.ts
 │   │   │   ├── config.ts
 │   │   │   ├── development-authenticator.ts
 │   │   │   ├── development-event-store.ts
 │   │   │   ├── event-store.ts
 │   │   │   ├── main.ts
+│   │   │   ├── production-worker-authenticator.test.ts
+│   │   │   ├── production-worker-authenticator.ts
 │   │   │   ├── redis-duplicate-share-store.ts
+│   │   │   ├── runtime.ts
 │   │   │   ├── server.ts
 │   │   │   ├── session.ts
-│   │   │   └── upstream-gateway.test.ts
+│   │   │   ├── upstream-gateway.test.ts
+│   │   │   └── worker-authenticator.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── upstream-simulator/
 │   │   ├── src/
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── wallet-worker/
 │   │   ├── src/
-│   │   │   └── main.ts
+│   │   │   ├── main.ts
+│   │   │   └── runtime.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── web/
@@ -167,16 +184,22 @@ MiningPlatform/
 ├── docs/
 │   ├── adr/
 │   │   ├── 0001-core-mining-foundation.md
-│   │   ├── 0001-upstream-gateway-first.md
-│   │   ├── 0002-double-entry-ledger.md
 │   │   ├── 0002-upstream-gateway-first.md
 │   │   ├── 0003-double-entry-ledger.md
-│   │   ├── 0003-no-user-deposit-in-mvp.md
-│   │   └── 0004-no-user-deposit-in-mvp.md
+│   │   ├── 0004-no-user-deposit-in-mvp.md
+│   │   ├── 0005-universal-hardware-model.md
+│   │   ├── 0006-event-delivery-and-outbox.md
+│   │   ├── 0007-production-miner-identity.md
+│   │   └── README.md
 │   ├── api/
 │   │   └── event-contracts.md
 │   ├── architecture/
+│   │   ├── bounded-contexts.md
+│   │   ├── context-map.md
+│   │   ├── data-flow.md
+│   │   ├── domain-architecture.md
 │   │   ├── event-driven-core.md
+│   │   ├── event-flow.md
 │   │   ├── hardening-alpha-2.md
 │   │   ├── idempotency.md
 │   │   ├── mvp-boundary.md
@@ -194,6 +217,9 @@ MiningPlatform/
 │   │   └── local-development.md
 │   ├── erd/
 │   │   └── README.md
+│   ├── events/
+│   │   ├── catalog.md
+│   │   └── versioning-policy.md
 │   ├── flowcharts/
 │   │   └── mining-flow.md
 │   ├── operations/
@@ -210,9 +236,13 @@ MiningPlatform/
 │   │   ├── v0.2.0-alpha.3.md
 │   │   ├── v0.2.0-alpha.4-validation.md
 │   │   ├── v0.2.0-alpha.4.md
+│   │   ├── v0.2.0-alpha.5-upgrade.md
+│   │   ├── v0.2.0-alpha.5-validation.md
+│   │   ├── v0.2.0-alpha.5.md
 │   │   └── v0.2.0-definition-of-done.md
 │   ├── security/
-│   │   └── threat-model-v1.md
+│   │   ├── threat-model-v1.md
+│   │   └── worker-credential-management.md
 │   ├── ui/
 │   │   ├── landing-page-v1.md
 │   │   ├── README.md
@@ -243,6 +273,13 @@ MiningPlatform/
 │   │   │   └── index.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
+│   ├── build-info/
+│   │   ├── src/
+│   │   │   ├── generated.ts
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
 │   ├── config/
 │   │   ├── src/
 │   │   │   └── index.ts
@@ -256,6 +293,8 @@ MiningPlatform/
 │   │   │   │   ├── 20260730000200_hardening_alpha_2/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── 20260731020000_universal_miner_detection/
+│   │   │   │   │   └── migration.sql
+│   │   │   │   ├── 20260731030000_architecture_miner_identity/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── migration_lock.toml
 │   │   │   │   └── README.md
@@ -325,7 +364,9 @@ MiningPlatform/
 │   ├── security/
 │   │   ├── src/
 │   │   │   ├── index.test.ts
-│   │   │   └── index.ts
+│   │   │   ├── index.ts
+│   │   │   ├── worker-credential.test.ts
+│   │   │   └── worker-credential.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── shared/
@@ -371,16 +412,28 @@ MiningPlatform/
 │       └── tsconfig.json
 ├── scripts/
 │   ├── add-author-headers.mjs
+│   ├── apply-delete-manifest.mjs
 │   ├── bootstrap.sh
+│   ├── check-alpha5-upgrade.mjs
 │   ├── check-secrets.sh
-│   └── stratum-smoke-client.ts
+│   ├── generate-release-manifest.mjs
+│   ├── stratum-smoke-client.ts
+│   ├── tsconfig.json
+│   ├── verify-alpha5-migration.mjs
+│   ├── verify-alpha5-release.mjs
+│   ├── verify-release-manifest.mjs
+│   └── worker-credential-cli.ts
 ├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── .npmrc
 ├── .prettierignore
 ├── .prettierrc.json
+├── apply-patch.ps1
+├── apply-patch.sh
+├── APPLY_PATCH.md
 ├── CHANGELOG.md
+├── DELETE_FILES.txt
 ├── docker-compose.dev.yml
 ├── docker-compose.yml
 ├── eslint.config.mjs
@@ -391,5 +444,6 @@ MiningPlatform/
 ├── project-manifest.json
 ├── PROJECT_TREE.txt
 ├── README.md
+├── release-manifest.json
 ├── tsconfig.base.json
 └── turbo.json

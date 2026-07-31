@@ -33,7 +33,7 @@ export interface DomainEvent<TPayload> {
 
 ## Alpha Transport Status
 
-`v0.2.0-alpha.1` publishes events through Redis Streams and also writes a development JSONL trace. PostgreSQL consumers use an idempotency record in the same transaction as projection updates. Transactional outbox publication, pending recovery, and dead-letter processing remain release blockers for final v0.2.0.
+`v0.2.0-alpha.5` supports a PostgreSQL transactional outbox, Redis Stream delivery, pending recovery, bounded retry, dead-letter handling, and idempotent projection. Docker-backed PostgreSQL/Redis integration and multi-replica validation remain release blockers.
 
 ## Mining Events
 
@@ -52,6 +52,20 @@ export interface DomainEvent<TPayload> {
 | `mining.share.upstream-rejected.v1` | stratum-server | Upstream rejected the share |
 | `mining.hashrate.updated.v1` | mining-worker | Realtime hashrate window changed |
 | `mining.worker.state-changed.v1` | mining-worker | Worker operational state changed |
+| `mining.worker.device-detected.v1` | stratum-server/monitoring-agent | Evidence-based hardware profile detected |
+
+
+## Security and Worker Identity Events
+
+| Event | Producer | Description | Runtime status |
+|---|---|---|---|
+| `security.worker-authentication.succeeded.v1` | worker identity | Successful worker credential authentication | AuditLog implemented; event transport catalogued |
+| `security.worker-authentication.failed.v1` | worker identity | Failed, locked, or rate-limited authentication | AuditLog implemented; event transport catalogued |
+| `security.worker-credential.created.v1` | worker management | Worker credential created | CLI audit implemented; event transport catalogued |
+| `security.worker-credential.rotated.v1` | worker management | Active credential rotated | CLI audit implemented; event transport catalogued |
+| `security.worker-credential.revoked.v1` | worker management | Credential revoked | CLI audit implemented; event transport catalogued |
+
+These events and audit records never contain plaintext worker secrets, account passwords, raw IP addresses, private keys, or TOTP secrets.
 
 ## Monitoring Events
 

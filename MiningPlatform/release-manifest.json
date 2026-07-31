@@ -1,0 +1,18 @@
+{
+  "project": "MiningPlatform",
+  "version": "0.2.0-alpha.5",
+  "releaseName": "Architecture and Miner Identity",
+  "artifactType": "incremental-patch",
+  "schemaVersion": 5,
+  "migration": "20260731030000_architecture_miner_identity",
+  "compatibleFrom": [
+    "0.2.0-alpha.4"
+  ],
+  "patchChecksum": "d2d8d36355338490803f81347887abcd6204158b3495262ae093d39f31dd39cf",
+  "payloadChecksum": "d2d8d36355338490803f81347887abcd6204158b3495262ae093d39f31dd39cf",
+  "checksumScope": "sha256-payload-v1 excluding release-manifest.json and *.sha256",
+  "payloadFileCount": 117,
+  "buildDate": "2026-07-31T08:38:00+07:00",
+  "gitCommit": "UNCOMMITTED",
+  "author": "Abia Nugrahanto"
+}

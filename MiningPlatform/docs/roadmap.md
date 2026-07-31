@@ -16,7 +16,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.2.0-alpha.4
+## Current Checkpoint: v0.2.0-alpha.5
 
 Implemented:
 
@@ -33,14 +33,31 @@ Implemented:
 - Universal CPU, GPU, FPGA, ASIC, hybrid, other, and unknown worker profiles.
 - Evidence-based Stratum, user, agent, and miner API detection.
 - Per-device telemetry model and universal worker review interface.
+- Official domain architecture, bounded contexts, context map, and event catalog.
+- Canonical ADR set without duplicated numbering.
+- Production worker credential model, scrypt hashing, rotation, revocation, expiry, and lock state.
+- PostgreSQL-backed Stratum authenticator with Redis rate limiting and audit logs.
+- `workerDeviceDetected` projection regression fix.
 
 Release blockers:
 
 - Captured compatibility fixture from the selected production upstream pool.
 - Transparent active-session reconnect or explicit failover policy.
-- Production worker authentication and tenant authorization.
+- PostgreSQL/Redis integration verification for production worker authentication.
+- Control Plane API for worker credential lifecycle and tenant authorization.
 - Full PostgreSQL and Redis integration tests.
 - Load and soak tests.
+
+
+## v0.2.0-alpha.6: Upstream Resilience
+
+- Pool adapter layer.
+- Multi-upstream registry and health scoring.
+- Circuit breaker, backoff with jitter, and failover policy.
+- Transparent or explicitly controlled session recovery.
+- Share queue and response timeout handling.
+- Provider-specific captured fixtures.
+- VarDiff foundation and job lifecycle hardening.
 
 ## v0.2.0: Core Mining Foundation
 

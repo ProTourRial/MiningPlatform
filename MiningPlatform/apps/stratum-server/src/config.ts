@@ -11,6 +11,10 @@ export interface StratumServerConfig {
   developmentWorker: string;
   developmentPassword: string;
   developmentDifficulty: string;
+  workerAuthDriver: 'development' | 'postgres';
+  workerAuthMaximumFailures: number;
+  workerAuthWindowMs: number;
+  workerAuthLockMs: number;
   socketTimeoutMs: number;
   maximumLineBytes: number;
   maximumSubmissionsPerSecond: number;
@@ -58,6 +62,17 @@ export function loadStratumConfig(): StratumServerConfig {
   }
   const ipHashKey = process.env.STRATUM_IP_HASH_KEY ?? (developmentMode ? 'development-only-ip-hash-key' : '');
   if (ipHashKey.length < 16) throw new Error('STRATUM_IP_HASH_KEY must contain at least 16 characters');
+  const workerAuthDriver = process.env.STRATUM_AUTH_DRIVER ?? (developmentMode ? 'development' : 'postgres');
+  if (workerAuthDriver !== 'development' && workerAuthDriver !== 'postgres') {
+    throw new Error('STRATUM_AUTH_DRIVER must be development or postgres');
+  }
+  if (process.env.NODE_ENV === 'production' && workerAuthDriver !== 'postgres') {
+    throw new Error('Production Stratum requires STRATUM_AUTH_DRIVER=postgres');
+  }
+  if (workerAuthDriver === 'development' && !developmentMode) {
+    throw new Error('Development worker authentication requires STRATUM_DEV_MODE=true');
+  }
+
   const upstreamDriver = process.env.UPSTREAM_DRIVER ?? (developmentMode ? 'development' : 'tcp');
   if (upstreamDriver !== 'development' && upstreamDriver !== 'tcp') {
     throw new Error('UPSTREAM_DRIVER must be development or tcp');
@@ -73,6 +88,10 @@ export function loadStratumConfig(): StratumServerConfig {
     developmentWorker: process.env.STRATUM_DEV_WORKER ?? 'demo.worker1',
     developmentPassword: process.env.STRATUM_DEV_PASSWORD ?? 'x',
     developmentDifficulty: process.env.STRATUM_DEV_DIFFICULTY ?? '0.000001',
+    workerAuthDriver,
+    workerAuthMaximumFailures: positiveInteger(process.env.STRATUM_AUTH_MAX_FAILURES, 5),
+    workerAuthWindowMs: positiveInteger(process.env.STRATUM_AUTH_WINDOW_MS, 60_000),
+    workerAuthLockMs: positiveInteger(process.env.STRATUM_AUTH_LOCK_MS, 15 * 60_000),
     socketTimeoutMs: positiveInteger(process.env.STRATUM_SOCKET_TIMEOUT_MS, 120_000),
     maximumLineBytes: positiveInteger(process.env.STRATUM_MAX_LINE_BYTES, 16_384),
     maximumSubmissionsPerSecond: positiveInteger(process.env.STRATUM_MAX_SUBMISSIONS_PER_SECOND, 20),
@@ -90,7 +109,7 @@ export function loadStratumConfig(): StratumServerConfig {
     upstreamServerName: process.env.UPSTREAM_SERVER_NAME,
     upstreamUsername: process.env.UPSTREAM_USERNAME ?? 'upstream.account',
     upstreamPassword: process.env.UPSTREAM_PASSWORD ?? 'x',
-    upstreamUserAgent: process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.4',
+    upstreamUserAgent: process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.5',
     upstreamConnectTimeoutMs: positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000),
     upstreamResponseTimeoutMs: positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000),
     upstreamMaximumAttempts: positiveInteger(process.env.UPSTREAM_MAXIMUM_ATTEMPTS, 5),

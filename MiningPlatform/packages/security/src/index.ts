@@ -24,3 +24,5 @@ export function safeEqual(left: string, right: string): boolean {
   const b = createHash('sha256').update(right).digest();
   return timingSafeEqual(a, b);
 }
+
+export * from './worker-credential.js';

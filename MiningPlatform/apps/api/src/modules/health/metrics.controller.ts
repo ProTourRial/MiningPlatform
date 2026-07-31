@@ -4,8 +4,11 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
+import { getBuildInfo } from '@mining/build-info';
 import { Controller, Get, Header } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
+
+const buildInfo = getBuildInfo('api');
 
 @ApiExcludeController()
 @Controller({ path: 'metrics', version: '1' })
@@ -23,7 +26,7 @@ export class MetricsController {
       `mining_api_process_resident_memory_bytes ${memory.rss}`,
       '# HELP mining_api_build_info Static build information.',
       '# TYPE mining_api_build_info gauge',
-      'mining_api_build_info{version="0.2.0-alpha.4"} 1',
+      `mining_api_build_info{version="${buildInfo.version}",commit="${buildInfo.commit}",schema="${buildInfo.schemaVersion}"} 1`,
       '',
     ].join('\n');
   }

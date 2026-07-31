@@ -1,17 +1,20 @@
 # ADR-0002: Upstream Gateway First
 
-Status: Accepted
+Status: Accepted  
+Date: 2026-07-30  
+Owner: Abia Nugrahanto
 
 ## Context
 
-Membangun pool mandiri sejak awal membutuhkan node, block template generation, coinbase construction, vardiff, share validation, block submission, accounting, dan risiko variance.
+Pool Bitcoin independen membutuhkan block-template generation, coinbase construction, node operations, propagation, VarDiff, accounting, dan reserve untuk variance. Membangun seluruhnya sebelum pipeline share stabil meningkatkan risiko.
 
 ## Decision
 
-MVP menggunakan upstream pool gateway. Sistem mempertahankan batas domain agar sumber reward dapat diganti dengan pool mandiri kelak.
+Fase produksi pertama menggunakan upstream pool gateway. MiningPlatform menerima worker, memvalidasi share secara lokal, meneruskan share ke upstream, dan menyimpan keputusan upstream secara terpisah.
 
 ## Consequences
 
-- Reward wajib direkonsiliasi dengan upstream.
-- Metode reward default adalah `FOLLOW_UPSTREAM`.
-- Platform tidak boleh mencatat kewajiban yang melampaui reward aktual tanpa reserve policy.
+- Reward default `FOLLOW_UPSTREAM`.
+- Reward wajib direkonsiliasi dengan penerimaan upstream.
+- Platform tidak mengklaim block, pool luck, atau reward yang tidak benar-benar menjadi hak platform.
+- Pool adapter dapat diganti tanpa mengubah ledger dan frontend.

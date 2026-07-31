@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.2.0-alpha.5] - 2026-07-31
+
+### Added
+
+- Official domain architecture for Control, Mining, Accounting, Event, Monitoring, and Operations planes.
+- Bounded-context catalog, context map, data flow, event flow, and domain event catalog.
+- Canonical ADR index and decisions for universal hardware, event delivery, and production miner identity.
+- `WorkerCredential` schema and migration with lifecycle, lock, expiry, rotation, and revocation fields.
+- Versioned scrypt worker-secret hashing and verification.
+- PostgreSQL-backed production worker authenticator with Redis rate limiting and audit logging.
+- Worker credential create, rotate, and revoke CLI.
+- Authentication regression tests and event-gate regression tests.
+- Incremental patch deletion manifest and cross-platform patch cleanup scripts.
+- Release, generated-client, and fresh/upgrade migration verification commands.
+
+### Fixed
+
+- Registered `mining.worker.device-detected.v1` in the mining projection supported-event gate.
+- Removed duplicate ADR numbering and consolidated canonical architecture decisions.
+- Prevented development worker authentication from being selected outside development mode.
+
+### Security
+
+- Worker plaintext secrets are displayed once and never persisted.
+- Production authentication validates user, mining account, worker, credential status, expiry, and lock state.
+- Authentication logs use HMAC-derived IP and user-agent identifiers and do not log passwords.
+- Repeated authentication failures are rate-limited through Redis and persisted credential lock state.
+
+### Known gaps
+
+- PostgreSQL and Redis integration tests for production authentication still require the local Docker environment.
+- Worker credential management is CLI-based until the Control Plane API is implemented.
+- Multi-upstream failover, transparent session recovery, and production VarDiff remain alpha.6 work.
+- Prisma Client generation and fresh/upgrade database migration verification must be completed on a platform with the correct Prisma engine.
+
 ## [0.2.0-alpha.4] - 2026-07-31
 
 - Added universal CPU, GPU, FPGA, ASIC, and hybrid worker profiles.

@@ -22,22 +22,10 @@ import {
   type WorkerDeviceDetectedPayload,
 } from '@mining/shared';
 import { PrismaTransactionalIdempotencyService } from './prisma-idempotency.js';
+import { assertSupportedMiningEvent } from './supported-events.js';
 
 const HASHRATE_BUCKET_SECONDS = 60;
 const HASHRATE_WINDOWS = [60, 300, 900, 3_600, 86_400] as const;
-const SUPPORTED_EVENT_VERSION = 1;
-const supportedEvents = new Set<string>([
-  MiningEvents.sessionConnected,
-  MiningEvents.sessionSubscribed,
-  MiningEvents.sessionAuthorized,
-  MiningEvents.sessionDisconnected,
-  MiningEvents.jobReceived,
-  MiningEvents.shareLocalAccepted,
-  MiningEvents.shareLocalRejected,
-  MiningEvents.shareUpstreamPending,
-  MiningEvents.shareUpstreamAccepted,
-  MiningEvents.shareUpstreamRejected,
-]);
 
 export type ProjectionResult =
   | { processed: true }
@@ -61,12 +49,7 @@ export class MiningProjection {
   constructor(private readonly consumerName = 'mining-worker-v1') {}
 
   async handle(event: DomainEvent): Promise<ProjectionResult> {
-    if (!supportedEvents.has(event.eventName)) {
-      throw new Error(`Unsupported mining event: ${event.eventName}`);
-    }
-    if (event.eventVersion !== SUPPORTED_EVENT_VERSION) {
-      throw new Error(`Unsupported event version ${event.eventVersion} for ${event.eventName}`);
-    }
+    assertSupportedMiningEvent(event.eventName, event.eventVersion);
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient): Promise<ProjectionResult> => {
       const idempotencyKey = `${this.consumerName}:${event.eventId}`;

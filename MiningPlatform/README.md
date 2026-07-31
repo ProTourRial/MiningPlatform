@@ -6,7 +6,7 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.2.0-alpha.4`
+Versi saat ini: `0.2.0-alpha.5`
 
 Rilis ini merupakan **upstream gateway development alpha**, bukan mining pool produksi. Landing page, Stratum downstream server, upstream TCP/TLS client, local upstream simulator, job normalization, multi-job registry, local share validation, upstream response correlation, durable event foundation, multi-window hashrate, dan dashboard development sudah tersedia.
 
@@ -14,7 +14,7 @@ Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
 - fixture tangkapan dari upstream pool yang benar-benar dipilih;
 - transparent reconnect setelah koneksi upstream aktif terputus;
-- production worker authentication dan tenant isolation penuh;
+- PostgreSQL/Redis integration verification untuk production worker authentication;
 - PostgreSQL dan Redis integration test pada lingkungan Docker;
 - reward settlement;
 - ledger posting reward;
@@ -75,7 +75,7 @@ Wallet tidak boleh mengubah saldo pengguna secara langsung. Perubahan saldo hany
 apps/
   web/                 Next.js landing page dan dashboard development
   api/                 NestJS REST API, health, metrics, dan WebSocket
-  stratum-server/      TCP Stratum gateway dan upstream decision flow
+  stratum-server/      TCP Stratum gateway, worker authentication, dan upstream decision flow
   upstream-simulator/  Local Stratum V1 upstream simulator
   outbox-worker/       PostgreSQL outbox dispatcher ke Redis Stream
   mining-worker/       Event projection dan hashrate aggregation
@@ -92,6 +92,7 @@ packages/
   shared/              Event contracts dan domain types
   idempotency/         Idempotency contracts
   state-machine/       Finite state transition guard
+  security/            HMAC, token, dan scrypt worker credential helpers
   ledger/              Double-entry invariants
   reward-engine/       FOLLOW_UPSTREAM allocation foundation
 ```
@@ -153,6 +154,7 @@ Terminal kedua:
 
 ```bash
 STRATUM_DEV_MODE=true \
+STRATUM_AUTH_DRIVER=development \
 EVENT_BUS_DRIVER=memory \
 EVENT_STORE_DRIVER=jsonl \
 UPSTREAM_DRIVER=tcp \
@@ -168,6 +170,30 @@ pnpm test:upstream
 ```
 
 Mode `UPSTREAM_DRIVER=development` tetap tersedia untuk job lokal lama. Mode `tcp` memakai satu koneksi upstream per downstream session pada alpha ini. Desain tersebut memudahkan verifikasi protokol, tetapi belum menjadi model scaling final.
+
+## Production worker authentication foundation
+
+Stratum production menggunakan credential worker terpisah dari password akun website.
+
+```bash
+pnpm worker:credential create demo.worker1
+pnpm worker:credential rotate demo.worker1
+pnpm worker:credential revoke wc_exampleCredentialId
+```
+
+Konfigurasi production foundation:
+
+```env
+STRATUM_DEV_MODE=false
+STRATUM_AUTH_DRIVER=postgres
+STRATUM_AUTH_MAX_FAILURES=5
+STRATUM_AUTH_WINDOW_MS=60000
+STRATUM_AUTH_LOCK_MS=900000
+EVENT_STORE_DRIVER=postgres
+EVENT_BUS_DRIVER=redis
+```
+
+Secret dibuat dengan entropy tinggi, hanya ditampilkan sekali, dan disimpan sebagai versioned scrypt hash. Authentication success/failure dicatat pada audit log tanpa raw IP atau plaintext password. Detail: `docs/security/worker-credential-management.md`.
 
 ## Development dengan Docker
 
@@ -247,7 +273,7 @@ GET /api/v1/metrics
 
 ## Batas keamanan
 
-- `STRATUM_DEV_MODE=true` ditolak saat production.
+- `STRATUM_DEV_MODE=true` dan `STRATUM_AUTH_DRIVER=development` ditolak saat production.
 - Production Stratum mewajibkan PostgreSQL event store dan Redis duplicate reservation.
 - Dashboard development dan WebSocket development ditolak saat production.
 - Wallet worker berada di Docker profile terpisah dan `PAYOUTS_ENABLED=false`.
@@ -260,25 +286,75 @@ GET /api/v1/metrics
 1. Tambahkan fixture tangkapan dan expected hash dari upstream pool yang dipilih.
 2. Uji TLS, authorization policy, dan error code khusus provider tersebut.
 3. Implementasikan transparent reconnect atau explicit failover policy setelah sesi aktif terputus.
-4. Ganti development worker authenticator dengan PostgreSQL-backed authenticator.
-5. Jalankan PostgreSQL dan Redis integration tests.
+4. Jalankan PostgreSQL dan Redis integration tests untuk production authenticator dan event pipeline.
+5. Tambahkan fixture credential rotation/revocation pada integration test.
 6. Jalankan load test serta soak test.
 7. Audit isolation untuk banyak user, banyak worker, dan banyak replica.
-8. Production worker authentication dan tenant isolation.
+8. Implementasikan Control Plane API untuk credential management dan tenant authorization.
 
 ## Dokumen utama
 
 - `docs/adr/0001-core-mining-foundation.md`
+- `docs/architecture/domain-architecture.md`
+- `docs/architecture/bounded-contexts.md`
+- `docs/events/catalog.md`
+- `docs/adr/README.md`
 - `docs/architecture/upstream-stratum-alpha-3.md`
 - `docs/architecture/hardening-alpha-2.md`
 - `docs/architecture/share-validation.md`
 - `docs/architecture/event-driven-core.md`
 - `docs/database/time-series-monitoring.md`
-- `docs/releases/v0.2.0-alpha.4.md`
-- `docs/releases/v0.2.0-alpha.4-validation.md`
+- `docs/releases/v0.2.0-alpha.5.md`
+- `docs/releases/v0.2.0-alpha.5-validation.md`
 - `docs/releases/v0.2.0-definition-of-done.md`
 - `docs/ui/landing-page-v1.md`
 
 ## Universal Miner Detection
 
 Worker dapat mewakili CPU, GPU, FPGA, ASIC, rig hybrid, atau hardware lain. Deteksi menggunakan user-agent Stratum, deklarasi user, monitoring agent, dan miner API dengan confidence level yang eksplisit. Pipeline share aktif tetap BTC/SHA-256.
+
+## Upgrade alpha.4 ke alpha.5
+
+Untuk upgrade incremental, ekstrak paket patch di atas folder alpha.4 lalu jalankan:
+
+```bash
+bash apply-patch.sh
+```
+
+Windows PowerShell:
+
+```powershell
+./apply-patch.ps1
+```
+
+Setelah itu jalankan verifikasi pada lingkungan yang memiliki pnpm dan Prisma engine yang sesuai:
+
+```bash
+pnpm verify:alpha5
+```
+
+Verifikasi migrasi database kosong dan salinan database alpha.4 dijelaskan dalam `docs/releases/v0.2.0-alpha.5-upgrade.md`. Jangan menjalankan pemeriksaan migrasi terhadap satu-satunya salinan database penting.
+
+## Release and build diagnostics
+
+The repository includes `release-manifest.json` for automated upgrade and CI checks. It records the release version, schema version, migration, alpha.4 compatibility, build date, git commit, and payload checksums.
+
+Every Node service binary supports machine-readable version output without initializing PostgreSQL or Redis:
+
+```bash
+pnpm --filter @mining/stratum-server start -- --version
+pnpm --filter @mining/mining-worker start -- --version
+pnpm --filter @mining/api start -- --version
+```
+
+The API also exposes:
+
+```text
+GET /version
+```
+
+Worker credential inventory can be reviewed without exposing credential secrets:
+
+```bash
+pnpm worker:credential list demo.worker1
+```

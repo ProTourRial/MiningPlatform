@@ -1,6 +1,6 @@
 {
   "name": "@mining/wallet-worker",
-  "version": "0.2.0-alpha.4",
+  "version": "0.2.0-alpha.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,18 +12,14 @@
     "test": "node -e \"console.log('wallet-worker tests not configured')\""
   },
   "dependencies": {
+    "@mining/build-info": "workspace:*",
     "@mining/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.0.0",
     "eslint": "9.0.0",
     "tsx": "4.19.0",
-<<<<<<< Updated upstream
-    "typescript": "5.7.0"
-  }
-=======
     "typescript": "5.6.3"
   },
   "author": "Abia Nugrahanto"
->>>>>>> Stashed changes
 }

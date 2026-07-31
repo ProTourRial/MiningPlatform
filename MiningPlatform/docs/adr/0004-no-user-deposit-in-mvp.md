@@ -1,5 +1,13 @@
 # ADR-0004: No User Deposit in MVP
 
-Status: Accepted
+Status: Accepted  
+Date: 2026-07-30  
+Owner: Abia Nugrahanto
 
-Pengguna memperoleh saldo dari reward mining. MVP tidak menyediakan deposit karena platform bukan exchange, cloud mining, atau marketplace. Penghapusan deposit mengurangi attack surface, kebutuhan compliance, dan kerancuan produk.
+## Decision
+
+MVP tidak menerima deposit pengguna. Saldo hanya berasal dari reward mining yang telah direkonsiliasi dan diposting ke ledger.
+
+## Consequences
+
+Attack surface, compliance scope, dan kerancuan dengan exchange atau cloud mining berkurang. Deposit baru dapat dipertimbangkan melalui ADR terpisah.

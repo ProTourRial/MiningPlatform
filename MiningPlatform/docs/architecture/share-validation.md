@@ -58,4 +58,4 @@ VALIDATING
             └── UPSTREAM_TIMEOUT
 ```
 
-Alpha pertama berhenti pada `LOCAL_ACCEPTED` atau `LOCAL_REJECTED`. Upstream state belum diaktifkan.
+Alpha.3 dan sesudahnya menjalankan state upstream melalui simulator/TCP adapter. Provider production, failover, dan session recovery masih memerlukan validasi lanjutan.

@@ -19,6 +19,11 @@ export const MiningEvents = {
   hashrateUpdated: 'mining.hashrate.updated.v1',
   workerStateChanged: 'mining.worker.state-changed.v1',
   workerDeviceDetected: 'mining.worker.device-detected.v1',
+  workerAuthenticationSucceeded: 'security.worker-authentication.succeeded.v1',
+  workerAuthenticationFailed: 'security.worker-authentication.failed.v1',
+  workerCredentialCreated: 'security.worker-credential.created.v1',
+  workerCredentialRotated: 'security.worker-credential.rotated.v1',
+  workerCredentialRevoked: 'security.worker-credential.revoked.v1',
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
@@ -183,4 +188,23 @@ export interface HashrateUpdatedPayload {
   rejectedShares: number;
   invalidShares: number;
   recordedAt: string;
+}
+
+export interface WorkerAuthenticationAuditPayload {
+  sessionId: string;
+  workerId?: string;
+  credentialId?: string;
+  remoteIpHash: string;
+  workerNameHash: string;
+  outcome: 'SUCCEEDED' | 'FAILED';
+  reason?: string;
+  occurredAt: string;
+}
+
+export interface WorkerCredentialLifecyclePayload {
+  workerId: string;
+  credentialId: string;
+  action: 'CREATED' | 'ROTATED' | 'REVOKED';
+  expiresAt?: string;
+  occurredAt: string;
 }

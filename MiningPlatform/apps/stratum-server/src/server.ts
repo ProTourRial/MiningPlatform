@@ -48,7 +48,8 @@ import {
   type StratumRequest,
 } from '@mining/stratum-protocol';
 import type { StratumServerConfig } from './config.js';
-import { DevelopmentWorkerAuthenticator, type WorkerAuthenticator } from './development-authenticator.js';
+import { DevelopmentWorkerAuthenticator } from './development-authenticator.js';
+import type { WorkerAuthenticator } from './worker-authenticator.js';
 import type { MiningEventStore } from './event-store.js';
 import type { MinerSession } from './session.js';
 
@@ -99,12 +100,6 @@ export class StratumServer {
     } else {
       const { DevelopmentJsonlEventStore } = await import('./development-event-store.js');
       eventStore = new DevelopmentJsonlEventStore(config.developmentDataDirectory);
-<<<<<<< Updated upstream
-      eventBus = config.eventBusDriver === 'redis'
-        ? await RedisStreamEventBus.connect({ url: config.redisUrl, stream: config.eventStream })
-        : new InMemoryEventBus();
-      if (eventBus instanceof RedisStreamEventBus) closers.push(() => eventBus.close());
-=======
       if (config.eventBusDriver === 'redis') {
         const { RedisStreamEventBus } = await import('@mining/event-bus/redis-stream');
         const redisEventBus = await RedisStreamEventBus.connect({ url: config.redisUrl, stream: config.eventStream });
@@ -113,7 +108,6 @@ export class StratumServer {
       } else {
         eventBus = new InMemoryEventBus();
       }
->>>>>>> Stashed changes
     }
 
     eventBus?.subscribe(MiningEvents.shareLocalAccepted, async (event) => {
@@ -123,8 +117,13 @@ export class StratumServer {
       logger.warn({ eventId: event.eventId, aggregateId: event.aggregateId }, 'local share rejected');
     });
 
+    const authenticator = config.workerAuthDriver === 'postgres'
+      ? await (await import('./production-worker-authenticator.js')).ProductionWorkerAuthenticator.create(config)
+      : new DevelopmentWorkerAuthenticator(config);
+    if (authenticator.close) closers.push(() => authenticator.close?.() ?? Promise.resolve());
+
     return new StratumServer(config, {
-      authenticator: new DevelopmentWorkerAuthenticator(config),
+      authenticator,
       eventBus,
       eventStore,
       duplicateStore,
@@ -319,11 +318,27 @@ export class StratumServer {
       return;
     }
     const credentials = parseMiningAuthorize(request.params);
-    const worker = await this.dependencies.authenticator.authenticate(credentials.workerName, credentials.password);
-    if (!worker) {
+    const authentication = await this.dependencies.authenticator.authenticate(
+      credentials.workerName,
+      credentials.password,
+      {
+        sessionId: session.id,
+        remoteIpHash: session.remoteHash,
+        userAgent: session.userAgent,
+        userAgentHash: session.userAgent
+          ? hmacSensitiveValue(session.userAgent, this.config.ipHashKey)
+          : undefined,
+      },
+    );
+    if (!authentication.authenticated) {
+      logger.warn(
+        { sessionId: session.id, remoteHash: session.remoteHash, reason: authentication.code },
+        'worker authorization failed',
+      );
       this.write(session, errorResponse(request.id, StratumErrorCode.unauthorizedWorker, 'Worker authorization failed'));
       return;
     }
+    const worker = authentication.worker;
 
     session.workerId = worker.workerId;
     session.workerName = worker.workerName;
