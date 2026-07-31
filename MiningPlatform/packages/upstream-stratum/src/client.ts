@@ -174,10 +174,12 @@ export class UpstreamStratumClient {
     socket.on('data', (chunk: string) => this.consume(chunk));
     socket.on('error', (error) => this.callbacks.onError?.(error));
     socket.on('close', () => {
+      const reason = new Error('Upstream connection closed');
       this.jobs.invalidateAll();
-      this.correlator.rejectAll(new Error('Upstream connection closed'));
+      this.correlator.rejectAll(reason);
       if (!this.stopped && this.state !== 'DISCONNECTED' && this.state !== 'RECONNECTING') {
         this.setState('DISCONNECTED');
+        this.callbacks.onDisconnect?.(reason);
       }
     });
   }

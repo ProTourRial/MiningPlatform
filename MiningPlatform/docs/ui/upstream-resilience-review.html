@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- MiningPlatform | Author: Abia Nugrahanto | Copyright (c) 2026 Abia Nugrahanto. All rights reserved. -->
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="author" content="Abia Nugrahanto" />
+  <title>MiningPlatform alpha.6 — Upstream Resilience Review</title>
+  <style>
+    :root{color-scheme:dark;--bg:#06100d;--panel:#0c1b16;--line:#25463a;--lime:#b8ff5a;--cyan:#66e5ff;--muted:#9eb5ac}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#173b2c 0,transparent 35%),var(--bg);font:16px/1.6 Inter,Segoe UI,sans-serif;color:#eef8f3}.wrap{max-width:1120px;margin:auto;padding:48px 24px}h1{font-size:clamp(2.4rem,7vw,5rem);line-height:1;margin:.2em 0}.tag,.metric{font-family:Consolas,monospace}.tag{color:var(--lime);letter-spacing:.12em;text-transform:uppercase}.lead{max-width:780px;color:var(--muted);font-size:1.15rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:36px 0}.card{background:linear-gradient(180deg,#10251d,#091511);border:1px solid var(--line);border-radius:18px;padding:22px}.card h2{margin-top:0}.metric{color:var(--cyan);font-size:1.8rem}.flow{overflow:auto;white-space:pre;background:#030a08;border:1px solid var(--line);border-radius:18px;padding:24px;color:var(--lime)}.status{display:inline-block;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}footer{margin-top:40px;color:var(--muted);border-top:1px solid var(--line);padding-top:20px}</style>
+</head>
+<body><main class="wrap">
+  <div class="tag">MiningPlatform / 0.2.0-alpha.6</div>
+  <h1>Upstream tetap bergerak saat jalur utama gagal.</h1>
+  <p class="lead">Review statis untuk pool adapter, multi-upstream registry, circuit breaker, recovery, job ownership, share queue, dan fondasi VarDiff. Halaman ini tidak mengklaim kesiapan produksi.</p>
+  <p><span class="status">Internal alpha</span> <span class="status">No real funds</span> <span class="status">Docker pending</span></p>
+  <section class="grid">
+    <article class="card"><h2>Pool adapters</h2><div class="metric">N providers</div><p>Kontrak provider memisahkan codec Stratum, kemampuan, koneksi, job, dan submit.</p></article>
+    <article class="card"><h2>Failover</h2><div class="metric">priority + weight</div><p>Backoff berjitter, circuit state, dan backup selection mempertahankan sesi downstream pada test lokal.</p></article>
+    <article class="card"><h2>Job ownership</h2><div class="metric">provider scoped</div><p>Share hanya dikirim ke pool pemilik job. Switch provider menginvalidasi pekerjaan lama.</p></article>
+    <article class="card"><h2>Backpressure</h2><div class="metric">bounded queue</div><p>Capacity, concurrency, dan timeout mencegah antrian memory tanpa batas.</p></article>
+  </section>
+  <pre class="flow">Miner → Gateway → Primary Pool
+                    │ failure
+                    ▼
+              RECOVERING
+                    │ circuit open
+                    ▼
+               Backup Pool
+                    │ new difficulty/extranonce/job
+                    ▼
+             Miner session continues</pre>
+  <section class="grid">
+    <article class="card"><h2>VarDiff</h2><p>Dinonaktifkan secara default. Target downstream tidak pernah lebih rendah dari difficulty upstream.</p></article>
+    <article class="card"><h2>Batas saat ini</h2><p>Manager masih per sesi miner, health belum distributed, fixture provider produksi belum tersedia.</p></article>
+    <article class="card"><h2>Review selanjutnya</h2><p>Prisma generate, migrasi fresh/upgrade, PostgreSQL/Redis integration, load, soak, chaos, dan Docker.</p></article>
+  </section>
+  <footer>MiningPlatform — Abia Nugrahanto — © 2026. Internal engineering review.</footer>
+</main></body></html>

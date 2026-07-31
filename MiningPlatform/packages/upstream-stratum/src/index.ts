@@ -12,3 +12,8 @@ export * from './request-correlator.js';
 export * from './session-state-machine.js';
 export * from './simulator.js';
 export * from './types.js';
+export * from './gateway-job-router.js';
+export * from './pool-adapter.js';
+export * from './pool-manager.js';
+export * from './share-queue.js';
+export * from './vardiff.js';

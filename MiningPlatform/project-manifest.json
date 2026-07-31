@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.5",
-  "generated_files": 325,
+  "version": "0.2.0-alpha.6",
+  "generated_files": 343,
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
@@ -17,8 +17,8 @@
     "scheduler": "centralized"
   },
   "target_release": "0.2.0",
-  "architecture_baseline": "ADR-0001 through ADR-0007",
-  "release_status": "architecture-and-production-miner-identity-alpha",
+  "architecture_baseline": "ADR-0001 through ADR-0008",
+  "release_status": "upstream-resilience-alpha",
   "implemented": {
     "landing_page": [
       "responsive-mining-design",
@@ -34,11 +34,15 @@
       "submit-response-correlation"
     ],
     "upstream_domain": [
-      "session-state-machine",
-      "initial-reconnect-backoff",
-      "job-normalization",
-      "multi-job-registry",
-      "clean-jobs-invalidation",
+      "pool-adapter-layer",
+      "multi-upstream-priority-registry",
+      "circuit-breaker-health-state",
+      "automatic-reconnect-and-failover",
+      "transparent-downstream-session-recovery",
+      "gateway-job-router",
+      "bounded-share-queue",
+      "vardiff-foundation",
+      "provider-scoped-job-ids",
       "local-upstream-simulator",
       "reference-byte-order-fixture"
     ],
@@ -73,7 +77,8 @@
       "hardening-migration",
       "universal-miner-detection-migration",
       "production-miner-identity-migration",
-      "ledger-database-constraints"
+      "ledger-database-constraints",
+      "upstream-resilience-migration"
     ],
     "operations": [
       "liveness-readiness",
@@ -107,17 +112,32 @@
       "credential-expiry-revocation-and-lock-state",
       "authentication-audit-log",
       "production-development-driver-guard"
+    ],
+    "upstream_resilience": [
+      "pool-adapter-layer",
+      "multi-upstream-registry",
+      "priority-weight-pool-selection",
+      "circuit-breaker",
+      "reconnect-backoff-jitter",
+      "local-transparent-session-failover",
+      "provider-scoped-job-routing",
+      "bounded-share-queue",
+      "health-and-failover-events",
+      "vardiff-foundation"
     ]
   },
   "release_blockers": [
     "selected-provider-captured-fixture",
     "provider-specific-version-rolling",
-    "active-session-transparent-reconnect-or-failover",
     "postgres-redis-integration-tests",
     "multi-replica-tests",
     "load-and-soak-tests",
     "postgres-redis-production-auth-integration-tests",
-    "control-plane-worker-credential-api"
+    "control-plane-worker-credential-api",
+    "provider-specific-captured-fixtures",
+    "shared-upstream-multiplexing",
+    "distributed-upstream-health-state",
+    "production-vardiff-validation"
   ],
   "known_environment_limitations": [
     "prisma-engine-validation-requires-platform-engine-download",
@@ -149,7 +169,7 @@
     "lockfile_version": "9.0",
     "install_command": "pnpm install --frozen-lockfile"
   },
-  "schema_version": 5,
+  "schema_version": 6,
   "release_manifest": "release-manifest.json",
   "build_metadata": {
     "api_endpoint": "GET /version",
@@ -172,6 +192,6 @@
   "database_summary": {
     "models": 34,
     "enums": 25,
-    "latest_migration": "20260731030000_architecture_miner_identity"
+    "latest_migration": "20260731110000_upstream_resilience"
   }
 }

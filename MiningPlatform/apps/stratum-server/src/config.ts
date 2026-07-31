@@ -4,6 +4,9 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
+import type { UpstreamPoolDefinition } from '@mining/upstream-stratum';
+import { parseUpstreamPoolsJson } from './upstream-config.js';
+
 export interface StratumServerConfig {
   host: string;
   port: number;
@@ -25,7 +28,7 @@ export interface StratumServerConfig {
   eventStream: string;
   versionRollingMask: string;
   ipHashKey: string;
-  upstreamDriver: 'development' | 'tcp';
+  upstreamDriver: 'development' | 'tcp' | 'multi';
   upstreamHost: string;
   upstreamPort: number;
   upstreamTls: boolean;
@@ -36,11 +39,39 @@ export interface StratumServerConfig {
   upstreamConnectTimeoutMs: number;
   upstreamResponseTimeoutMs: number;
   upstreamMaximumAttempts: number;
+  upstreamPools?: readonly UpstreamPoolDefinition[];
+  upstreamMaximumRecoveryCycles?: number;
+  upstreamReconnectBaseMs?: number;
+  upstreamReconnectMaximumMs?: number;
+  upstreamReconnectJitterRatio?: number;
+  upstreamShareQueueCapacity?: number;
+  upstreamShareQueueTimeoutMs?: number;
+  upstreamJobCacheMaximumEntries?: number;
+  vardiffEnabled?: boolean;
+  vardiffTargetShareIntervalSeconds?: number;
+  vardiffRetargetIntervalSeconds?: number;
+  vardiffMinimumDifficulty?: number;
+  vardiffMaximumDifficulty?: number;
+  vardiffMaximumAdjustmentFactor?: number;
+  vardiffMinimumSamples?: number;
 }
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   const parsed = Number(value ?? fallback);
   if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`Expected a positive integer, received ${value}`);
+  return parsed;
+}
+
+
+function positiveNumber(value: string | undefined, fallback: number, name: string): number {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${name} must be a positive number, received ${value}`);
+  return parsed;
+}
+
+function ratio(value: string | undefined, fallback: number, name: string): number {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) throw new Error(`${name} must be between 0 and 1`);
   return parsed;
 }
 
@@ -74,12 +105,35 @@ export function loadStratumConfig(): StratumServerConfig {
   }
 
   const upstreamDriver = process.env.UPSTREAM_DRIVER ?? (developmentMode ? 'development' : 'tcp');
-  if (upstreamDriver !== 'development' && upstreamDriver !== 'tcp') {
-    throw new Error('UPSTREAM_DRIVER must be development or tcp');
+  if (upstreamDriver !== 'development' && upstreamDriver !== 'tcp' && upstreamDriver !== 'multi') {
+    throw new Error('UPSTREAM_DRIVER must be development, tcp, or multi');
   }
-  if (process.env.NODE_ENV === 'production' && upstreamDriver !== 'tcp') {
-    throw new Error('Production Stratum requires UPSTREAM_DRIVER=tcp');
+  if (process.env.NODE_ENV === 'production' && upstreamDriver === 'development') {
+    throw new Error('Production Stratum requires UPSTREAM_DRIVER=tcp or multi');
   }
+
+  const upstreamHost = process.env.UPSTREAM_HOST ?? '127.0.0.1';
+  const upstreamPort = positiveInteger(process.env.UPSTREAM_PORT, 3334);
+  const upstreamTls = process.env.UPSTREAM_TLS === 'true';
+  const upstreamServerName = process.env.UPSTREAM_SERVER_NAME;
+  const upstreamUsername = process.env.UPSTREAM_USERNAME ?? 'upstream.account';
+  const upstreamPassword = process.env.UPSTREAM_PASSWORD ?? 'x';
+  const upstreamUserAgent = process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.6';
+  const upstreamConnectTimeoutMs = positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000);
+  const upstreamResponseTimeoutMs = positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000);
+  const maximumLineBytes = positiveInteger(process.env.STRATUM_MAX_LINE_BYTES, 16_384);
+  const upstreamPools = parseUpstreamPoolsJson(process.env.UPSTREAM_POOLS_JSON, {
+    host: upstreamHost,
+    port: upstreamPort,
+    tls: upstreamTls,
+    serverName: upstreamServerName,
+    username: upstreamUsername,
+    password: upstreamPassword,
+    userAgent: upstreamUserAgent,
+    connectTimeoutMs: upstreamConnectTimeoutMs,
+    responseTimeoutMs: upstreamResponseTimeoutMs,
+    maximumLineBytes,
+  });
 
   return {
     host: process.env.STRATUM_HOST ?? '0.0.0.0',
@@ -93,7 +147,7 @@ export function loadStratumConfig(): StratumServerConfig {
     workerAuthWindowMs: positiveInteger(process.env.STRATUM_AUTH_WINDOW_MS, 60_000),
     workerAuthLockMs: positiveInteger(process.env.STRATUM_AUTH_LOCK_MS, 15 * 60_000),
     socketTimeoutMs: positiveInteger(process.env.STRATUM_SOCKET_TIMEOUT_MS, 120_000),
-    maximumLineBytes: positiveInteger(process.env.STRATUM_MAX_LINE_BYTES, 16_384),
+    maximumLineBytes,
     maximumSubmissionsPerSecond: positiveInteger(process.env.STRATUM_MAX_SUBMISSIONS_PER_SECOND, 20),
     developmentDataDirectory: process.env.STRATUM_DEV_DATA_DIR ?? './data/stratum',
     eventBusDriver,
@@ -103,15 +157,30 @@ export function loadStratumConfig(): StratumServerConfig {
     versionRollingMask: process.env.STRATUM_VERSION_ROLLING_MASK ?? '1fffe000',
     ipHashKey,
     upstreamDriver,
-    upstreamHost: process.env.UPSTREAM_HOST ?? '127.0.0.1',
-    upstreamPort: positiveInteger(process.env.UPSTREAM_PORT, 3334),
-    upstreamTls: process.env.UPSTREAM_TLS === 'true',
-    upstreamServerName: process.env.UPSTREAM_SERVER_NAME,
-    upstreamUsername: process.env.UPSTREAM_USERNAME ?? 'upstream.account',
-    upstreamPassword: process.env.UPSTREAM_PASSWORD ?? 'x',
-    upstreamUserAgent: process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.5',
-    upstreamConnectTimeoutMs: positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000),
-    upstreamResponseTimeoutMs: positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000),
+    upstreamHost,
+    upstreamPort,
+    upstreamTls,
+    upstreamServerName,
+    upstreamUsername,
+    upstreamPassword,
+    upstreamUserAgent,
+    upstreamConnectTimeoutMs,
+    upstreamResponseTimeoutMs,
     upstreamMaximumAttempts: positiveInteger(process.env.UPSTREAM_MAXIMUM_ATTEMPTS, 5),
+    upstreamPools,
+    upstreamMaximumRecoveryCycles: positiveInteger(process.env.UPSTREAM_MAXIMUM_RECOVERY_CYCLES, 5),
+    upstreamReconnectBaseMs: positiveInteger(process.env.UPSTREAM_RECONNECT_BASE_MS, 250),
+    upstreamReconnectMaximumMs: positiveInteger(process.env.UPSTREAM_RECONNECT_MAXIMUM_MS, 30_000),
+    upstreamReconnectJitterRatio: ratio(process.env.UPSTREAM_RECONNECT_JITTER_RATIO, 0.2, 'UPSTREAM_RECONNECT_JITTER_RATIO'),
+    upstreamShareQueueCapacity: positiveInteger(process.env.UPSTREAM_SHARE_QUEUE_CAPACITY, 256),
+    upstreamShareQueueTimeoutMs: positiveInteger(process.env.UPSTREAM_SHARE_QUEUE_TIMEOUT_MS, 10_000),
+    upstreamJobCacheMaximumEntries: positiveInteger(process.env.UPSTREAM_JOB_CACHE_MAXIMUM_ENTRIES, 512),
+    vardiffEnabled: process.env.VARDIFF_ENABLED === 'true',
+    vardiffTargetShareIntervalSeconds: positiveInteger(process.env.VARDIFF_TARGET_SHARE_INTERVAL_SECONDS, 15),
+    vardiffRetargetIntervalSeconds: positiveInteger(process.env.VARDIFF_RETARGET_INTERVAL_SECONDS, 90),
+    vardiffMinimumDifficulty: positiveNumber(process.env.VARDIFF_MINIMUM_DIFFICULTY, 1, 'VARDIFF_MINIMUM_DIFFICULTY'),
+    vardiffMaximumDifficulty: positiveNumber(process.env.VARDIFF_MAXIMUM_DIFFICULTY, 1_000_000_000, 'VARDIFF_MAXIMUM_DIFFICULTY'),
+    vardiffMaximumAdjustmentFactor: positiveNumber(process.env.VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR, 4, 'VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR'),
+    vardiffMinimumSamples: positiveInteger(process.env.VARDIFF_MINIMUM_SAMPLES, 4),
   };
 }

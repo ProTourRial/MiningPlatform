@@ -1,7 +1,5 @@
-# MiningPlatform
-# Author: Abia Nugrahanto
-# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+# MiningPlatform | Author: Abia Nugrahanto
 $ErrorActionPreference = "Stop"
-Set-Location $PSScriptRoot
 node scripts/apply-delete-manifest.mjs
-node scripts/check-alpha5-upgrade.mjs
+node scripts/check-alpha6-upgrade.mjs
+Write-Host "MiningPlatform alpha.6 patch structure verified. Run pnpm verify:alpha6 in the target environment."

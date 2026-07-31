@@ -33,7 +33,7 @@ export interface DomainEvent<TPayload> {
 
 ## Alpha Transport Status
 
-`v0.2.0-alpha.5` supports a PostgreSQL transactional outbox, Redis Stream delivery, pending recovery, bounded retry, dead-letter handling, and idempotent projection. Docker-backed PostgreSQL/Redis integration and multi-replica validation remain release blockers.
+`v0.2.0-alpha.6` supports a PostgreSQL transactional outbox, Redis Stream delivery, pending recovery, bounded retry, dead-letter handling, and idempotent projection. Docker-backed PostgreSQL/Redis integration and multi-replica validation remain release blockers.
 
 ## Mining Events
 
@@ -53,6 +53,12 @@ export interface DomainEvent<TPayload> {
 | `mining.hashrate.updated.v1` | mining-worker | Realtime hashrate window changed |
 | `mining.worker.state-changed.v1` | mining-worker | Worker operational state changed |
 | `mining.worker.device-detected.v1` | stratum-server/monitoring-agent | Evidence-based hardware profile detected |
+| `mining.upstream.pool-selected.v1` | stratum-server | Active upstream provider selected |
+| `mining.upstream.failover-started.v1` | stratum-server | Recovery and failover cycle started |
+| `mining.upstream.failover-completed.v1` | stratum-server | Backup provider became active |
+| `mining.upstream.failover-failed.v1` | stratum-server | No eligible provider recovered the session |
+| `mining.upstream.health-changed.v1` | stratum-server | Provider health or circuit state changed |
+| `mining.worker.difficulty-changed.v1` | stratum-server | Downstream assigned difficulty changed |
 
 
 ## Security and Worker Identity Events

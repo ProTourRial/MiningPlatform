@@ -39,17 +39,17 @@ const patchChecksum = suppliedPatchChecksum ?? (artifactType === 'incremental-pa
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.2.0-alpha.5',
-  releaseName: 'Architecture and Miner Identity',
+  version: '0.2.0-alpha.6',
+  releaseName: 'Upstream Resilience',
   artifactType,
-  schemaVersion: 5,
-  migration: '20260731030000_architecture_miner_identity',
-  compatibleFrom: ['0.2.0-alpha.4'],
+  schemaVersion: 6,
+  migration: '20260731110000_upstream_resilience',
+  compatibleFrom: ['0.2.0-alpha.5'],
   patchChecksum,
   payloadChecksum,
   checksumScope: 'sha256-payload-v1 excluding release-manifest.json and *.sha256',
   payloadFileCount: files.length,
-  buildDate: process.env.BUILD_DATE ?? '2026-07-31T08:38:00+07:00',
+  buildDate: process.env.BUILD_DATE ?? '2026-07-31T17:54:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',
   author: 'Abia Nugrahanto',
 };

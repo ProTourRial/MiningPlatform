@@ -20,3 +20,18 @@ test('unsupported event versions are rejected before projection', () => {
     /Unsupported event version/,
   );
 });
+
+
+test('upstream resilience events are accepted by the mining projection event gate', () => {
+  for (const eventName of [
+    MiningEvents.upstreamPoolSelected,
+    MiningEvents.upstreamFailoverStarted,
+    MiningEvents.upstreamFailoverCompleted,
+    MiningEvents.upstreamFailoverFailed,
+    MiningEvents.upstreamHealthChanged,
+    MiningEvents.workerDifficultyChanged,
+  ]) {
+    assert.equal(supportedMiningEvents.has(eventName), true);
+    assert.doesNotThrow(() => assertSupportedMiningEvent(eventName, 1));
+  }
+});

@@ -51,7 +51,7 @@ function config(): StratumServerConfig {
     upstreamTls: false,
     upstreamUsername: 'upstream.account',
     upstreamPassword: 'x',
-    upstreamUserAgent: 'MiningPlatform-test/0.2.0-alpha.5',
+    upstreamUserAgent: 'MiningPlatform-test/0.2.0-alpha.6',
     upstreamConnectTimeoutMs: 5_000,
     upstreamResponseTimeoutMs: 10_000,
     upstreamMaximumAttempts: 5,

@@ -8,9 +8,9 @@
  */
 
 export const RELEASE_DEFAULTS = Object.freeze({
-  version: '0.2.0-alpha.5',
+  version: '0.2.0-alpha.6',
   gitCommit: 'UNCOMMITTED',
-  buildDate: '2026-07-31T08:38:00+07:00',
-  schemaVersion: 5,
-  migration: '20260731030000_architecture_miner_identity',
+  buildDate: '2026-07-31T17:54:00+07:00',
+  schemaVersion: 6,
+  migration: '20260731110000_upstream_resilience',
 });

@@ -55,6 +55,64 @@ export interface UpstreamClientCallbacks {
   onExtranonce?: (subscription: UpstreamSubscription) => void;
   onJob?: (job: BitcoinMiningJob) => void;
   onError?: (error: Error) => void;
+  onDisconnect?: (reason: Error) => void;
+}
+
+export interface PoolAdapterCapabilities {
+  protocol: 'STRATUM_V1';
+  supportsTls: boolean;
+  supportsVersionRolling: boolean;
+  supportsSetExtranonce: boolean;
+  supportsClientReconnect: boolean;
+}
+
+export interface PoolAdapterCallbacks extends UpstreamClientCallbacks {}
+
+export interface PoolAdapter {
+  readonly id: string;
+  readonly endpoint: UpstreamEndpoint;
+  readonly capabilities: PoolAdapterCapabilities;
+  readonly state: UpstreamSessionState;
+  readonly currentSubscription?: UpstreamSubscription;
+  readonly currentDifficulty: string;
+  start(maximumAttempts?: number, signal?: AbortSignal): Promise<UpstreamSubscription>;
+  getJob(jobId: string): BitcoinMiningJob | undefined;
+  submit(input: UpstreamSubmitInput): Promise<UpstreamShareResult>;
+  close(): void;
+}
+
+export interface UpstreamPoolDefinition {
+  id: string;
+  name: string;
+  priority: number;
+  weight: number;
+  enabled: boolean;
+  failureThreshold: number;
+  recoveryTimeoutMs: number;
+  endpoint: UpstreamEndpoint;
+}
+
+export type PoolHealthState = 'HEALTHY' | 'DEGRADED' | 'CIRCUIT_OPEN' | 'DISABLED';
+
+export interface PoolHealthSnapshot {
+  poolId: string;
+  state: PoolHealthState;
+  consecutiveFailures: number;
+  successfulConnections: number;
+  lastConnectedAt?: string;
+  lastFailureAt?: string;
+  circuitOpenedUntil?: string;
+  lastError?: string;
+}
+
+export type UpstreamManagerState = 'IDLE' | 'CONNECTING' | 'ACTIVE' | 'RECOVERING' | 'FAILED' | 'STOPPED';
+
+export interface UpstreamFailoverNotice {
+  previousPoolId?: string;
+  nextPoolId?: string;
+  reason: string;
+  attemptedPoolIds: readonly string[];
+  occurredAt: string;
 }
 
 export interface UpstreamSubmitInput extends Omit<BitcoinShareSubmission, 'workerName' | 'submittedAt'> {

@@ -16,7 +16,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.2.0-alpha.5
+## Current Checkpoint: v0.2.0-alpha.6
 
 Implemented:
 
@@ -38,18 +38,24 @@ Implemented:
 - Production worker credential model, scrypt hashing, rotation, revocation, expiry, and lock state.
 - PostgreSQL-backed Stratum authenticator with Redis rate limiting and audit logs.
 - `workerDeviceDetected` projection regression fix.
+- Pool adapter boundary and multi-upstream registry.
+- Priority/weight provider selection, circuit breaker, backoff with jitter, and local transparent failover.
+- Provider-scoped job routing and bounded job cache.
+- Bounded share queue with timeout and backpressure.
+- Upstream health/failover events and conservative VarDiff foundation.
 
 Release blockers:
 
 - Captured compatibility fixture from the selected production upstream pool.
-- Transparent active-session reconnect or explicit failover policy.
+- Captured provider-specific compatibility fixtures.
+- Shared upstream multiplexing and distributed health state.
 - PostgreSQL/Redis integration verification for production worker authentication.
 - Control Plane API for worker credential lifecycle and tenant authorization.
 - Full PostgreSQL and Redis integration tests.
 - Load and soak tests.
 
 
-## v0.2.0-alpha.6: Upstream Resilience
+## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
 
 - Pool adapter layer.
 - Multi-upstream registry and health scoring.

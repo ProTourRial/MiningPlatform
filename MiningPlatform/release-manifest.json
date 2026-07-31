@@ -1,18 +1,18 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.5",
-  "releaseName": "Architecture and Miner Identity",
-  "artifactType": "incremental-patch",
-  "schemaVersion": 5,
-  "migration": "20260731030000_architecture_miner_identity",
+  "version": "0.2.0-alpha.6",
+  "releaseName": "Upstream Resilience",
+  "artifactType": "full-release",
+  "schemaVersion": 6,
+  "migration": "20260731110000_upstream_resilience",
   "compatibleFrom": [
-    "0.2.0-alpha.4"
+    "0.2.0-alpha.5"
   ],
-  "patchChecksum": "d2d8d36355338490803f81347887abcd6204158b3495262ae093d39f31dd39cf",
-  "payloadChecksum": "d2d8d36355338490803f81347887abcd6204158b3495262ae093d39f31dd39cf",
+  "patchChecksum": "4e30b414006a24c91c0ef9da5be1b027343729724a8b7f28e2d17baccaf2af5d",
+  "payloadChecksum": "662d8b411dbea7d170051589560c5c1ebb4a2ae135c4d58296e1385d071bef8b",
   "checksumScope": "sha256-payload-v1 excluding release-manifest.json and *.sha256",
-  "payloadFileCount": 117,
-  "buildDate": "2026-07-31T08:38:00+07:00",
+  "payloadFileCount": 342,
+  "buildDate": "2026-07-31T17:54:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }

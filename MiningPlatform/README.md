@@ -6,7 +6,7 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.2.0-alpha.5`
+Versi saat ini: `0.2.0-alpha.6`
 
 Rilis ini merupakan **upstream gateway development alpha**, bukan mining pool produksi. Landing page, Stratum downstream server, upstream TCP/TLS client, local upstream simulator, job normalization, multi-job registry, local share validation, upstream response correlation, durable event foundation, multi-window hashrate, dan dashboard development sudah tersedia.
 
@@ -335,9 +335,20 @@ pnpm verify:alpha5
 
 Verifikasi migrasi database kosong dan salinan database alpha.4 dijelaskan dalam `docs/releases/v0.2.0-alpha.5-upgrade.md`. Jangan menjalankan pemeriksaan migrasi terhadap satu-satunya salinan database penting.
 
+
+## Upgrade alpha.5 ke alpha.6
+
+Ekstrak patch incremental di atas folder alpha.5, lalu jalankan `bash apply-patch.sh` atau `.\apply-patch.ps1`. Verifikasi target environment dengan:
+
+```bash
+pnpm verify:alpha6
+```
+
+Prosedur database kosong dan upgrade salinan alpha.5 tersedia di `docs/releases/v0.2.0-alpha.6-upgrade.md`.
+
 ## Release and build diagnostics
 
-The repository includes `release-manifest.json` for automated upgrade and CI checks. It records the release version, schema version, migration, alpha.4 compatibility, build date, git commit, and payload checksums.
+The repository includes `release-manifest.json` for automated upgrade and CI checks. It records the release version, schema version, migration, alpha.5 compatibility, build date, git commit, and payload checksums.
 
 Every Node service binary supports machine-readable version output without initializing PostgreSQL or Redis:
 
@@ -358,3 +369,18 @@ Worker credential inventory can be reviewed without exposing credential secrets:
 ```bash
 pnpm worker:credential list demo.worker1
 ```
+
+
+## Upstream resilience alpha.6
+
+The local gateway now supports a session-scoped pool adapter registry with primary/backup selection, circuit breaker, recovery backoff with jitter, provider-scoped jobs, bounded share submission, and a conservative VarDiff foundation.
+
+```env
+UPSTREAM_DRIVER=multi
+UPSTREAM_POOLS_JSON=[{"key":"primary","host":"127.0.0.1","port":3334,"tls":false,"username":"gateway.worker","password":"x","priority":0,"weight":100}]
+STRATUM_VARDIFF_ENABLED=false
+```
+
+Static review: `docs/ui/upstream-resilience-review.html`. Architecture: `docs/architecture/upstream-resilience-alpha-6.md`.
+
+Alpha.6 remains an internal protocol release. Provider fixtures, Prisma/database integration, distributed health, shared upstream multiplexing, load testing, and Docker verification remain release blockers.

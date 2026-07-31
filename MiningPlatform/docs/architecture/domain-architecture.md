@@ -2,7 +2,7 @@
 
 Owner: Abia Nugrahanto  
 Status: Accepted baseline  
-Version: 0.2.0-alpha.5
+Version: 0.2.0-alpha.6
 
 ## Tujuan
 

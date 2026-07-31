@@ -121,6 +121,8 @@ enum UpstreamSessionStatus {
   AUTHORIZED
   ACTIVE
   DEGRADED
+  RECOVERING
+  FAILED
   DISCONNECTED
 }
 
@@ -210,6 +212,7 @@ enum UpstreamStatus {
   SETUP
   OPERATIONAL
   DEGRADED
+  CIRCUIT_OPEN
   OFFLINE
   DISABLED
 }
@@ -459,6 +462,10 @@ model MinerSession {
   disconnectedAt       DateTime?
   lastActivityAt       DateTime                 @default(now())
   disconnectReason     String?
+  activeUpstreamPoolKey String?
+  upstreamRecoveryStartedAt DateTime?
+  upstreamRecoveredAt  DateTime?
+  upstreamFailoverCount Int                     @default(0)
   worker               Worker?                  @relation(fields: [workerId], references: [id], onDelete: SetNull)
   shares               Share[]
   difficultyAssignments DifficultyAssignment[]
@@ -491,10 +498,16 @@ model UpstreamSession {
   extranonce1      String?
   extranonce2Size  Int?
   connectedAt      DateTime              @default(now())
+  selectedAt       DateTime?
   authorizedAt     DateTime?
+  recoveryStartedAt DateTime?
+  recoveredAt      DateTime?
   disconnectedAt  DateTime?
   lastActivityAt   DateTime              @default(now())
+  reconnectCount   Int                   @default(0)
+  failoverFromPoolId String?
   failureCode      String?
+  lastError        String?
   upstreamPool     UpstreamPool          @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
   jobs             StratumJob[]
 
@@ -803,6 +816,7 @@ model WalletTransaction {
 model UpstreamPool {
   id                  String         @id @default(cuid())
   assetId             String
+  poolKey             String
   name                String
   host                String
   port                Int
@@ -810,6 +824,16 @@ model UpstreamPool {
   rewardMethod        RewardMethod
   status              UpstreamStatus @default(SETUP)
   priority            Int            @default(100)
+  weight              Int            @default(100)
+  failureThreshold    Int            @default(3)
+  recoveryTimeoutMs   Int            @default(30000)
+  consecutiveFailures Int            @default(0)
+  successfulConnections Int          @default(0)
+  lastConnectedAt     DateTime?
+  lastFailureAt       DateTime?
+  circuitOpenedUntil  DateTime?
+  lastError           String?
+  capabilities        Json?
   encryptedCredential String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -820,7 +844,9 @@ model UpstreamPool {
   stratumJobs         StratumJob[]
 
   @@unique([assetId, name])
-  @@index([assetId, status, priority])
+  @@unique([assetId, poolKey])
+  @@index([assetId, status, priority, weight])
+  @@index([status, circuitOpenedUntil])
 }
 
 model UpstreamReconciliation {

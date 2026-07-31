@@ -20,6 +20,10 @@ import {
   type ShareUpstreamDecisionPayload,
   type ShareUpstreamPendingPayload,
   type WorkerDeviceDetectedPayload,
+  type UpstreamPoolSelectedPayload,
+  type UpstreamFailoverPayload,
+  type UpstreamHealthChangedPayload,
+  type WorkerDifficultyChangedPayload,
 } from '@mining/shared';
 import { PrismaTransactionalIdempotencyService } from './prisma-idempotency.js';
 import { assertSupportedMiningEvent } from './supported-events.js';
@@ -81,6 +85,20 @@ export class MiningProjection {
           break;
         case MiningEvents.workerDeviceDetected:
           await this.workerDeviceDetected(tx, event as DomainEvent<WorkerDeviceDetectedPayload>);
+          break;
+        case MiningEvents.upstreamPoolSelected:
+          await this.upstreamPoolSelected(tx, event as DomainEvent<UpstreamPoolSelectedPayload>);
+          break;
+        case MiningEvents.upstreamFailoverStarted:
+        case MiningEvents.upstreamFailoverCompleted:
+        case MiningEvents.upstreamFailoverFailed:
+          await this.upstreamFailover(tx, event as DomainEvent<UpstreamFailoverPayload>);
+          break;
+        case MiningEvents.upstreamHealthChanged:
+          await this.upstreamHealthChanged(tx, event as DomainEvent<UpstreamHealthChangedPayload>);
+          break;
+        case MiningEvents.workerDifficultyChanged:
+          await this.workerDifficultyChanged(tx, event as DomainEvent<WorkerDifficultyChangedPayload>);
           break;
         case MiningEvents.jobReceived:
           await this.jobReceived(tx, event as DomainEvent<MiningJobReceivedPayload>);
@@ -202,6 +220,99 @@ export class MiningProjection {
   }
 
 
+  private async upstreamPoolSelected(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<UpstreamPoolSelectedPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const minerSession = (tx as unknown as {
+      minerSession: { update(args: unknown): Promise<unknown> };
+    }).minerSession;
+    await minerSession.update({
+      where: { id: payload.sessionId },
+      data: {
+        activeUpstreamPoolKey: payload.poolId,
+        upstreamRecoveredAt: new Date(payload.selectedAt),
+        lastActivityAt: new Date(payload.selectedAt),
+      },
+    });
+  }
+
+  private async upstreamFailover(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<UpstreamFailoverPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const minerSession = (tx as unknown as {
+      minerSession: { update(args: unknown): Promise<unknown> };
+    }).minerSession;
+    const started = event.eventName === MiningEvents.upstreamFailoverStarted;
+    await minerSession.update({
+      where: { id: payload.sessionId },
+      data: started
+        ? {
+            upstreamRecoveryStartedAt: new Date(payload.occurredAt),
+            lastActivityAt: new Date(payload.occurredAt),
+          }
+        : {
+            activeUpstreamPoolKey: payload.nextPoolId,
+            upstreamRecoveredAt: payload.recovered ? new Date(payload.occurredAt) : undefined,
+            upstreamFailoverCount: { increment: 1 },
+            lastActivityAt: new Date(payload.occurredAt),
+          },
+    });
+  }
+
+  private async upstreamHealthChanged(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<UpstreamHealthChangedPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    const upstreamPool = (tx as unknown as {
+      upstreamPool: { updateMany(args: unknown): Promise<unknown> };
+    }).upstreamPool;
+    await upstreamPool.updateMany({
+      where: { poolKey: payload.poolId },
+      data: {
+        status: payload.state === 'HEALTHY'
+          ? 'OPERATIONAL'
+          : payload.state === 'CIRCUIT_OPEN'
+            ? 'CIRCUIT_OPEN'
+            : payload.state,
+        consecutiveFailures: payload.consecutiveFailures,
+        successfulConnections: payload.successfulConnections,
+        lastConnectedAt: payload.lastConnectedAt ? new Date(payload.lastConnectedAt) : undefined,
+        lastFailureAt: payload.lastFailureAt ? new Date(payload.lastFailureAt) : undefined,
+        circuitOpenedUntil: payload.circuitOpenedUntil ? new Date(payload.circuitOpenedUntil) : undefined,
+        lastError: payload.lastError,
+      },
+    });
+  }
+
+  private async workerDifficultyChanged(
+    tx: Prisma.TransactionClient,
+    event: DomainEvent<WorkerDifficultyChangedPayload>,
+  ): Promise<void> {
+    const payload = event.payload;
+    await tx.difficultyAssignment.updateMany({
+      where: { sessionId: payload.sessionId, expiresAt: null },
+      data: { expiresAt: new Date(payload.assignedAt) },
+    });
+    await tx.difficultyAssignment.create({
+      data: {
+        sessionId: payload.sessionId,
+        workerId: payload.workerId,
+        difficulty: payload.nextDifficulty,
+        source: payload.source,
+        assignedAt: new Date(payload.assignedAt),
+      },
+    });
+    await tx.minerSession.update({
+      where: { id: payload.sessionId },
+      data: { activeDifficulty: payload.nextDifficulty, lastActivityAt: new Date(payload.assignedAt) },
+    });
+  }
+
   private async workerDeviceDetected(
     tx: Prisma.TransactionClient,
     event: DomainEvent<WorkerDeviceDetectedPayload>,
@@ -255,13 +366,20 @@ export class MiningProjection {
   ): Promise<void> {
     const payload = event.payload;
     const asset = await tx.asset.findUniqueOrThrow({ where: { symbol: payload.asset } });
+    const upstreamPoolRepository = (tx as unknown as {
+      upstreamPool: { findFirst(args: unknown): Promise<{ id: string } | null> };
+    }).upstreamPool;
+    const upstreamPool = payload.upstreamPoolKey
+      ? await upstreamPoolRepository.findFirst({ where: { assetId: asset.id, poolKey: payload.upstreamPoolKey } })
+      : null;
     await tx.stratumJob.upsert({
       where: { id: payload.jobId },
       update: { status: 'ACTIVE', expiresAt: new Date(payload.expiresAt) },
       create: {
         id: payload.jobId,
         assetId: asset.id,
-        externalJobId: payload.jobId,
+        upstreamPoolId: upstreamPool?.id,
+        externalJobId: payload.upstreamJobId ?? payload.jobId,
         status: 'ACTIVE',
         previousBlockHash: payload.previousBlockHash,
         coinbase1: payload.coinbase1,

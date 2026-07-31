@@ -18,6 +18,12 @@ Versioning: event name suffix `.vN`
 | `mining.share.upstream-accepted.v1` | stratum-server | Share | mining-worker, future reward | Implemented |
 | `mining.share.upstream-rejected.v1` | stratum-server | Share | mining-worker, audit | Implemented |
 | `mining.hashrate.updated.v1` | mining-worker | Worker | API/WebSocket, statistics | Implemented |
+| `mining.upstream.pool-selected.v1` | stratum-server | MinerSession | mining-worker, monitoring, audit | Implemented in alpha.6 |
+| `mining.upstream.failover-started.v1` | stratum-server | MinerSession | mining-worker, monitoring, audit | Implemented in alpha.6 |
+| `mining.upstream.failover-completed.v1` | stratum-server | MinerSession | mining-worker, monitoring, audit | Implemented in alpha.6 |
+| `mining.upstream.failover-failed.v1` | stratum-server | MinerSession | mining-worker, monitoring, alerting | Implemented in alpha.6 |
+| `mining.upstream.health-changed.v1` | stratum-server | UpstreamPool | mining-worker, monitoring | Implemented in alpha.6 |
+| `mining.worker.difficulty-changed.v1` | stratum-server | Worker | mining-worker, monitoring | Implemented in alpha.6 |
 | `security.worker-authentication.succeeded.v1` | worker identity | Worker | audit, security alerts | Catalogued; AuditLog write implemented |
 | `security.worker-authentication.failed.v1` | worker identity | Worker | audit, abuse detection | Catalogued; AuditLog write implemented |
 | `security.worker-credential.created.v1` | worker management | Worker | audit, notification | Catalogued; CLI audit implemented |

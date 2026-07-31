@@ -150,7 +150,7 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
     upstreamTls: false,
     upstreamUsername: 'upstream.account',
     upstreamPassword: 'x',
-    upstreamUserAgent: 'MiningPlatform-gateway-test/0.2.0-alpha.5',
+    upstreamUserAgent: 'MiningPlatform-gateway-test/0.2.0-alpha.6',
     upstreamConnectTimeoutMs: 2_000,
     upstreamResponseTimeoutMs: 2_000,
     upstreamMaximumAttempts: 2,
@@ -197,5 +197,142 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
     miner.close();
     await server.close();
     await simulator.close();
+  }
+});
+
+test('keeps the downstream miner connected while failing over to a backup upstream', async () => {
+  const primary = new UpstreamStratumSimulator({ extranonce1: '11111111' });
+  const backup = new UpstreamStratumSimulator({ extranonce1: '22222222' });
+  await primary.listen();
+  await backup.listen();
+  const eventStore = new CollectingEventStore();
+  const config: StratumServerConfig = {
+    host: '127.0.0.1',
+    port: 0,
+    developmentMode: true,
+    developmentWorker: 'demo.worker1',
+    developmentPassword: 'x',
+    developmentDifficulty: '0.000001',
+    workerAuthDriver: 'development',
+    workerAuthMaximumFailures: 5,
+    workerAuthWindowMs: 60_000,
+    workerAuthLockMs: 900_000,
+    socketTimeoutMs: 30_000,
+    maximumLineBytes: 65_536,
+    maximumSubmissionsPerSecond: 20,
+    developmentDataDirectory: './data/test',
+    eventBusDriver: 'memory',
+    eventStoreDriver: 'jsonl',
+    redisUrl: 'redis://127.0.0.1:6379',
+    eventStream: 'test-events',
+    versionRollingMask: '1fffe000',
+    ipHashKey: 'test-ip-hash-key-1234567890',
+    upstreamDriver: 'multi',
+    upstreamHost: '127.0.0.1',
+    upstreamPort: primary.port,
+    upstreamTls: false,
+    upstreamUsername: 'upstream.account',
+    upstreamPassword: 'x',
+    upstreamUserAgent: 'MiningPlatform-failover-test/0.2.0-alpha.6',
+    upstreamConnectTimeoutMs: 500,
+    upstreamResponseTimeoutMs: 2_000,
+    upstreamMaximumAttempts: 1,
+    upstreamMaximumRecoveryCycles: 3,
+    upstreamReconnectBaseMs: 10,
+    upstreamReconnectMaximumMs: 20,
+    upstreamReconnectJitterRatio: 0,
+    upstreamShareQueueCapacity: 16,
+    upstreamShareQueueTimeoutMs: 2_000,
+    upstreamJobCacheMaximumEntries: 64,
+    upstreamPools: [
+      {
+        id: 'primary',
+        name: 'Primary simulator',
+        priority: 10,
+        weight: 100,
+        enabled: true,
+        failureThreshold: 1,
+        recoveryTimeoutMs: 60_000,
+        endpoint: {
+          host: '127.0.0.1',
+          port: primary.port,
+          userAgent: 'MiningPlatform-failover-test/0.2.0-alpha.6',
+          username: 'upstream.account',
+          password: 'x',
+          connectTimeoutMs: 500,
+          responseTimeoutMs: 2_000,
+          maximumLineBytes: 65_536,
+        },
+      },
+      {
+        id: 'backup',
+        name: 'Backup simulator',
+        priority: 20,
+        weight: 100,
+        enabled: true,
+        failureThreshold: 1,
+        recoveryTimeoutMs: 60_000,
+        endpoint: {
+          host: '127.0.0.1',
+          port: backup.port,
+          userAgent: 'MiningPlatform-failover-test/0.2.0-alpha.6',
+          username: 'upstream.account',
+          password: 'x',
+          connectTimeoutMs: 500,
+          responseTimeoutMs: 2_000,
+          maximumLineBytes: 65_536,
+        },
+      },
+    ],
+  };
+  const server = new StratumServer(config, {
+    authenticator: {
+      authenticate: async (workerName, password) =>
+        workerName === 'demo.worker1' && password === 'x'
+          ? { authenticated: true as const, worker: { workerId: 'worker-failover-1', workerName } }
+          : { authenticated: false as const, code: 'INVALID_CREDENTIALS' as const },
+    },
+    eventBus: new InMemoryEventBus(),
+    eventStore,
+    duplicateStore: new InMemoryDuplicateShareStore(),
+  });
+
+  await server.listen();
+  const miner = await LineClient.connect(server.listeningPort);
+  try {
+    miner.send(11, 'mining.subscribe', ['FailoverMiner/1.0']);
+    assert.equal((await miner.response(11)).error, null);
+    miner.send(12, 'mining.authorize', ['demo.worker1', 'x']);
+    assert.equal((await miner.response(12)).result, true);
+
+    const primaryExtra = parseMiningSetExtranonce((await miner.notification('mining.set_extranonce')).params);
+    assert.equal(primaryExtra.extranonce1, '11111111');
+    await miner.notification('mining.set_difficulty');
+    await miner.notification('mining.notify');
+
+    await primary.close();
+
+    const backupExtra = parseMiningSetExtranonce((await miner.notification('mining.set_extranonce', 5_000)).params);
+    assert.equal(backupExtra.extranonce1, '22222222');
+    const backupDifficulty = parseMiningSetDifficulty((await miner.notification('mining.set_difficulty', 5_000)).params);
+    const backupNotify = parseMiningNotify((await miner.notification('mining.notify', 5_000)).params);
+    const backupJob = normalizeUpstreamJob({
+      notification: backupNotify,
+      extranonce1: backupExtra.extranonce1,
+      extranonce2Size: backupExtra.extranonce2Size,
+      assignedDifficulty: backupDifficulty.difficulty,
+    });
+    const share = findShare(backupJob);
+    miner.send(13, 'mining.submit', [share.workerName, share.jobId, share.extranonce2, share.networkTime, share.nonce]);
+    assert.equal((await miner.response(13, 5_000)).result, true);
+    assert.equal(backup.submissions.length, 1);
+    assert.ok(eventStore.events.some((event) => event.eventName === MiningEvents.upstreamFailoverStarted));
+    assert.ok(eventStore.events.some((event) => event.eventName === MiningEvents.upstreamFailoverCompleted));
+    assert.ok(eventStore.events.filter((event) => event.eventName === MiningEvents.upstreamPoolSelected).length >= 2);
+  } finally {
+    miner.close();
+    await server.close();
+    await primary.close().catch(() => undefined);
+    await backup.close();
   }
 });

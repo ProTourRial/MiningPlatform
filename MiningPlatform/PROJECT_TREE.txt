@@ -105,6 +105,8 @@ MiningPlatform/
 │   │   │   ├── runtime.ts
 │   │   │   ├── server.ts
 │   │   │   ├── session.ts
+│   │   │   ├── upstream-config.test.ts
+│   │   │   ├── upstream-config.ts
 │   │   │   ├── upstream-gateway.test.ts
 │   │   │   └── worker-authenticator.ts
 │   │   ├── package.json
@@ -190,6 +192,7 @@ MiningPlatform/
 │   │   ├── 0005-universal-hardware-model.md
 │   │   ├── 0006-event-delivery-and-outbox.md
 │   │   ├── 0007-production-miner-identity.md
+│   │   ├── 0008-multi-upstream-resilience.md
 │   │   └── README.md
 │   ├── api/
 │   │   └── event-contracts.md
@@ -208,6 +211,7 @@ MiningPlatform/
 │   │   ├── state-machines.md
 │   │   ├── system-interpretation-v1.md
 │   │   ├── universal-miner-detection.md
+│   │   ├── upstream-resilience-alpha-6.md
 │   │   └── upstream-stratum-alpha-3.md
 │   ├── database/
 │   │   ├── ledger-invariants.md
@@ -239,6 +243,9 @@ MiningPlatform/
 │   │   ├── v0.2.0-alpha.5-upgrade.md
 │   │   ├── v0.2.0-alpha.5-validation.md
 │   │   ├── v0.2.0-alpha.5.md
+│   │   ├── v0.2.0-alpha.6-upgrade.md
+│   │   ├── v0.2.0-alpha.6-validation.md
+│   │   ├── v0.2.0-alpha.6.md
 │   │   └── v0.2.0-definition-of-done.md
 │   ├── security/
 │   │   ├── threat-model-v1.md
@@ -246,7 +253,8 @@ MiningPlatform/
 │   ├── ui/
 │   │   ├── landing-page-v1.md
 │   │   ├── README.md
-│   │   └── universal-miner-review.html
+│   │   ├── universal-miner-review.html
+│   │   └── upstream-resilience-review.html
 │   └── roadmap.md
 ├── infrastructure/
 │   ├── backups/
@@ -295,6 +303,8 @@ MiningPlatform/
 │   │   │   │   ├── 20260731020000_universal_miner_detection/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── 20260731030000_architecture_miner_identity/
+│   │   │   │   │   └── migration.sql
+│   │   │   │   ├── 20260731110000_upstream_resilience/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── migration_lock.toml
 │   │   │   │   └── README.md
@@ -395,14 +405,20 @@ MiningPlatform/
 │   │   │   │   └── reference-v1.ts
 │   │   │   ├── backoff.ts
 │   │   │   ├── client.ts
+│   │   │   ├── gateway-job-router.ts
 │   │   │   ├── index.ts
 │   │   │   ├── job-normalizer.ts
 │   │   │   ├── job-registry.ts
+│   │   │   ├── pool-adapter.ts
+│   │   │   ├── pool-manager.ts
 │   │   │   ├── request-correlator.ts
 │   │   │   ├── session-state-machine.ts
+│   │   │   ├── share-queue.ts
 │   │   │   ├── simulator.ts
 │   │   │   ├── types.ts
-│   │   │   └── upstream-stratum.test.ts
+│   │   │   ├── upstream-resilience.test.ts
+│   │   │   ├── upstream-stratum.test.ts
+│   │   │   └── vardiff.ts
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   └── validation/
@@ -415,12 +431,15 @@ MiningPlatform/
 │   ├── apply-delete-manifest.mjs
 │   ├── bootstrap.sh
 │   ├── check-alpha5-upgrade.mjs
+│   ├── check-alpha6-upgrade.mjs
 │   ├── check-secrets.sh
 │   ├── generate-release-manifest.mjs
 │   ├── stratum-smoke-client.ts
 │   ├── tsconfig.json
 │   ├── verify-alpha5-migration.mjs
 │   ├── verify-alpha5-release.mjs
+│   ├── verify-alpha6-migration.mjs
+│   ├── verify-alpha6-release.mjs
 │   ├── verify-release-manifest.mjs
 │   └── worker-credential-cli.ts
 ├── .dockerignore

@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.0-alpha.6] - 2026-07-31
+
+### Added
+
+- Pool adapter abstraction and multi-upstream registry.
+- Priority/weight selection, circuit breaker, automatic recovery, exponential backoff, and jitter.
+- Provider-scoped multi-job router with clean invalidation and bounded cache.
+- Bounded share queue with concurrency, timeout, and explicit backpressure.
+- Upstream selection, failover, health, and worker difficulty domain events.
+- Conservative VarDiff foundation with upstream difficulty floor.
+- Database schema version 6 and upstream resilience migration.
+- Primary-to-backup TCP failover regression test.
+
+### Changed
+
+- Downstream sessions remain connected during recoverable upstream failures.
+- Share submission is routed only to the provider that owns the job.
+- Release metadata and binary/API version output now report schema version 6.
+
+### Known gaps
+
+- Provider-specific captured fixtures, shared multiplexing, and distributed circuit state are pending.
+- Prisma generation, PostgreSQL/Redis integration, Docker, load, soak, and chaos verification require the target environment.
+
 ## [0.2.0-alpha.5] - 2026-07-31
 
 ### Added
@@ -40,6 +64,7 @@
 - Added universal CPU, GPU, FPGA, ASIC, and hybrid worker profiles.
 - Added evidence-based miner detection and persistence.
 - Added universal hardware website review surfaces.
+- Added Abia Nugrahanto author attribution headers across code files.
 - Removed packaged build and dependency artifacts from the release archive.
 - Included and synchronized `pnpm-lock.yaml` for reproducible workspace installation.
 - Fixed legacy ESM logger import and frontend type errors found during universal-hardware validation.

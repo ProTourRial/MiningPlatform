@@ -1,6 +1,6 @@
 {
   "name": "mining-platform",
-  "version": "0.2.0-alpha.5",
+  "version": "0.2.0-alpha.6",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
@@ -40,11 +40,17 @@
     "verify:alpha5:static": "node scripts/check-alpha5-upgrade.mjs",
     "verify:alpha5": "node scripts/verify-alpha5-release.mjs",
     "verify:alpha5:fast": "node scripts/verify-alpha5-release.mjs --skip-install --skip-build",
-    "verify:migration:fresh": "node scripts/verify-alpha5-migration.mjs fresh",
-    "verify:migration:upgrade": "node scripts/verify-alpha5-migration.mjs upgrade",
+    "verify:migration:fresh": "node scripts/verify-alpha6-migration.mjs fresh",
+    "verify:migration:upgrade": "node scripts/verify-alpha6-migration.mjs upgrade",
     "typecheck:scripts": "tsc -p scripts/tsconfig.json",
     "release:manifest": "node scripts/generate-release-manifest.mjs . release-manifest.json",
-    "release:manifest:verify": "node scripts/verify-release-manifest.mjs ."
+    "release:manifest:verify": "node scripts/verify-release-manifest.mjs .",
+    "verify:alpha6:static": "node scripts/check-alpha6-upgrade.mjs",
+    "verify:alpha6": "node scripts/verify-alpha6-release.mjs",
+    "test:upstream-resilience": "pnpm --filter @mining/upstream-stratum test && pnpm --filter @mining/stratum-server test",
+    "verify:alpha6:fast": "node scripts/verify-alpha6-release.mjs --skip-install --skip-build",
+    "verify:migration:alpha6:fresh": "node scripts/verify-alpha6-migration.mjs fresh",
+    "verify:migration:alpha6:upgrade": "node scripts/verify-alpha6-migration.mjs upgrade"
   },
   "devDependencies": {
     "@types/node": "22.0.0",

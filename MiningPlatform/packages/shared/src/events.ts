@@ -24,6 +24,12 @@ export const MiningEvents = {
   workerCredentialCreated: 'security.worker-credential.created.v1',
   workerCredentialRotated: 'security.worker-credential.rotated.v1',
   workerCredentialRevoked: 'security.worker-credential.revoked.v1',
+  upstreamPoolSelected: 'mining.upstream.pool-selected.v1',
+  upstreamFailoverStarted: 'mining.upstream.failover-started.v1',
+  upstreamFailoverCompleted: 'mining.upstream.failover-completed.v1',
+  upstreamFailoverFailed: 'mining.upstream.failover-failed.v1',
+  upstreamHealthChanged: 'mining.upstream.health-changed.v1',
+  workerDifficultyChanged: 'mining.worker.difficulty-changed.v1',
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
@@ -133,6 +139,51 @@ export interface WorkerDeviceDetectedPayload {
   detectedAt: string;
 }
 
+
+export interface UpstreamPoolSelectedPayload {
+  sessionId: string;
+  workerId: string;
+  poolId: string;
+  previousPoolId?: string;
+  selectedAt: string;
+}
+
+export interface UpstreamFailoverPayload {
+  sessionId: string;
+  workerId: string;
+  previousPoolId?: string;
+  nextPoolId?: string;
+  reason: string;
+  attemptedPoolIds: readonly string[];
+  occurredAt: string;
+  recovered: boolean;
+}
+
+export interface UpstreamHealthChangedPayload {
+  sessionId: string;
+  workerId: string;
+  poolId: string;
+  state: 'HEALTHY' | 'DEGRADED' | 'CIRCUIT_OPEN' | 'DISABLED';
+  consecutiveFailures: number;
+  successfulConnections: number;
+  lastConnectedAt?: string;
+  lastFailureAt?: string;
+  circuitOpenedUntil?: string;
+  lastError?: string;
+  observedAt: string;
+}
+
+export interface WorkerDifficultyChangedPayload {
+  sessionId: string;
+  workerId: string;
+  previousDifficulty: string;
+  nextDifficulty: string;
+  source: 'UPSTREAM_FLOOR' | 'VARDIFF';
+  assignedAt: string;
+  observedShareIntervalSeconds?: number;
+  sampleCount?: number;
+}
+
 export interface MinerSessionConnectedPayload {
   sessionId: string;
   remoteIpHash: string;
@@ -165,6 +216,9 @@ export interface MinerSessionDisconnectedPayload {
 export interface MiningJobReceivedPayload {
   sessionId: string;
   jobId: string;
+  upstreamPoolKey?: string;
+  upstreamJobId?: string;
+  gatewayGeneration?: number;
   asset: 'BTC';
   algorithm: 'SHA256';
   previousBlockHash: string;

@@ -6,7 +6,7 @@
 
 import type { Socket } from 'node:net';
 import type { BitcoinMiningJob } from '@mining/mining-core';
-import type { UpstreamStratumClient } from '@mining/upstream-stratum';
+import type { MultiUpstreamPoolManager, VariableDifficultyController } from '@mining/upstream-stratum';
 
 export type MinerSessionState = 'CONNECTED' | 'SUBSCRIBED' | 'AUTHORIZED' | 'ACTIVE' | 'DISCONNECTED';
 
@@ -28,7 +28,10 @@ export interface MinerSession {
   assignedDifficulty: string;
   versionRollingMask?: string;
   currentJob?: BitcoinMiningJob;
-  upstream?: UpstreamStratumClient;
+  upstream?: MultiUpstreamPoolManager;
+  vardiff?: VariableDifficultyController;
+  activeUpstreamPoolId?: string;
+  recoveryStartedAt?: Date;
   acceptedDifficultyBuckets: Map<number, DifficultyBucket>;
   submissionWindowStartedAt: number;
   submissionsInWindow: number;

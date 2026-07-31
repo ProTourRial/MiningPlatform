@@ -1,43 +1,14 @@
-# Apply MiningPlatform alpha.5 Patch
+# Apply MiningPlatform alpha.6 Patch
 
-Author: Abia Nugrahanto  
-Upgrade source: `0.2.0-alpha.4`  
-Upgrade target: `0.2.0-alpha.5`
+Owner: Abia Nugrahanto
 
-## Apply
+This incremental patch is compatible with `0.2.0-alpha.5`.
 
-1. Back up the alpha.4 project and database.
-2. Extract the patch ZIP over the existing `MiningPlatform` directory and allow replacement.
-3. Remove obsolete ADR duplicates:
+1. Back up source and database.
+2. Extract the patch over the existing `MiningPlatform` directory.
+3. Run `bash apply-patch.sh` or `.\apply-patch.ps1`.
+4. Verify the downloaded ZIP with its `.sha256` file before extraction.
+5. Run `pnpm verify:alpha6` in an environment with registry access and the correct Prisma engine.
+5. Verify fresh and alpha.5-upgrade migrations on disposable databases.
 
-```bash
-bash apply-patch.sh
-```
-
-Windows PowerShell:
-
-```powershell
-./apply-patch.ps1
-```
-
-4. Validate dependencies and generated code:
-
-```bash
-corepack enable
-corepack prepare pnpm@10.13.1 --activate
-pnpm install --frozen-lockfile
-pnpm db:generate
-pnpm typecheck
-pnpm test
-pnpm build
-```
-
-The combined command is:
-
-```bash
-pnpm verify:alpha5
-```
-
-## Migration checks
-
-Use disposable databases only. See `docs/releases/v0.2.0-alpha.5-upgrade.md` for the fresh-database and alpha.4-upgrade procedures.
+No files require deletion in alpha.6. The structured delete manifest remains present so the patch mechanism is consistent between releases.
