@@ -9,6 +9,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./"
   },
   "include": ["src/**/*.ts"]
