@@ -225,6 +225,37 @@ enum NotificationType {
   PAYOUT
 }
 
+enum UserSessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AccountTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum AuditCategory {
+  AUTH
+  SECURITY
+  ACCOUNT
+  WORKER
+  CREDENTIAL
+  SYSTEM
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
 model User {
   id                 String          @id @default(cuid())
   email              String          @unique
@@ -234,6 +265,8 @@ model User {
   status             UserStatus      @default(PENDING_VERIFICATION)
   accountType        AccountType     @default(INDIVIDUAL)
   emailVerifiedAt    DateTime?
+  locale             String          @default("id-ID")
+  timezone           String          @default("Asia/Jakarta")
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   deletedAt          DateTime?
@@ -246,6 +279,12 @@ model User {
   payouts            Payout[]
   notifications      Notification[]
   auditLogs          AuditLog[]       @relation("AuditActor")
+  sessions           UserSession[]
+  accountTokens      AccountToken[]
+  totpEnrollments    TotpEnrollment[]
+  roleAssignments    UserRoleAssignment[]
+  apiKeys            ApiKey[]
+  createdWorkerCredentials WorkerCredential[] @relation("WorkerCredentialCreatedBy")
 
   @@index([status])
 }
@@ -262,6 +301,122 @@ model UserSecurity {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSession {
+  id               String            @id @default(cuid())
+  userId           String
+  tokenFamilyId    String
+  refreshTokenHash String
+  status           UserSessionStatus @default(ACTIVE)
+  deviceName       String?
+  deviceType       String?
+  browser          String?
+  operatingSystem  String?
+  ipHash           String?
+  countryCode      String?
+  city             String?
+  userAgentHash    String?
+  createdAt        DateTime          @default(now())
+  lastActiveAt     DateTime          @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  revokeReason     String?
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([tokenFamilyId, refreshTokenHash])
+  @@index([userId, status, lastActiveAt])
+  @@index([status, expiresAt])
+}
+
+model AccountToken {
+  id         String           @id @default(cuid())
+  userId     String
+  type       AccountTokenType
+  tokenHash  String           @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+  user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, type, expiresAt])
+}
+
+model TotpEnrollment {
+  id              String   @id @default(cuid())
+  userId          String
+  encryptedSecret String
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, expiresAt])
+}
+
+model Role {
+  id          String               @id @default(cuid())
+  key         String               @unique
+  name        String
+  description String?
+  system      Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  permissions RolePermission[]
+  assignments UserRoleAssignment[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model UserRoleAssignment {
+  userId     String
+  roleId     String
+  assignedBy String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model ApiKey {
+  id           String       @id @default(cuid())
+  userId       String
+  name         String
+  prefix       String       @unique
+  secretHash   String
+  status       ApiKeyStatus @default(ACTIVE)
+  permissions  String[]
+  expiresAt    DateTime?
+  lastUsedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  revokedAt    DateTime?
+  createdBy    String?
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
 }
 
 model CompanyProfile {
@@ -355,6 +510,7 @@ model Worker {
 model WorkerCredential {
   id             String                 @id @default(cuid())
   workerId       String
+  createdByUserId String?
   credentialId   String                 @unique
   secretHash     String
   status         WorkerCredentialStatus @default(ACTIVE)
@@ -368,8 +524,10 @@ model WorkerCredential {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   worker         Worker                 @relation(fields: [workerId], references: [id], onDelete: Restrict)
+  createdBy      User?                  @relation("WorkerCredentialCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([workerId, status])
+  @@index([createdByUserId, createdAt])
   @@index([status, expiresAt])
   @@index([lockedUntil])
 }
@@ -885,18 +1043,24 @@ model Notification {
 }
 
 model AuditLog {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   actorUserId    String?
+  category       AuditCategory @default(SYSTEM)
+  outcome        AuditOutcome  @default(SUCCESS)
   action         String
   resourceType   String
   resourceId     String?
+  sessionId      String?
+  requestId      String?
   ipHash         String?
   userAgentHash  String?
   metadata       Json?
-  occurredAt     DateTime @default(now())
+  occurredAt     DateTime      @default(now())
   actor          User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([actorUserId, occurredAt])
+  @@index([category, outcome, occurredAt])
+  @@index([sessionId, occurredAt])
   @@index([resourceType, resourceId, occurredAt])
 }
 

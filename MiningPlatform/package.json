@@ -1,6 +1,6 @@
 {
   "name": "mining-platform",
-  "version": "0.2.0-alpha.6",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
@@ -50,7 +50,13 @@
     "test:upstream-resilience": "pnpm --filter @mining/upstream-stratum test && pnpm --filter @mining/stratum-server test",
     "verify:alpha6:fast": "node scripts/verify-alpha6-release.mjs --skip-install --skip-build",
     "verify:migration:alpha6:fresh": "node scripts/verify-alpha6-migration.mjs fresh",
-    "verify:migration:alpha6:upgrade": "node scripts/verify-alpha6-migration.mjs upgrade"
+    "verify:migration:alpha6:upgrade": "node scripts/verify-alpha6-migration.mjs upgrade",
+    "verify:v030:static": "node scripts/check-v030-upgrade.mjs",
+    "verify:v030": "node scripts/verify-v030-release.mjs",
+    "verify:v030:fast": "node scripts/verify-v030-release.mjs --skip-install --skip-build",
+    "verify:migration:v030:fresh": "node scripts/verify-v030-migration.mjs fresh",
+    "verify:migration:v030:upgrade": "node scripts/verify-v030-migration.mjs upgrade",
+    "verify:managed-source": "node scripts/verify-managed-source.mjs ."
   },
   "devDependencies": {
     "@types/node": "22.0.0",

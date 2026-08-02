@@ -31,6 +31,14 @@ import { assertSupportedMiningEvent } from './supported-events.js';
 const HASHRATE_BUCKET_SECONDS = 60;
 const HASHRATE_WINDOWS = [60, 300, 900, 3_600, 86_400] as const;
 
+interface HashrateBucketProjectionRecord {
+  bucketStart: Date;
+  acceptedDifficultySum: { toString(): string };
+  acceptedCount: number;
+  rejectedCount: number;
+  invalidCount: number;
+}
+
 export type ProjectionResult =
   | { processed: true }
   | { processed: false; reason: 'DUPLICATE' };
@@ -611,7 +619,7 @@ export class MiningProjection {
         bucketStart: { gt: oldestStart, lte: currentBucket },
       },
       orderBy: { bucketStart: 'asc' },
-    });
+    }) as HashrateBucketProjectionRecord[];
 
     for (const windowSeconds of HASHRATE_WINDOWS) {
       const windowStart = input.submittedAt.getTime() - windowSeconds * 1_000;

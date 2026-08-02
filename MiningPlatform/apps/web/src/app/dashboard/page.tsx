@@ -5,12 +5,8 @@
  */
 
 import { PageShell } from '@/components/dashboard/page-shell';
-import { RealtimeMiningPanel } from '@/components/dashboard/realtime-mining-panel';
+import { OverviewPanel } from '@/components/dashboard/control-plane/overview-panel';
 
 export default function DashboardPage() {
-  return (
-    <PageShell title="Overview" description="Ringkasan pipeline mining, worker, hashrate, reward, dan payout.">
-      <RealtimeMiningPanel />
-    </PageShell>
-  );
+  return <PageShell title="Overview" description="Ringkasan worker, hashrate, upstream pool, service health, dan audit event."><OverviewPanel /></PageShell>;
 }

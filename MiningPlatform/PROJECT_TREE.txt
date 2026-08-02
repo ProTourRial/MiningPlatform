@@ -5,10 +5,42 @@ MiningPlatform/
 ├── apps/
 │   ├── api/
 │   │   ├── src/
+│   │   │   ├── common/
+│   │   │   │   └── auth/
+│   │   │   │       ├── auth.types.ts
+│   │   │   │       ├── current-principal.decorator.ts
+│   │   │   │       ├── permissions.decorator.ts
+│   │   │   │       └── request-security-context.ts
 │   │   │   ├── modules/
+│   │   │   │   ├── api-keys/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   │   └── api-keys.dto.ts
+│   │   │   │   │   ├── api-keys.controller.ts
+│   │   │   │   │   ├── api-keys.module.ts
+│   │   │   │   │   └── api-keys.service.ts
+│   │   │   │   ├── audit/
+│   │   │   │   │   ├── audit-core.module.ts
+│   │   │   │   │   ├── audit.controller.ts
+│   │   │   │   │   ├── audit.module.ts
+│   │   │   │   │   └── audit.service.ts
 │   │   │   │   ├── auth/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   │   └── auth.dto.ts
+│   │   │   │   │   ├── access-token.guard.ts
+│   │   │   │   │   ├── auth-rate-limit.service.ts
 │   │   │   │   │   ├── auth.controller.ts
-│   │   │   │   │   └── auth.module.ts
+│   │   │   │   │   ├── auth.module.ts
+│   │   │   │   │   ├── auth.service.ts
+│   │   │   │   │   ├── authorization.service.ts
+│   │   │   │   │   ├── identity-config.ts
+│   │   │   │   │   ├── identity-delivery.service.ts
+│   │   │   │   │   └── permissions.guard.ts
+│   │   │   │   ├── credentials/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   │   └── credentials.dto.ts
+│   │   │   │   │   ├── credentials.controller.ts
+│   │   │   │   │   ├── credentials.module.ts
+│   │   │   │   │   └── credentials.service.ts
 │   │   │   │   ├── health/
 │   │   │   │   │   ├── health.controller.ts
 │   │   │   │   │   ├── health.module.ts
@@ -45,8 +77,11 @@ MiningPlatform/
 │   │   │   │   │   ├── transparency.controller.ts
 │   │   │   │   │   └── transparency.module.ts
 │   │   │   │   ├── users/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   │   └── users.dto.ts
 │   │   │   │   │   ├── users.controller.ts
-│   │   │   │   │   └── users.module.ts
+│   │   │   │   │   ├── users.module.ts
+│   │   │   │   │   └── users.service.ts
 │   │   │   │   ├── version/
 │   │   │   │   │   ├── version.controller.ts
 │   │   │   │   │   └── version.module.ts
@@ -54,8 +89,11 @@ MiningPlatform/
 │   │   │   │   │   ├── wallets.controller.ts
 │   │   │   │   │   └── wallets.module.ts
 │   │   │   │   ├── workers/
+│   │   │   │   │   ├── dto/
+│   │   │   │   │   │   └── workers.dto.ts
 │   │   │   │   │   ├── workers.controller.ts
-│   │   │   │   │   └── workers.module.ts
+│   │   │   │   │   ├── workers.module.ts
+│   │   │   │   │   └── workers.service.ts
 │   │   │   │   └── domain-modules.ts
 │   │   │   ├── app.module.ts
 │   │   │   ├── main.ts
@@ -131,6 +169,8 @@ MiningPlatform/
 │       │   │   ├── dashboard/
 │       │   │   │   ├── api/
 │       │   │   │   │   └── page.tsx
+│       │   │   │   ├── audit/
+│       │   │   │   │   └── page.tsx
 │       │   │   │   ├── hashrate/
 │       │   │   │   │   └── page.tsx
 │       │   │   │   ├── profile/
@@ -147,17 +187,35 @@ MiningPlatform/
 │       │   │   │   │   └── page.tsx
 │       │   │   │   ├── layout.tsx
 │       │   │   │   └── page.tsx
+│       │   │   ├── forgot-password/
+│       │   │   │   └── page.tsx
 │       │   │   ├── login/
 │       │   │   │   └── page.tsx
 │       │   │   ├── register/
 │       │   │   │   └── page.tsx
+│       │   │   ├── reset-password/
+│       │   │   │   └── page.tsx
 │       │   │   ├── transparency/
+│       │   │   │   └── page.tsx
+│       │   │   ├── verify-email/
 │       │   │   │   └── page.tsx
 │       │   │   ├── globals.css
 │       │   │   ├── layout.tsx
 │       │   │   └── page.tsx
 │       │   ├── components/
+│       │   │   ├── auth/
+│       │   │   │   ├── account-action-forms.tsx
+│       │   │   │   ├── login-form.tsx
+│       │   │   │   └── register-form.tsx
 │       │   │   ├── dashboard/
+│       │   │   │   ├── control-plane/
+│       │   │   │   │   ├── api-keys-panel.tsx
+│       │   │   │   │   ├── audit-log-panel.tsx
+│       │   │   │   │   ├── overview-panel.tsx
+│       │   │   │   │   ├── profile-panel.tsx
+│       │   │   │   │   ├── security-panel.tsx
+│       │   │   │   │   └── workers-manager.tsx
+│       │   │   │   ├── dashboard-frame.tsx
 │       │   │   │   ├── page-shell.tsx
 │       │   │   │   ├── realtime-mining-panel.tsx
 │       │   │   │   ├── sidebar.tsx
@@ -193,9 +251,11 @@ MiningPlatform/
 │   │   ├── 0006-event-delivery-and-outbox.md
 │   │   ├── 0007-production-miner-identity.md
 │   │   ├── 0008-multi-upstream-resilience.md
+│   │   ├── 0009-identity-access-session-rbac.md
 │   │   └── README.md
 │   ├── api/
-│   │   └── event-contracts.md
+│   │   ├── event-contracts.md
+│   │   └── identity-access.md
 │   ├── architecture/
 │   │   ├── bounded-contexts.md
 │   │   ├── context-map.md
@@ -205,6 +265,7 @@ MiningPlatform/
 │   │   ├── event-flow.md
 │   │   ├── hardening-alpha-2.md
 │   │   ├── idempotency.md
+│   │   ├── identity-access-v030.md
 │   │   ├── mvp-boundary.md
 │   │   ├── service-boundaries.md
 │   │   ├── share-validation.md
@@ -246,11 +307,15 @@ MiningPlatform/
 │   │   ├── v0.2.0-alpha.6-upgrade.md
 │   │   ├── v0.2.0-alpha.6-validation.md
 │   │   ├── v0.2.0-alpha.6.md
-│   │   └── v0.2.0-definition-of-done.md
+│   │   ├── v0.2.0-definition-of-done.md
+│   │   ├── v0.3.0-upgrade.md
+│   │   ├── v0.3.0-validation.md
+│   │   └── v0.3.0.md
 │   ├── security/
 │   │   ├── threat-model-v1.md
 │   │   └── worker-credential-management.md
 │   ├── ui/
+│   │   ├── identity-access-review.html
 │   │   ├── landing-page-v1.md
 │   │   ├── README.md
 │   │   ├── universal-miner-review.html
@@ -305,6 +370,8 @@ MiningPlatform/
 │   │   │   │   ├── 20260731030000_architecture_miner_identity/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── 20260731110000_upstream_resilience/
+│   │   │   │   │   └── migration.sql
+│   │   │   │   ├── 20260731190000_identity_access/
 │   │   │   │   │   └── migration.sql
 │   │   │   │   ├── migration_lock.toml
 │   │   │   │   └── README.md
@@ -373,8 +440,17 @@ MiningPlatform/
 │   │   └── tsconfig.json
 │   ├── security/
 │   │   ├── src/
+│   │   │   ├── account-token.ts
+│   │   │   ├── backup-codes.ts
+│   │   │   ├── device.ts
+│   │   │   ├── encryption.ts
+│   │   │   ├── identity.test.ts
 │   │   │   ├── index.test.ts
 │   │   │   ├── index.ts
+│   │   │   ├── jwt.ts
+│   │   │   ├── password.ts
+│   │   │   ├── permissions.ts
+│   │   │   ├── totp.ts
 │   │   │   ├── worker-credential.test.ts
 │   │   │   └── worker-credential.ts
 │   │   ├── package.json
@@ -433,6 +509,7 @@ MiningPlatform/
 │   ├── check-alpha5-upgrade.mjs
 │   ├── check-alpha6-upgrade.mjs
 │   ├── check-secrets.sh
+│   ├── check-v030-upgrade.mjs
 │   ├── generate-release-manifest.mjs
 │   ├── stratum-smoke-client.ts
 │   ├── tsconfig.json
@@ -441,6 +518,8 @@ MiningPlatform/
 │   ├── verify-alpha6-migration.mjs
 │   ├── verify-alpha6-release.mjs
 │   ├── verify-release-manifest.mjs
+│   ├── verify-v030-migration.mjs
+│   ├── verify-v030-release.mjs
 │   └── worker-credential-cli.ts
 ├── .dockerignore
 ├── .env.example

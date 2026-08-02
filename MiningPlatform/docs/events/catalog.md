@@ -24,6 +24,21 @@ Versioning: event name suffix `.vN`
 | `mining.upstream.failover-failed.v1` | stratum-server | MinerSession | mining-worker, monitoring, alerting | Implemented in alpha.6 |
 | `mining.upstream.health-changed.v1` | stratum-server | UpstreamPool | mining-worker, monitoring | Implemented in alpha.6 |
 | `mining.worker.difficulty-changed.v1` | stratum-server | Worker | mining-worker, monitoring | Implemented in alpha.6 |
+| `identity.account.registered.v1` | auth API | User | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.email.verified.v1` | auth API | User | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.login.succeeded.v1` | auth API | UserSession | audit, security | Contract catalogued in v0.3.0 |
+| `identity.login.failed.v1` | auth API | User | audit, security | Contract catalogued in v0.3.0 |
+| `identity.session.created.v1` | auth API | UserSession | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.session.revoked.v1` | auth API | UserSession | audit, security | Contract catalogued in v0.3.0 |
+| `identity.password.changed.v1` | auth API | UserSecurity | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.two-factor.enabled.v1` | auth API | UserSecurity | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.two-factor.disabled.v1` | auth API | UserSecurity | audit, notification | Contract catalogued in v0.3.0 |
+| `identity.profile.updated.v1` | users API | User | audit | Contract catalogued in v0.3.0 |
+| `identity.api-key.created.v1` | API key service | ApiKey | audit | Contract catalogued in v0.3.0 |
+| `identity.api-key.revoked.v1` | API key service | ApiKey | audit | Contract catalogued in v0.3.0 |
+| `control.worker.created.v1` | worker API | Worker | audit, monitoring | Contract catalogued in v0.3.0 |
+| `control.worker.updated.v1` | worker API | Worker | audit, monitoring | Contract catalogued in v0.3.0 |
+| `control.worker.deleted.v1` | worker API | Worker | audit, mining session control | Contract catalogued in v0.3.0 |
 | `security.worker-authentication.succeeded.v1` | worker identity | Worker | audit, security alerts | Catalogued; AuditLog write implemented |
 | `security.worker-authentication.failed.v1` | worker identity | Worker | audit, abuse detection | Catalogued; AuditLog write implemented |
 | `security.worker-credential.created.v1` | worker management | Worker | audit, notification | Catalogued; CLI audit implemented |

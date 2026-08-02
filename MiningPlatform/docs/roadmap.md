@@ -1,13 +1,17 @@
-# Roadmap
+# MiningPlatform Roadmap
 
-## Release Sequence
+Author: Abia Nugrahanto
+
+## Release sequence
 
 ```text
-v0.2.0  Core Mining Foundation
+v0.2.0  Core Mining and Upstream Foundation
     ↓
-v0.3.0  Monitoring and Reward Foundation
+v0.3.0  Identity & Access
     ↓
-v0.4.0  Ledger and Settlement
+v0.3.1  Monitoring and Notification Foundation
+    ↓
+v0.4.0  Accounting, Ledger, and Settlement
     ↓
 v0.5.0  Wallet and Secure Payout
     ↓
@@ -16,122 +20,80 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.2.0-alpha.6
+## Current checkpoint: v0.3.0 — Identity & Access
 
-Implemented:
+Implemented foundation:
 
-- Downstream Stratum handshake, authorization, notification, and submission flow.
-- Upstream Stratum TCP/TLS client and local simulator.
-- Reference fixture header reconstruction and byte-order test.
-- Upstream session state machine and initial reconnect backoff.
-- Job normalization, multi-job registry, and `clean_jobs` invalidation.
-- Local validation followed by upstream submit and response correlation.
-- Separate local and upstream share lifecycle events.
-- Redis duplicate reservation and PostgreSQL durable outbox foundation.
-- Rolling 1m, 5m, 15m, 1h, and 24h hashrate snapshots.
-- Development-only authorized WebSocket room and dashboard panel.
-- Universal CPU, GPU, FPGA, ASIC, hybrid, other, and unknown worker profiles.
-- Evidence-based Stratum, user, agent, and miner API detection.
-- Per-device telemetry model and universal worker review interface.
-- Official domain architecture, bounded contexts, context map, and event catalog.
-- Canonical ADR set without duplicated numbering.
-- Production worker credential model, scrypt hashing, rotation, revocation, expiry, and lock state.
-- PostgreSQL-backed Stratum authenticator with Redis rate limiting and audit logs.
-- `workerDeviceDetected` projection regression fix.
-- Pool adapter boundary and multi-upstream registry.
-- Priority/weight provider selection, circuit breaker, backoff with jitter, and local transparent failover.
-- Provider-scoped job routing and bounded job cache.
-- Bounded share queue with timeout and backpressure.
-- Upstream health/failover events and conservative VarDiff foundation.
+- user registration and email verification;
+- login/logout and short-lived JWT access tokens;
+- rotating refresh-token sessions;
+- session device inventory and revoke one/all;
+- forgot/reset/change password;
+- TOTP and one-time backup codes;
+- permission-based RBAC and ownership enforcement;
+- user profile and settings;
+- worker CRUD, status, statistics, and universal hardware declaration;
+- worker credential lifecycle;
+- API key lifecycle management;
+- user audit log;
+- production dashboard read model;
+- authentication rate limiting;
+- schema version 7 and migration verification scripts.
 
 Release blockers:
 
-- Captured compatibility fixture from the selected production upstream pool.
-- Captured provider-specific compatibility fixtures.
-- Shared upstream multiplexing and distributed health state.
-- PostgreSQL/Redis integration verification for production worker authentication.
-- Control Plane API for worker credential lifecycle and tenant authorization.
-- Full PostgreSQL and Redis integration tests.
-- Load and soak tests.
+- production email delivery adapter;
+- generated Prisma Client and fresh/upgrade migration verification;
+- PostgreSQL/Redis integration tests;
+- Docker/Nginx verification;
+- API-key authentication guard;
+- owner operations UI;
+- load and security tests.
 
+## v0.3.1 — Monitoring and Notifications
 
-## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
+- authenticated WebSocket tenant isolation for production workers;
+- monitoring-agent enrollment;
+- telemetry ingestion and retention;
+- worker alerts and incidents;
+- email/Telegram/Discord/webhook provider adapters;
+- notification preference and retry lifecycle;
+- operational dashboards and alert rules.
 
-- Pool adapter layer.
-- Multi-upstream registry and health scoring.
-- Circuit breaker, backoff with jitter, and failover policy.
-- Transparent or explicitly controlled session recovery.
-- Share queue and response timeout handling.
-- Provider-specific captured fixtures.
-- VarDiff foundation and job lifecycle hardening.
+## v0.4.0 — Accounting, Ledger, and Settlement
 
-## v0.2.0: Core Mining Foundation
+- upstream reconciliation;
+- contribution aggregation;
+- FOLLOW_UPSTREAM reward period lifecycle;
+- automatic balanced journal posting;
+- reward liability and platform fee accounts;
+- balance projection;
+- reconciliation reports and controlled adjustments.
 
-- Expanded mining schema and migrations.
-- Miner session and Stratum job persistence.
-- Stratum V1 subscribe, authorize, notify, and submit flow.
-- Upstream connection and relay.
-- Local SHA-256 share validation.
-- Difficulty target calculation.
-- Duplicate, stale, malformed, unauthorized, and low-difficulty detection.
-- Share state machine.
-- Event bus and transactional outbox.
-- Shared idempotency capability.
-- Share persistence and upstream result tracking.
-- Realtime Redis aggregation.
-- Worker state and hashrate windows.
-- WebSocket dashboard updates.
-- Time-series retention jobs.
-- End-to-end Stratum test miner.
+## v0.5.0 — Wallet and Secure Payout
 
-Release gate: `docs/releases/v0.2.0-definition-of-done.md`.
+- Bitcoin node and watch-only wallet adapter;
+- UTXO inventory, locking, coin selection, fee estimation;
+- payout batching and idempotency;
+- PSBT and approval workflow;
+- hot/cold wallet policy;
+- broadcast, RBF, confirmation, and ledger settlement.
 
-## v0.3.0: Monitoring and Reward Foundation
+## v0.6.0 — Transparency and Owner Operations
 
-- Miner API and optional monitoring agent.
-- Temperature, fan, power, hardware error, and efficiency metrics.
-- Monitoring alerts and incident lifecycle.
-- Upstream reconciliation.
-- `FOLLOW_UPSTREAM` reward strategy.
-- Reward period state machine.
-- Reward previews without spendable balances.
+- public delayed statistics;
+- Owner user/worker/pool operations;
+- maintenance and emergency controls;
+- wallet approval;
+- immutable security event review;
+- backup/restore and disaster recovery workflows.
 
-## v0.4.0: Ledger and Settlement
+## v1.0.0 — Production Ready
 
-- Production double-entry journal posting.
-- Reward liability accounts.
-- Platform fee and upstream fee accounting.
-- Immutable journal references and reversals.
-- Balance projections.
-- Reconciliation reports.
-
-## v0.5.0: Wallet and Secure Payout
-
-- Bitcoin node and wallet adapter.
-- UTXO inventory and locking.
-- Coin selection and fee estimation.
-- Payout batches.
-- PSBT and approval flow.
-- Hot and cold wallet policy.
-- Broadcast, RBF, confirmation, and settlement.
-- Emergency wallet controls.
-
-## v0.6.0: Transparency and Owner Operations
-
-- Public pool and network metrics.
-- Aggregated earnings and payout statistics.
-- Owner user and worker management.
-- Pool configuration.
-- Reward operations.
-- Wallet approval.
-- Maintenance and emergency controls.
-- Audit logs, security events, and system health.
-
-## v1.0.0: Production-Ready Upstream Gateway
-
-- Security assessment and remediation.
-- Capacity and failure testing.
-- Disaster recovery exercises.
-- Production observability and on-call runbooks.
-- Reconciliation acceptance criteria.
-- Operational approval for real funds.
+- captured provider fixtures;
+- capacity, load, soak, stress, and chaos tests;
+- security assessment;
+- multi-replica durability;
+- observability and on-call runbooks;
+- disaster recovery exercise;
+- operational approval for real funds.

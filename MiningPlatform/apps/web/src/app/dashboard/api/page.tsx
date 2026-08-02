@@ -5,7 +5,6 @@
  */
 
 import { PageShell } from '@/components/dashboard/page-shell';
+import { ApiKeysPanel } from '@/components/dashboard/control-plane/api-keys-panel';
 
-export default function Page() {
-  return <PageShell title="API Access" description="API key terbatas untuk integrasi monitoring dan otomasi." />;
-}
+export default function Page() { return <PageShell title="API Access" description="API key menggunakan permission terbatas dan secret satu kali tampil."><ApiKeysPanel /></PageShell>; }

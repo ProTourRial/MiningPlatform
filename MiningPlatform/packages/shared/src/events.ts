@@ -30,6 +30,21 @@ export const MiningEvents = {
   upstreamFailoverFailed: 'mining.upstream.failover-failed.v1',
   upstreamHealthChanged: 'mining.upstream.health-changed.v1',
   workerDifficultyChanged: 'mining.worker.difficulty-changed.v1',
+  accountRegistered: 'identity.account.registered.v1',
+  emailVerified: 'identity.email.verified.v1',
+  loginSucceeded: 'identity.login.succeeded.v1',
+  loginFailed: 'identity.login.failed.v1',
+  sessionCreated: 'identity.session.created.v1',
+  sessionRevoked: 'identity.session.revoked.v1',
+  passwordChanged: 'identity.password.changed.v1',
+  twoFactorEnabled: 'identity.two-factor.enabled.v1',
+  twoFactorDisabled: 'identity.two-factor.disabled.v1',
+  userProfileUpdated: 'identity.profile.updated.v1',
+  apiKeyCreated: 'identity.api-key.created.v1',
+  apiKeyRevoked: 'identity.api-key.revoked.v1',
+  workerCreated: 'control.worker.created.v1',
+  workerUpdated: 'control.worker.updated.v1',
+  workerDeleted: 'control.worker.deleted.v1',
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
@@ -261,4 +276,47 @@ export interface WorkerCredentialLifecyclePayload {
   action: 'CREATED' | 'ROTATED' | 'REVOKED';
   expiresAt?: string;
   occurredAt: string;
+}
+
+
+export interface IdentityActorPayload {
+  userId: string;
+  sessionId?: string;
+  occurredAt: string;
+}
+
+export interface AccountRegisteredPayload extends IdentityActorPayload {
+  emailHash: string;
+  accountType: 'INDIVIDUAL' | 'COMPANY';
+  verificationRequired: boolean;
+}
+
+export interface LoginAuditPayload extends IdentityActorPayload {
+  outcome: 'SUCCEEDED' | 'FAILED';
+  reason?: string;
+  deviceName?: string;
+  ipHash?: string;
+}
+
+export interface UserSessionLifecyclePayload extends IdentityActorPayload {
+  targetSessionId: string;
+  action: 'CREATED' | 'REVOKED' | 'EXPIRED';
+  reason?: string;
+}
+
+export interface UserSecurityLifecyclePayload extends IdentityActorPayload {
+  action: 'EMAIL_VERIFIED' | 'PASSWORD_CHANGED' | 'TWO_FACTOR_ENABLED' | 'TWO_FACTOR_DISABLED';
+}
+
+export interface ControlWorkerLifecyclePayload extends IdentityActorPayload {
+  workerId: string;
+  action: 'CREATED' | 'UPDATED' | 'DELETED';
+  status?: string;
+}
+
+export interface ApiKeyLifecyclePayload extends IdentityActorPayload {
+  apiKeyId: string;
+  prefix: string;
+  action: 'CREATED' | 'REVOKED';
+  permissions: readonly string[];
 }

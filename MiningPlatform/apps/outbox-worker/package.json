@@ -1,6 +1,6 @@
 {
   "name": "@mining/outbox-worker",
-  "version": "0.2.0-alpha.6",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {

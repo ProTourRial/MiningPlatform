@@ -23,7 +23,7 @@ async function walk(directory) {
 
 const files = (await walk(payloadRoot))
   .map((absolute) => ({ absolute, path: relative(payloadRoot, absolute).split(sep).join('/') }))
-  .filter((entry) => entry.path !== 'release-manifest.json' && !entry.path.endsWith('.sha256'))
+  .filter((entry) => !['release-manifest.json', 'installed-release-manifest.json'].includes(entry.path) && !entry.path.endsWith('.sha256'))
   .sort((left, right) => left.path.localeCompare(right.path));
 const hash = createHash('sha256');
 for (const file of files) {

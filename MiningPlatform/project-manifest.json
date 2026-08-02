@@ -1,197 +1,76 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.6",
-  "generated_files": 343,
+  "version": "0.3.0",
+  "release_name": "Identity & Access",
+  "schema_version": 7,
+  "latest_migration": "20260731190000_identity_access",
+  "compatible_from": ["0.2.0-alpha.6"],
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
     "reward_method": "FOLLOW_UPSTREAM",
-    "platform_fee_percent": 2,
     "user_deposit": false,
     "ledger": "double-entry",
+    "web_identity_separate_from_worker_identity": true,
     "event_delivery": "at-least-once",
-    "event_durability": "postgres-outbox",
-    "duplicate_reservation": "redis-nx-ex",
-    "idempotency": "mandatory",
-    "state_machines": "mandatory",
-    "scheduler": "centralized"
+    "event_durability": "postgres-outbox"
   },
-  "target_release": "0.2.0",
-  "architecture_baseline": "ADR-0001 through ADR-0008",
-  "release_status": "upstream-resilience-alpha",
   "implemented": {
-    "landing_page": [
-      "responsive-mining-design",
-      "alpha-boundary-copy",
-      "production-dashboard-disabled"
+    "identity": [
+      "registration",
+      "email-verification",
+      "login-logout",
+      "jwt-access-token",
+      "refresh-token-rotation",
+      "web-session-inventory-and-revocation"
     ],
-    "stratum_gateway": [
-      "downstream-configure-subscribe-authorize-submit",
-      "upstream-tcp-tls-client",
-      "upstream-subscribe-authorize",
-      "difficulty-and-extranonce-relay",
-      "notify-job-relay",
-      "submit-response-correlation"
+    "account_security": [
+      "forgot-reset-change-password",
+      "totp-two-factor",
+      "one-time-backup-codes",
+      "redis-production-rate-limit",
+      "hashed-tokens",
+      "encrypted-totp-secret"
     ],
-    "upstream_domain": [
-      "pool-adapter-layer",
-      "multi-upstream-priority-registry",
-      "circuit-breaker-health-state",
-      "automatic-reconnect-and-failover",
-      "transparent-downstream-session-recovery",
-      "gateway-job-router",
-      "bounded-share-queue",
-      "vardiff-foundation",
-      "provider-scoped-job-ids",
-      "local-upstream-simulator",
-      "reference-byte-order-fixture"
+    "authorization": [
+      "role-permission-rbac",
+      "user-owner-roles",
+      "domain-ownership-checks"
     ],
-    "share_validation": [
-      "sha256d",
-      "difficulty-target",
-      "duplicate",
-      "stale",
-      "malformed",
-      "unauthorized",
-      "time",
-      "version",
-      "local-upstream-lifecycle"
+    "control_plane": [
+      "profile-settings",
+      "worker-crud",
+      "worker-statistics",
+      "worker-credential-lifecycle",
+      "api-key-lifecycle",
+      "audit-log",
+      "production-dashboard-foundation"
     ],
-    "durability_foundation": [
-      "postgres-outbox",
-      "outbox-dispatcher",
-      "redis-pending-recovery",
-      "dead-letter-stream"
-    ],
-    "monitoring": [
-      "1m",
-      "5m",
-      "15m",
-      "1h",
-      "24h",
-      "development-websocket-room"
-    ],
-    "database": [
-      "34-model-prisma-schema",
-      "baseline-migration",
-      "hardening-migration",
-      "universal-miner-detection-migration",
-      "production-miner-identity-migration",
-      "ledger-database-constraints",
-      "upstream-resilience-migration"
-    ],
-    "operations": [
-      "liveness-readiness",
-      "prometheus-metrics",
-      "central-retention-scheduler",
-      "service-env-isolation"
-    ],
-    "universal_hardware": [
-      "cpu-gpu-fpga-asic-hybrid-other-unknown-types",
-      "evidence-based-miner-detection",
-      "stratum-user-agent-observation",
-      "user-declared-device-profile",
-      "monitoring-agent-and-miner-api-evidence",
-      "per-device-telemetry-schema",
-      "universal-worker-review-ui"
-    ],
-    "architecture": [
-      "control-mining-accounting-event-monitoring-operations-planes",
-      "bounded-context-catalog",
-      "context-map",
-      "data-and-event-flow",
-      "domain-event-catalog-and-versioning",
-      "canonical-adr-index"
-    ],
-    "miner_identity": [
-      "worker-credential-model",
-      "versioned-scrypt-secret-hashing",
-      "credential-create-rotate-revoke-cli",
-      "postgres-worker-authenticator",
-      "redis-auth-rate-limit",
-      "credential-expiry-revocation-and-lock-state",
-      "authentication-audit-log",
-      "production-development-driver-guard"
-    ],
-    "upstream_resilience": [
-      "pool-adapter-layer",
-      "multi-upstream-registry",
-      "priority-weight-pool-selection",
-      "circuit-breaker",
-      "reconnect-backoff-jitter",
-      "local-transparent-session-failover",
-      "provider-scoped-job-routing",
-      "bounded-share-queue",
-      "health-and-failover-events",
-      "vardiff-foundation"
+    "mining_plane": [
+      "stratum-v1-gateway",
+      "production-worker-credential-authentication",
+      "multi-upstream-resilience-foundation",
+      "sha256-share-validation",
+      "universal-hardware-profile"
     ]
   },
   "release_blockers": [
-    "selected-provider-captured-fixture",
-    "provider-specific-version-rolling",
+    "production-email-provider",
+    "prisma-client-v030-generation",
+    "fresh-and-upgrade-migration-verification",
     "postgres-redis-integration-tests",
-    "multi-replica-tests",
-    "load-and-soak-tests",
-    "postgres-redis-production-auth-integration-tests",
-    "control-plane-worker-credential-api",
-    "provider-specific-captured-fixtures",
-    "shared-upstream-multiplexing",
-    "distributed-upstream-health-state",
-    "production-vardiff-validation"
-  ],
-  "known_environment_limitations": [
-    "prisma-engine-validation-requires-platform-engine-download",
-    "docker-backed-integration-tests-deferred",
-    "postgres-redis-load-and-soak-tests-deferred"
-  ],
-  "author": "Abia Nugrahanto",
-  "universal_hardware": {
-    "types": [
-      "CPU",
-      "GPU",
-      "FPGA",
-      "ASIC",
-      "HYBRID",
-      "OTHER",
-      "UNKNOWN"
-    ],
-    "detection": [
-      "STRATUM_USER_AGENT",
-      "USER_DECLARED",
-      "MONITORING_AGENT",
-      "MINER_API"
-    ],
-    "active_algorithm": "SHA256",
-    "universal_algorithms": false
-  },
-  "dependency_reproducibility": {
-    "pnpm_lockfile": "included",
-    "lockfile_version": "9.0",
-    "install_command": "pnpm install --frozen-lockfile"
-  },
-  "schema_version": 6,
-  "release_manifest": "release-manifest.json",
-  "build_metadata": {
-    "api_endpoint": "GET /version",
-    "binary_flag": "--version",
-    "fields": [
-      "version",
-      "commit",
-      "buildDate",
-      "schemaVersion",
-      "migration",
-      "component"
-    ]
-  },
-  "credential_cli": [
-    "create",
-    "rotate",
-    "revoke",
-    "list"
+    "docker-nginx-verification",
+    "api-key-request-authentication",
+    "owner-operations-ui",
+    "reward-ledger-wallet-payout-production"
   ],
   "database_summary": {
-    "models": 34,
-    "enums": 25,
-    "latest_migration": "20260731110000_upstream_resilience"
-  }
+    "models": 42,
+    "enums": 30
+  },
+  "build_metadata": {
+    "api_endpoint": "GET /version",
+    "binary_flag": "--version"
+  },
+  "author": "Abia Nugrahanto"
 }

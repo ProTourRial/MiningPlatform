@@ -1,18 +1,24 @@
 {
   "project": "MiningPlatform",
-  "version": "0.2.0-alpha.6",
-  "releaseName": "Upstream Resilience",
-  "artifactType": "full-release",
-  "schemaVersion": 6,
-  "migration": "20260731110000_upstream_resilience",
+  "version": "0.3.0",
+  "releaseName": "Identity & Access",
+  "artifactType": "direct-overwrite-source-overlay",
+  "schemaVersion": 7,
+  "migration": "20260731190000_identity_access",
   "compatibleFrom": [
-    "0.2.0-alpha.5"
+    "0.2.0-alpha.3",
+    "0.2.0-alpha.4",
+    "0.2.0-alpha.5",
+    "0.2.0-alpha.6",
+    "0.3.0"
   ],
-  "patchChecksum": "4e30b414006a24c91c0ef9da5be1b027343729724a8b7f28e2d17baccaf2af5d",
-  "payloadChecksum": "662d8b411dbea7d170051589560c5c1ebb4a2ae135c4d58296e1385d071bef8b",
-  "checksumScope": "sha256-payload-v1 excluding release-manifest.json and *.sha256",
-  "payloadFileCount": 342,
-  "buildDate": "2026-07-31T17:54:00+07:00",
+  "patchChecksum": "NOT_APPLICABLE",
+  "payloadChecksum": "e87221bfa2c4fdc658b334905f503b897939f0ac651d66d47487f89fac579781",
+  "checksumScope": "sha256-payload-v1 excluding release-manifest.json, installed-release-manifest.json, and *.sha256",
+  "payloadFileCount": 412,
+  "buildDate": "2026-07-31T18:52:00+07:00",
   "gitCommit": "UNCOMMITTED",
-  "author": "Abia Nugrahanto"
+  "author": "Abia Nugrahanto",
+  "packagingRevision": "r1",
+  "installationMode": "direct-overwrite-preserve-extra-files"
 }

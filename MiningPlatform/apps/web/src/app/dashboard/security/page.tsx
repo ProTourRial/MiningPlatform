@@ -5,7 +5,6 @@
  */
 
 import { PageShell } from '@/components/dashboard/page-shell';
+import { SecurityPanel } from '@/components/dashboard/control-plane/security-panel';
 
-export default function Page() {
-  return <PageShell title="Security" description="Password, 2FA, session, perangkat, dan aktivitas login." />;
-}
+export default function Page() { return <PageShell title="Security" description="Password, TOTP, backup code, dan session perangkat."><SecurityPanel /></PageShell>; }

@@ -16,6 +16,7 @@ const menu = [
   ['Security', '/dashboard/security'],
   ['Settings', '/dashboard/settings'],
   ['API', '/dashboard/api'],
+  ['Audit', '/dashboard/audit'],
 ] as const;
 
 export function Sidebar() {

@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.3.0-packaging-r1] - 2026-07-31
+
+- Added direct-overwrite recovery for existing large working directories.
+- Added managed-source verification that ignores node_modules, build caches, and user-local extra files.
+- Added the missing delete-manifest utility and robust PowerShell/shell recovery scripts.
+
+
+## [0.3.0] - 2026-07-31
+
+### Added
+
+- User registration, email verification, login, logout, JWT access tokens, rotating refresh sessions, and device session management.
+- Forgot, reset, and change password flows.
+- TOTP two-factor authentication and one-time backup codes.
+- Permission-based RBAC with USER and OWNER roles and domain ownership checks.
+- Worker CRUD, statistics, universal hardware declaration, and production dashboard read models.
+- Worker credential create, rotate, revoke, expire, created-by, and last-used lifecycle through the Control Plane API.
+- API key lifecycle management and current-user audit log.
+- Redis-backed production authentication rate limiting with development-only memory fallback.
+- Identity event contracts, ADR-0009, API documentation, migration verification, and release review UI.
+- Database schema version 7 and migration `20260731190000_identity_access`.
+
+### Security
+
+- Web credentials and Stratum worker credentials remain separate.
+- Refresh/account/API-key/backup-code secrets are persisted only as hashes.
+- TOTP secrets are encrypted using AES-256-GCM.
+- JWT requests are checked against authoritative PostgreSQL session state.
+- Password change/reset and refresh-token reuse revoke sessions.
+- Raw IP addresses are replaced with HMAC-derived identifiers.
+- Production rejects development identity delivery and memory-only rate limiting.
+
+### Fixed
+
+- Removed duplicate `User.notifications` relation that would prevent Prisma Client generation.
+- Corrected production dashboard hashrate field mapping to `HashrateSnapshot.hashrate`.
+- Added a dedicated audit dashboard page and static duplicate-schema-member release check.
+
+### Known gaps
+
+- Production email delivery provider, API-key request authentication, Docker integration, and database migration verification remain pending.
+- Reward settlement, wallet orchestration, and payout remain disabled.
+
 ## [0.2.0-alpha.6] - 2026-07-31
 
 ### Added

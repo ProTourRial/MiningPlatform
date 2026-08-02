@@ -118,7 +118,7 @@ export function loadStratumConfig(): StratumServerConfig {
   const upstreamServerName = process.env.UPSTREAM_SERVER_NAME;
   const upstreamUsername = process.env.UPSTREAM_USERNAME ?? 'upstream.account';
   const upstreamPassword = process.env.UPSTREAM_PASSWORD ?? 'x';
-  const upstreamUserAgent = process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.2.0-alpha.6';
+  const upstreamUserAgent = process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.3.0';
   const upstreamConnectTimeoutMs = positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000);
   const upstreamResponseTimeoutMs = positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000);
   const maximumLineBytes = positiveInteger(process.env.STRATUM_MAX_LINE_BYTES, 16_384);

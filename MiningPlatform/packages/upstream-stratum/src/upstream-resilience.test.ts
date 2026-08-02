@@ -31,7 +31,7 @@ function pool(id: string, port: number, priority: number, extranonce1: string): 
     endpoint: {
       host: '127.0.0.1',
       port,
-      userAgent: 'MiningPlatform-resilience-test/0.2.0-alpha.6',
+      userAgent: 'MiningPlatform-resilience-test/0.3.0',
       username: 'upstream.account',
       password: 'x',
       connectTimeoutMs: 500,

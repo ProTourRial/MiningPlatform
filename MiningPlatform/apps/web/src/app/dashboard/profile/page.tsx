@@ -5,7 +5,6 @@
  */
 
 import { PageShell } from '@/components/dashboard/page-shell';
+import { ProfilePanel } from '@/components/dashboard/control-plane/profile-panel';
 
-export default function Page() {
-  return <PageShell title="Profile" description="Profil individu atau perusahaan." />;
-}
+export default function Page() { return <PageShell title="Profile" description="Identitas akun, locale, timezone, role, dan status keamanan."><ProfilePanel /></PageShell>; }

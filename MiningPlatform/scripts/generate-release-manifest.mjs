@@ -25,7 +25,7 @@ async function walk(directory) {
 
 const files = (await walk(payloadRoot))
   .map((absolute) => ({ absolute, path: relative(payloadRoot, absolute).split(sep).join('/') }))
-  .filter((entry) => entry.path !== 'release-manifest.json' && !entry.path.endsWith('.sha256'))
+  .filter((entry) => !['release-manifest.json', 'installed-release-manifest.json'].includes(entry.path) && !entry.path.endsWith('.sha256'))
   .sort((left, right) => left.path.localeCompare(right.path));
 const hash = createHash('sha256');
 for (const file of files) {
@@ -39,17 +39,17 @@ const patchChecksum = suppliedPatchChecksum ?? (artifactType === 'incremental-pa
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.2.0-alpha.6',
-  releaseName: 'Upstream Resilience',
+  version: '0.3.0',
+  releaseName: 'Identity & Access',
   artifactType,
-  schemaVersion: 6,
-  migration: '20260731110000_upstream_resilience',
-  compatibleFrom: ['0.2.0-alpha.5'],
+  schemaVersion: 7,
+  migration: '20260731190000_identity_access',
+  compatibleFrom: ['0.2.0-alpha.6'],
   patchChecksum,
   payloadChecksum,
-  checksumScope: 'sha256-payload-v1 excluding release-manifest.json and *.sha256',
+  checksumScope: 'sha256-payload-v1 excluding release-manifest.json, installed-release-manifest.json, and *.sha256',
   payloadFileCount: files.length,
-  buildDate: process.env.BUILD_DATE ?? '2026-07-31T17:54:00+07:00',
+  buildDate: process.env.BUILD_DATE ?? '2026-07-31T18:52:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',
   author: 'Abia Nugrahanto',
 };

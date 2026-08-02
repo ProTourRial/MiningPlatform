@@ -5,15 +5,8 @@
  */
 
 import { PageShell } from '@/components/dashboard/page-shell';
-import { UniversalMinerPanel } from '@/components/dashboard/universal-miner-panel';
+import { WorkersManager } from '@/components/dashboard/control-plane/workers-manager';
 
 export default function Page() {
-  return (
-    <PageShell
-      title="Universal Workers"
-      description="Worker dapat berasal dari ASIC, GPU, CPU, FPGA, atau rig hybrid selama software miner mendukung protokol dan algoritma pool yang aktif."
-    >
-      <UniversalMinerPanel />
-    </PageShell>
-  );
+  return <PageShell title="Workers" description="Worker, credential, status, dan statistik dipisahkan agar lifecycle miner tetap dapat diaudit."><WorkersManager /></PageShell>;
 }
