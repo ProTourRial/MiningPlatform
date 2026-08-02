@@ -6,54 +6,77 @@
 
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import type { AuthPrincipal } from '../../common/auth/auth.types';
-import { CurrentPrincipal } from '../../common/auth/current-principal.decorator';
-import { RequirePermissions } from '../../common/auth/permissions.decorator';
-import { AccessTokenGuard } from '../auth/access-token.guard';
-import { PermissionsGuard } from '../auth/permissions.guard';
-import { CreateWorkerDto, UpdateWorkerDto } from './dto/workers.dto';
-import { WorkersService } from './workers.service';
+import { PLATFORM_DEFAULTS } from '@mining/shared';
+import { CurrentPrincipal, Scopes, type AuthPrincipal } from '../auth/auth.decorators.js';
+import { AuthGuard } from '../auth/auth.guard.js';
+import { CreateWorkerDto, UpdateWorkerDto } from './workers.dto.js';
+import { WorkersService } from './workers.service.js';
 
 @ApiTags('workers')
 @ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller({ path: 'workers', version: '1' })
-@UseGuards(AccessTokenGuard, PermissionsGuard)
 export class WorkersController {
-  constructor(private readonly workers: WorkersService) {}
+  constructor(private readonly workersService: WorkersService) {}
+
+  @Get('status')
+  status() {
+    return {
+      module: 'workers',
+      status: 'control-plane-alpha',
+      currentAlgorithm: PLATFORM_DEFAULTS.algorithm,
+      hardwareSupport: PLATFORM_DEFAULTS.supportedHardwareTypes,
+      productionAuthentication: 'WorkerCredential/scrypt-v1',
+    };
+  }
 
   @Get()
-  @RequirePermissions('workers.read')
-  list(@CurrentPrincipal() principal: AuthPrincipal) {
-    return this.workers.list(principal);
+  @Scopes('workers:read')
+  list(@CurrentPrincipal() principal: AuthPrincipal) { return this.workersService.list(principal.userId); }
+
+  @Post()
+  @Scopes('workers:write')
+  create(@CurrentPrincipal() principal: AuthPrincipal, @Body() dto: CreateWorkerDto) {
+    return this.workersService.create(principal.userId, dto);
   }
 
   @Get(':workerId')
-  @RequirePermissions('workers.read')
+  @Scopes('workers:read')
   get(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string) {
-    return this.workers.get(principal, workerId);
-  }
-
-  @Get(':workerId/statistics')
-  @RequirePermissions('workers.read')
-  statistics(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string) {
-    return this.workers.statistics(principal, workerId);
-  }
-
-  @Post()
-  @RequirePermissions('workers.write')
-  create(@CurrentPrincipal() principal: AuthPrincipal, @Body() input: CreateWorkerDto) {
-    return this.workers.create(principal, input);
+    return this.workersService.get(principal.userId, workerId);
   }
 
   @Patch(':workerId')
-  @RequirePermissions('workers.write')
-  update(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string, @Body() input: UpdateWorkerDto) {
-    return this.workers.update(principal, workerId, input);
+  @Scopes('workers:write')
+  update(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string, @Body() dto: UpdateWorkerDto) {
+    return this.workersService.update(principal.userId, workerId, dto);
   }
 
   @Delete(':workerId')
-  @RequirePermissions('workers.delete')
+  @Scopes('workers:write')
   remove(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string) {
-    return this.workers.remove(principal, workerId);
+    return this.workersService.remove(principal.userId, workerId);
+  }
+
+  @Get(':workerId/credentials')
+  @Scopes('workers:read')
+  credentials(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string) {
+    return this.workersService.credentials(principal.userId, workerId);
+  }
+
+  @Post(':workerId/credentials/rotate')
+  @Scopes('workers:write')
+  rotateCredential(@CurrentPrincipal() principal: AuthPrincipal, @Param('workerId') workerId: string) {
+    return this.workersService.rotateCredential(principal.userId, workerId);
+  }
+
+  @Delete(':workerId/credentials/:credentialId')
+  @Scopes('workers:write')
+  revokeCredential(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('workerId') workerId: string,
+    @Param('credentialId') credentialId: string,
+  ) {
+    return this.workersService.revokeCredential(principal.userId, workerId, credentialId);
   }
 }

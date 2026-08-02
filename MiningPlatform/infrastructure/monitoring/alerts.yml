@@ -1,0 +1,38 @@
+groups:
+  - name: mining-platform-control-plane
+    rules:
+      - alert: MiningApiDown
+        expr: up{job="mining-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: MiningPlatform API is unavailable
+      - alert: MiningRefreshTokenReplayDetected
+        expr: mining_auth_refresh_reuse_last_5m > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Refresh-token replay was detected and its token family was revoked
+      - alert: MiningOutboxBacklog
+        expr: mining_outbox_pending_total > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: MiningPlatform outbox backlog is growing
+      - alert: MiningOutboxFailures
+        expr: mining_outbox_failed_total > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: MiningPlatform has failed or dead-letter events
+      - alert: MiningUpstreamUnavailable
+        expr: sum(mining_upstream_pools_total{status=~"OPERATIONAL|DEGRADED"}) < 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: No usable upstream mining pool is registered

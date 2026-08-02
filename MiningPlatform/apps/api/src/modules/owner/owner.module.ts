@@ -1,12 +1,8 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
+import { AdminController } from './admin.controller.js';
+import { AdminService } from './admin.service.js';
 
-// Owner operations are intentionally not exposed until private-network access,
-// mandatory 2FA, step-up authentication, and audit controls are implemented.
-@Module({})
+@Module({ imports: [AuthModule], controllers: [AdminController], providers: [AdminService] })
 export class OwnerModule {}

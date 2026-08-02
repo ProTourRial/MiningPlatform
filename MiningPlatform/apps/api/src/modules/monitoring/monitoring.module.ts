@@ -5,12 +5,14 @@
  */
 
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
 import { MonitoringController } from './monitoring.controller.js';
 import { MonitoringGateway } from './monitoring.gateway.js';
 import { MonitoringRuntimeState } from './monitoring-runtime-state.js';
 import { MonitoringService } from './monitoring.service.js';
 
 @Module({
+  imports: [AuthModule],
   controllers: [MonitoringController],
   providers: [MonitoringService, MonitoringGateway, MonitoringRuntimeState],
 })

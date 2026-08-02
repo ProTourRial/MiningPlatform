@@ -75,7 +75,7 @@ async function main(): Promise<void> {
   const configure = await responseFor(1);
   if (configure.error) throw new Error(`Configure failed: ${JSON.stringify(configure.error)}`);
 
-  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.3.0']);
+  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.3.0-alpha.2']);
   const subscribe = await responseFor(2);
   if (subscribe.error) throw new Error(`Subscribe failed: ${JSON.stringify(subscribe.error)}`);
   const subscribeResult = subscribe.result as [unknown, string, number];

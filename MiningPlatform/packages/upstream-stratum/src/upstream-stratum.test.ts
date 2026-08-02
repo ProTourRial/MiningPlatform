@@ -93,7 +93,7 @@ test('connects, receives a normalized job, and correlates an accepted share', as
     {
       host: '127.0.0.1',
       port: simulator.port,
-      userAgent: 'MiningPlatform-test/0.3.0',
+      userAgent: 'MiningPlatform-test/0.2.0-alpha.6',
       username: 'upstream.account',
       password: 'x',
       connectTimeoutMs: 2_000,
@@ -128,7 +128,7 @@ test('correlates an upstream rejection without throwing', async () => {
     {
       host: '127.0.0.1',
       port: simulator.port,
-      userAgent: 'MiningPlatform-test/0.3.0',
+      userAgent: 'MiningPlatform-test/0.2.0-alpha.6',
       username: 'upstream.account',
       password: 'x',
       connectTimeoutMs: 2_000,
@@ -168,7 +168,7 @@ test('retries an initial connection failure with exponential backoff', async () 
     {
       host: '127.0.0.1',
       port,
-      userAgent: 'MiningPlatform-retry-test/0.3.0',
+      userAgent: 'MiningPlatform-retry-test/0.2.0-alpha.6',
       username: 'upstream.account',
       password: 'x',
       connectTimeoutMs: 200,

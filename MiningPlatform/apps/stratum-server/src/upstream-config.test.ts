@@ -14,7 +14,7 @@ const legacy = {
   tls: false,
   username: 'account.worker',
   password: 'secret',
-  userAgent: 'MiningPlatform-test/0.3.0',
+  userAgent: 'MiningPlatform-test/0.2.0-alpha.6',
   connectTimeoutMs: 5_000,
   responseTimeoutMs: 10_000,
   maximumLineBytes: 16_384,

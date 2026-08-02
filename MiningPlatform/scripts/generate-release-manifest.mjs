@@ -13,9 +13,12 @@ const outputPath = resolve(process.argv[3] ?? resolve(payloadRoot, 'release-mani
 const artifactType = process.argv[4] ?? 'full-release';
 const suppliedPatchChecksum = process.argv[5];
 
+const excludedDirectories = new Set(['.git', '.next', '.turbo', 'coverage', 'dist', 'dist-release', 'node_modules']);
+
 async function walk(directory) {
   const output = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
     const absolute = resolve(directory, entry.name);
     if (entry.isDirectory()) output.push(...await walk(absolute));
     else if (entry.isFile()) output.push(absolute);
@@ -25,7 +28,11 @@ async function walk(directory) {
 
 const files = (await walk(payloadRoot))
   .map((absolute) => ({ absolute, path: relative(payloadRoot, absolute).split(sep).join('/') }))
-  .filter((entry) => !['release-manifest.json', 'installed-release-manifest.json'].includes(entry.path) && !entry.path.endsWith('.sha256'))
+  .filter((entry) =>
+    entry.path !== 'release-manifest.json' &&
+    !entry.path.endsWith('.sha256') &&
+    !entry.path.startsWith('packages/database/src/generated/')
+  )
   .sort((left, right) => left.path.localeCompare(right.path));
 const hash = createHash('sha256');
 for (const file of files) {
@@ -39,17 +46,17 @@ const patchChecksum = suppliedPatchChecksum ?? (artifactType === 'incremental-pa
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0',
-  releaseName: 'Identity & Access',
+  version: '0.3.0-alpha.2',
+  releaseName: 'Control Plane Hardening',
   artifactType,
-  schemaVersion: 7,
-  migration: '20260731190000_identity_access',
-  compatibleFrom: ['0.2.0-alpha.6'],
+  schemaVersion: 8,
+  migration: '20260803040000_auth_session_rotation_hardening',
+  compatibleFrom: ['0.3.0-alpha.1', '0.2.0-alpha.6'],
   patchChecksum,
   payloadChecksum,
-  checksumScope: 'sha256-payload-v1 excluding release-manifest.json, installed-release-manifest.json, and *.sha256',
+  checksumScope: 'sha256-payload-v1 excluding release-manifest.json and *.sha256',
   payloadFileCount: files.length,
-  buildDate: process.env.BUILD_DATE ?? '2026-07-31T18:52:00+07:00',
+  buildDate: process.env.BUILD_DATE ?? '2026-08-03T04:33:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',
   author: 'Abia Nugrahanto',
 };

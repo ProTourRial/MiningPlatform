@@ -1,6 +1,6 @@
 {
   "name": "@mining/outbox-worker",
-  "version": "0.3.0",
+  "version": "0.3.0-alpha.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,13 +9,14 @@
     "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('outbox-worker integration tests require PostgreSQL and Redis')\""
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
     "@mining/build-info": "workspace:*",
     "@mining/database": "workspace:*",
     "@mining/event-bus": "workspace:*",
-    "@mining/logger": "workspace:*"
+    "@mining/logger": "workspace:*",
+    "@mining/security": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.0.0",

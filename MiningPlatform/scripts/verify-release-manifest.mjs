@@ -11,9 +11,12 @@ import { relative, resolve, sep } from 'node:path';
 const payloadRoot = resolve(process.argv[2] ?? process.cwd());
 const manifest = JSON.parse(await readFile(resolve(payloadRoot, 'release-manifest.json'), 'utf8'));
 
+const excludedDirectories = new Set(['.git', '.next', '.turbo', 'coverage', 'dist', 'dist-release', 'node_modules']);
+
 async function walk(directory) {
   const output = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
     const absolute = resolve(directory, entry.name);
     if (entry.isDirectory()) output.push(...await walk(absolute));
     else if (entry.isFile()) output.push(absolute);
@@ -23,7 +26,11 @@ async function walk(directory) {
 
 const files = (await walk(payloadRoot))
   .map((absolute) => ({ absolute, path: relative(payloadRoot, absolute).split(sep).join('/') }))
-  .filter((entry) => !['release-manifest.json', 'installed-release-manifest.json'].includes(entry.path) && !entry.path.endsWith('.sha256'))
+  .filter((entry) =>
+    entry.path !== 'release-manifest.json' &&
+    !entry.path.endsWith('.sha256') &&
+    !entry.path.startsWith('packages/database/src/generated/')
+  )
   .sort((left, right) => left.path.localeCompare(right.path));
 const hash = createHash('sha256');
 for (const file of files) {

@@ -1,10 +1,4 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { PageShell } from '@/components/dashboard/page-shell';
-import { ProfilePanel } from '@/components/dashboard/control-plane/profile-panel';
-
-export default function Page() { return <PageShell title="Profile" description="Identitas akun, locale, timezone, role, dan status keamanan."><ProfilePanel /></PageShell>; }
+import { ProfileManagementPanel } from '@/components/dashboard/profile-management-panel';
+export default function Page() { return <PageShell title="Profile" description="Kelola identitas, bahasa, timezone, dan informasi mining account."><ProfileManagementPanel /></PageShell>; }

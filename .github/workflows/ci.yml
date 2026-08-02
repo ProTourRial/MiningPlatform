@@ -1,0 +1,142 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: MiningPlatform
+
+env:
+  DATABASE_URL: postgresql://mining:mining-test-password@127.0.0.1:5432/mining_platform_test?schema=public
+  REDIS_URL: redis://127.0.0.1:6379
+  APP_URL: https://mining.example.test
+  NODE_ENV: test
+  AUTH_JWT_SECRET: ci-only-jwt-secret-with-at-least-thirty-two-bytes
+  AUTH_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+  AUTH_IP_HASH_KEY: ci-only-hmac-key-with-at-least-thirty-two-bytes
+  AUTH_EXPOSE_TEST_TOKENS: "true"
+  AUTH_SECURE_COOKIES: "false"
+  STRATUM_IP_HASH_KEY: ci-only-stratum-hmac-key-at-least-thirty-two
+  STRATUM_DEV_MODE: "true"
+  STRATUM_AUTH_DRIVER: development
+  UPSTREAM_DRIVER: development
+  EMAIL_PROVIDER: disabled
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform_test
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: mining-test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate:deploy
+      - run: pnpm verify:v030-alpha2:static
+      - run: pnpm verify:payment-addresses
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm release:manifest:verify
+
+  migration-fresh:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform_test
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: mining-test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm verify:migration:v030-alpha2:fresh
+        env:
+          MIGRATION_TEST_ACK: v030-alpha2-fresh-empty-database
+
+  migration-upgrade:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform_test
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: mining-test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm verify:migration:v030-alpha2:upgrade
+        env:
+          MIGRATION_TEST_ACK: v030-alpha1-upgrade-copy

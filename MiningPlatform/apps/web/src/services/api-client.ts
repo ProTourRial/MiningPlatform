@@ -4,33 +4,45 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
-export class ApiError extends Error {
-  constructor(public readonly status: number, message: string, public readonly payload?: unknown) {
+export class ApiRequestError extends Error {
+  constructor(public readonly status: number, message: string) {
     super(message);
+    this.name = 'ApiRequestError';
   }
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}, allowRefresh = true): Promise<T> {
-  const headers = new Headers(init.headers);
-  if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
-  if (response.status === 401 && allowRefresh && !path.startsWith('/auth/')) {
-    const refreshed = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: '{}',
-      credentials: 'include',
-    });
-    if (refreshed.ok) return apiFetch<T>(path, init, false);
+async function execute(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${API_BASE_URL}${path}`, {
+    credentials: 'include',
+    ...init,
+    headers: {
+      'content-type': 'application/json',
+      ...init?.headers,
+    },
+  });
+}
+
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response = await execute(path, init);
+  const refreshExcluded = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/verify-email', '/auth/forgot-password', '/auth/reset-password'];
+  if (response.status === 401 && !refreshExcluded.includes(path)) {
+    const refreshed = await execute('/auth/refresh', { method: 'POST', body: '{}' });
+    if (refreshed.ok) response = await execute(path, init);
   }
-  const payload = response.headers.get('content-type')?.includes('application/json') ? await response.json() : await response.text();
+
   if (!response.ok) {
-    const message = typeof payload === 'object' && payload && 'message' in payload
-      ? String((payload as { message: unknown }).message)
-      : `API request failed (${response.status})`;
-    throw new ApiError(response.status, message, payload);
+    let detail = `API request failed with status ${response.status}`;
+    try {
+      const payload = await response.json() as { message?: string | string[] };
+      if (payload.message) detail = Array.isArray(payload.message) ? payload.message.join(', ') : payload.message;
+    } catch {
+      // Preserve the status-based message when the response is not JSON.
+    }
+    throw new ApiRequestError(response.status, detail);
   }
-  return payload as T;
+
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
 }

@@ -2,7 +2,7 @@
 
 Owner: Abia Nugrahanto  
 Status: Accepted baseline  
-Version: 0.3.0
+Version: 0.3.0-alpha.1
 
 ## Tujuan
 
@@ -77,4 +77,4 @@ MiningPlatform
 
 ## Deployment saat ini
 
-Logical plane tidak berarti satu microservice per context. Pada v0.3.0, beberapa bounded context masih berada dalam deployment yang sama. Pemisahan fisik dilakukan setelah throughput, security isolation, atau ownership membutuhkannya.
+Logical plane tidak berarti satu microservice per context. Pada alpha.5, beberapa bounded context masih berada dalam deployment yang sama. Pemisahan fisik dilakukan setelah throughput, security isolation, atau ownership membutuhkannya.

@@ -1,0 +1,8 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+
+* @ProTourRial
+/.github/workflows/ @ProTourRial
+/MiningPlatform/packages/database/prisma/ @ProTourRial
+/MiningPlatform/apps/api/src/modules/auth/ @ProTourRial
+/MiningPlatform/apps/wallet-worker/ @ProTourRial

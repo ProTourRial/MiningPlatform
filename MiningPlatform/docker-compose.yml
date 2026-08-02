@@ -5,11 +5,11 @@
 name: mining-platform
 
 x-build-metadata: &build-metadata
-  MINING_BUILD_VERSION: ${MINING_BUILD_VERSION:-0.3.0}
+  MINING_BUILD_VERSION: ${MINING_BUILD_VERSION:-0.3.0-alpha.2}
   GIT_COMMIT: ${GIT_COMMIT:-UNCOMMITTED}
-  BUILD_DATE: ${BUILD_DATE:-2026-07-31T17:54:00+07:00}
-  SCHEMA_VERSION: ${SCHEMA_VERSION:-6}
-  SCHEMA_MIGRATION: ${SCHEMA_MIGRATION:-20260731110000_upstream_resilience}
+  BUILD_DATE: ${BUILD_DATE:-2026-08-03T04:33:00+07:00}
+  SCHEMA_VERSION: ${SCHEMA_VERSION:-8}
+  SCHEMA_MIGRATION: ${SCHEMA_MIGRATION:-20260803040000_auth_session_rotation_hardening}
 
 
 services:
@@ -23,6 +23,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    ports:
+      - "127.0.0.1:${POSTGRES_PUBLIC_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -66,11 +68,23 @@ services:
       NODE_ENV: production
       PORT: 4000
       APP_URL: ${APP_URL:?Set APP_URL in .env}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
       EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
       REALTIME_EVENT_GROUP: ${REALTIME_EVENT_GROUP:-api-realtime-v1}
       ENABLE_DEVELOPMENT_DASHBOARD: "false"
+      ENABLE_REALTIME_GATEWAY: ${ENABLE_REALTIME_GATEWAY:-true}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?Set AUTH_JWT_SECRET in .env}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?Set AUTH_ENCRYPTION_KEY in .env}
+      AUTH_IP_HASH_KEY: ${AUTH_IP_HASH_KEY:?Set AUTH_IP_HASH_KEY in .env}
+      AUTH_TOKEN_ISSUER: ${AUTH_TOKEN_ISSUER:-mining-platform}
+      AUTH_TOKEN_AUDIENCE: ${AUTH_TOKEN_AUDIENCE:-mining-platform-control-plane}
+      AUTH_ACCESS_TOKEN_SECONDS: ${AUTH_ACCESS_TOKEN_SECONDS:-900}
+      AUTH_REFRESH_TOKEN_DAYS: ${AUTH_REFRESH_TOKEN_DAYS:-30}
+      AUTH_SECURE_COOKIES: ${AUTH_SECURE_COOKIES:-true}
+      AUTH_EXPOSE_TEST_TOKENS: "false"
+      SUPPORT_PAYMENTS_ENABLED: ${SUPPORT_PAYMENTS_ENABLED:-false}
       ENABLE_SWAGGER: "false"
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
@@ -87,6 +101,9 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api/v1
+        NEXT_PUBLIC_SOCKET_URL: ""
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -118,23 +135,38 @@ services:
       STRATUM_AUTH_WINDOW_MS: ${STRATUM_AUTH_WINDOW_MS:-60000}
       STRATUM_AUTH_LOCK_MS: ${STRATUM_AUTH_LOCK_MS:-900000}
       STRATUM_IP_HASH_KEY: ${STRATUM_IP_HASH_KEY:?Set STRATUM_IP_HASH_KEY in .env}
-      UPSTREAM_DRIVER: tcp
-      UPSTREAM_HOST: ${UPSTREAM_HOST:?Set UPSTREAM_HOST in .env}
+      UPSTREAM_DRIVER: ${UPSTREAM_DRIVER:-multi}
+      UPSTREAM_HOST: ${UPSTREAM_HOST:-}
       UPSTREAM_PORT: ${UPSTREAM_PORT:-3333}
       UPSTREAM_TLS: ${UPSTREAM_TLS:-false}
       UPSTREAM_SERVER_NAME: ${UPSTREAM_SERVER_NAME:-}
-      UPSTREAM_USERNAME: ${UPSTREAM_USERNAME:?Set UPSTREAM_USERNAME in .env}
-      UPSTREAM_PASSWORD: ${UPSTREAM_PASSWORD:?Set UPSTREAM_PASSWORD in .env}
-      UPSTREAM_USER_AGENT: ${UPSTREAM_USER_AGENT:-MiningPlatform/0.3.0}
+      UPSTREAM_USERNAME: ${UPSTREAM_USERNAME:-}
+      UPSTREAM_PASSWORD: ${UPSTREAM_PASSWORD:-}
+      UPSTREAM_USER_AGENT: ${UPSTREAM_USER_AGENT:-MiningPlatform/0.3.0-alpha.2}
       UPSTREAM_CONNECT_TIMEOUT_MS: ${UPSTREAM_CONNECT_TIMEOUT_MS:-5000}
       UPSTREAM_RESPONSE_TIMEOUT_MS: ${UPSTREAM_RESPONSE_TIMEOUT_MS:-10000}
       UPSTREAM_MAXIMUM_ATTEMPTS: ${UPSTREAM_MAXIMUM_ATTEMPTS:-5}
+      UPSTREAM_POOLS_JSON: ${UPSTREAM_POOLS_JSON:-}
+      UPSTREAM_MAXIMUM_RECOVERY_CYCLES: ${UPSTREAM_MAXIMUM_RECOVERY_CYCLES:-5}
+      UPSTREAM_RECONNECT_BASE_MS: ${UPSTREAM_RECONNECT_BASE_MS:-250}
+      UPSTREAM_RECONNECT_MAXIMUM_MS: ${UPSTREAM_RECONNECT_MAXIMUM_MS:-30000}
+      UPSTREAM_RECONNECT_JITTER_RATIO: ${UPSTREAM_RECONNECT_JITTER_RATIO:-0.2}
+      UPSTREAM_SHARE_QUEUE_CAPACITY: ${UPSTREAM_SHARE_QUEUE_CAPACITY:-256}
+      UPSTREAM_SHARE_QUEUE_TIMEOUT_MS: ${UPSTREAM_SHARE_QUEUE_TIMEOUT_MS:-10000}
+      UPSTREAM_JOB_CACHE_MAXIMUM_ENTRIES: ${UPSTREAM_JOB_CACHE_MAXIMUM_ENTRIES:-512}
+      VARDIFF_ENABLED: ${VARDIFF_ENABLED:-false}
+      VARDIFF_TARGET_SHARE_INTERVAL_SECONDS: ${VARDIFF_TARGET_SHARE_INTERVAL_SECONDS:-15}
+      VARDIFF_RETARGET_INTERVAL_SECONDS: ${VARDIFF_RETARGET_INTERVAL_SECONDS:-90}
+      VARDIFF_MINIMUM_DIFFICULTY: ${VARDIFF_MINIMUM_DIFFICULTY:-1}
+      VARDIFF_MAXIMUM_DIFFICULTY: ${VARDIFF_MAXIMUM_DIFFICULTY:-1000000000}
+      VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR: ${VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR:-4}
+      VARDIFF_MINIMUM_SAMPLES: ${VARDIFF_MINIMUM_SAMPLES:-4}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     ports:
-      - "127.0.0.1:3333:3333"
+      - "${STRATUM_PUBLISH_ADDRESS:-127.0.0.1}:${STRATUM_PUBLIC_PORT:-3333}:3333"
     volumes:
       - stratum_data:/app/data/stratum
     networks: [mining-network]
@@ -154,6 +186,11 @@ services:
       OUTBOX_BATCH_SIZE: ${OUTBOX_BATCH_SIZE:-100}
       OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
       OUTBOX_LOCK_TIMEOUT_MS: ${OUTBOX_LOCK_TIMEOUT_MS:-60000}
+      APP_URL: ${APP_URL:?Set APP_URL in .env}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?Set AUTH_ENCRYPTION_KEY in .env}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-disabled}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
@@ -226,6 +263,7 @@ services:
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     volumes:
       - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
     networks: [mining-network]
 
   grafana:
@@ -233,6 +271,8 @@ services:
     restart: unless-stopped
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks: [mining-network]
 
   nginx:

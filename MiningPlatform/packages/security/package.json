@@ -1,6 +1,6 @@
 {
   "name": "@mining/security",
-  "version": "0.3.0",
+  "version": "0.3.0-alpha.2",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -9,7 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node --test dist/*.test.js"
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {},
   "devDependencies": {

@@ -1,10 +1,4 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { PageShell } from '@/components/dashboard/page-shell';
-import { ApiKeysPanel } from '@/components/dashboard/control-plane/api-keys-panel';
-
-export default function Page() { return <PageShell title="API Access" description="API key menggunakan permission terbatas dan secret satu kali tampil."><ApiKeysPanel /></PageShell>; }
+import { ApiKeyManagementPanel } from '@/components/dashboard/api-key-management-panel';
+export default function Page() { return <PageShell title="API Access" description="Buat API key berscope terbatas untuk integrasi monitoring dan otomasi."><ApiKeyManagementPanel /></PageShell>; }

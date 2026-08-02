@@ -12,5 +12,7 @@ Owner: Abia Nugrahanto
 | 0006 | Event Delivery and Transactional Outbox | Accepted |
 | 0007 | Production Miner Identity | Accepted |
 | 0008 | Multi-Upstream Resilience | Accepted |
+| 0009 | Control Plane Identity and Revocable Sessions | Accepted |
 
 Nomor ADR tidak boleh digunakan ulang. Perubahan keputusan yang signifikan dibuat sebagai ADR baru yang menyatakan ADR lama superseded.
+

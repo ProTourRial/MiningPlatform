@@ -1,12 +1,11 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { PageShell } from '@/components/dashboard/page-shell';
-import { WorkersManager } from '@/components/dashboard/control-plane/workers-manager';
+import { WorkerManagementPanel } from '@/components/dashboard/worker-management-panel';
 
 export default function Page() {
-  return <PageShell title="Workers" description="Worker, credential, status, dan statistik dipisahkan agar lifecycle miner tetap dapat diaudit."><WorkersManager /></PageShell>;
+  return (
+    <PageShell title="Workers" description="Daftarkan worker, lihat status, dan rotasi kredensial Stratum produksi.">
+      <WorkerManagementPanel />
+    </PageShell>
+  );
 }

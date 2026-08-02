@@ -5,9 +5,7 @@
  */
 
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { HealthModule } from '../health/health.module';
 import { SystemController } from './system.controller';
 
-@Module({ imports: [AuthModule, HealthModule], controllers: [SystemController] })
+@Module({ controllers: [SystemController] })
 export class SystemModule {}

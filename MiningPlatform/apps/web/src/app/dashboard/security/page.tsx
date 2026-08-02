@@ -1,10 +1,4 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { PageShell } from '@/components/dashboard/page-shell';
-import { SecurityPanel } from '@/components/dashboard/control-plane/security-panel';
-
-export default function Page() { return <PageShell title="Security" description="Password, TOTP, backup code, dan session perangkat."><SecurityPanel /></PageShell>; }
+import { SecurityManagementPanel } from '@/components/dashboard/security-management-panel';
+export default function Page() { return <PageShell title="Security" description="Kelola TOTP 2FA, recovery code, dan sesi aktif."><SecurityManagementPanel /></PageShell>; }

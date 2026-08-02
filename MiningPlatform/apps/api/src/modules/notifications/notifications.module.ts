@@ -1,11 +1,8 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { Module } from '@nestjs/common';
-import { NotificationsController } from './notifications.controller';
+import { AuthModule } from '../auth/auth.module.js';
+import { NotificationsController } from './notifications.controller.js';
+import { NotificationsService } from './notifications.service.js';
 
-@Module({ controllers: [NotificationsController] })
+@Module({ imports: [AuthModule], controllers: [NotificationsController], providers: [NotificationsService] })
 export class NotificationsModule {}

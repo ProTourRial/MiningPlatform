@@ -4,7 +4,7 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { prisma, type Prisma } from '@mining/database';
+import { prisma } from '@mining/database';
 import { generateWorkerCredential } from '@mining/security';
 
 interface CredentialListRow {
@@ -85,7 +85,7 @@ async function createOrRotate(mode: 'create' | 'rotate', identity: string, args:
   const generated = await generateWorkerCredential();
   const expiresAt = optionalExpiry(args);
 
-  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  await prisma.$transaction(async (tx) => {
     if (mode === 'rotate') {
       const credentialTx = tx as unknown as WorkerCredentialDatabase;
       await credentialTx.workerCredential.updateMany({

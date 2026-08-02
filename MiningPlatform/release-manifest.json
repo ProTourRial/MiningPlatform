@@ -1,24 +1,19 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0",
-  "releaseName": "Identity & Access",
-  "artifactType": "direct-overwrite-source-overlay",
-  "schemaVersion": 7,
-  "migration": "20260731190000_identity_access",
+  "version": "0.3.0-alpha.2",
+  "releaseName": "Control Plane Hardening",
+  "artifactType": "full-release",
+  "schemaVersion": 8,
+  "migration": "20260803040000_auth_session_rotation_hardening",
   "compatibleFrom": [
-    "0.2.0-alpha.3",
-    "0.2.0-alpha.4",
-    "0.2.0-alpha.5",
-    "0.2.0-alpha.6",
-    "0.3.0"
+    "0.3.0-alpha.1",
+    "0.2.0-alpha.6"
   ],
-  "patchChecksum": "NOT_APPLICABLE",
-  "payloadChecksum": "e87221bfa2c4fdc658b334905f503b897939f0ac651d66d47487f89fac579781",
-  "checksumScope": "sha256-payload-v1 excluding release-manifest.json, installed-release-manifest.json, and *.sha256",
-  "payloadFileCount": 412,
-  "buildDate": "2026-07-31T18:52:00+07:00",
+  "patchChecksum": "NOT_PACKAGED",
+  "payloadChecksum": "6063de4b9e3f9ce5c56c8618b772f7565e71d7116eacbea5a292595fb8b219ff",
+  "checksumScope": "sha256-payload-v1 excluding release-manifest.json and *.sha256",
+  "payloadFileCount": 408,
+  "buildDate": "2026-08-03T04:33:00+07:00",
   "gitCommit": "UNCOMMITTED",
-  "author": "Abia Nugrahanto",
-  "packagingRevision": "r1",
-  "installationMode": "direct-overwrite-preserve-extra-files"
+  "author": "Abia Nugrahanto"
 }

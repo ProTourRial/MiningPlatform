@@ -5,6 +5,7 @@
  */
 
 import Link from 'next/link';
+import { LogoutButton } from './logout-button';
 
 const menu = [
   ['Overview', '/dashboard'],
@@ -16,7 +17,7 @@ const menu = [
   ['Security', '/dashboard/security'],
   ['Settings', '/dashboard/settings'],
   ['API', '/dashboard/api'],
-  ['Audit', '/dashboard/audit'],
+  ['Admin', '/dashboard/admin'],
 ] as const;
 
 export function Sidebar() {
@@ -28,6 +29,7 @@ export function Sidebar() {
           <Link key={href} href={href} className="rounded-lg px-3 py-2 text-sm text-[var(--muted)] hover:bg-white/5 hover:text-white">{label}</Link>
         ))}
       </nav>
+      <LogoutButton />
     </aside>
   );
 }

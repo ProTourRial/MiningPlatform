@@ -1,47 +1,65 @@
 # Changelog
 
-## [0.3.0-packaging-r1] - 2026-07-31
-
-- Added direct-overwrite recovery for existing large working directories.
-- Added managed-source verification that ignores node_modules, build caches, and user-local extra files.
-- Added the missing delete-manifest utility and robust PowerShell/shell recovery scripts.
-
-
-## [0.3.0] - 2026-07-31
+## [0.3.0-alpha.2] - 2026-08-03
 
 ### Added
 
-- User registration, email verification, login, logout, JWT access tokens, rotating refresh sessions, and device session management.
-- Forgot, reset, and change password flows.
-- TOTP two-factor authentication and one-time backup codes.
-- Permission-based RBAC with USER and OWNER roles and domain ownership checks.
-- Worker CRUD, statistics, universal hardware declaration, and production dashboard read models.
-- Worker credential create, rotate, revoke, expire, created-by, and last-used lifecycle through the Control Plane API.
-- API key lifecycle management and current-user audit log.
-- Redis-backed production authentication rate limiting with development-only memory fallback.
-- Identity event contracts, ADR-0009, API documentation, migration verification, and release review UI.
-- Database schema version 7 and migration `20260731190000_identity_access`.
-
-### Security
-
-- Web credentials and Stratum worker credentials remain separate.
-- Refresh/account/API-key/backup-code secrets are persisted only as hashes.
-- TOTP secrets are encrypted using AES-256-GCM.
-- JWT requests are checked against authoritative PostgreSQL session state.
-- Password change/reset and refresh-token reuse revoke sessions.
-- Raw IP addresses are replaced with HMAC-derived identifiers.
-- Production rejects development identity delivery and memory-only rate limiting.
+- Root GitHub Actions workflows with PostgreSQL, Redis, frozen lockfile installation, fresh migration, upgrade migration, and Docker E2E jobs.
+- Persistent refresh-token family history, replay detection, family-wide revocation, and PostgreSQL integration coverage for parallel refresh requests.
+- Resend-backed verification and password-reset delivery through the transactional outbox.
+- Disabled-by-default maintenance donation and future site-payment receiving-address registry.
+- Database snapshot/restore tooling, rollback procedure, refresh-token replay metric, and alert rule.
 
 ### Fixed
 
-- Removed duplicate `User.notifications` relation that would prevent Prisma Client generation.
-- Corrected production dashboard hashrate field mapping to `HashrateSnapshot.hashrate`.
-- Added a dedicated audit dashboard page and static duplicate-schema-member release check.
+- Worker rename now returns a conflict for duplicate names and handles concurrent unique-constraint races.
+- Worker deletion, credential revocation, logout, and password-reset session revocation are transactional.
+- Authentication TTL values reject invalid, zero, negative, or excessive values.
+- Dockerfiles use `pnpm install --frozen-lockfile` and copy `pnpm-lock.yaml`.
+
+### Security
+
+- A replayed or concurrently reused refresh token revokes its entire token family.
+- Public payment addresses remain disabled by default and cannot credit user balances.
+- Identity email delivery requires HTTPS application URLs in production and uses provider idempotency keys.
+
+### Validation boundary
+
+- Static checks and release-manifest verification completed in the packaging environment.
+- pnpm/Prisma/PostgreSQL/Redis/Docker execution must complete successfully in GitHub Actions before the build is described as validated.
+
+## [0.3.0-alpha.1] - 2026-08-03
+
+### Added
+
+- Control Plane registration, email verification, password login, rotating refresh sessions, logout, password reset, and TOTP 2FA.
+- RBAC for USER, ADMIN, and OWNER with mandatory TOTP for administrator endpoints.
+- User profile, active-session, scoped API-key, Worker CRUD, and worker credential management APIs.
+- Production dashboard snapshot and authenticated WebSocket worker rooms.
+- Encrypted notification-channel registry and notification inbox endpoints.
+- Schema version 7 and control-plane migration.
+- ADR-0009, Control Plane architecture, upgrade guide, and release validation scripts.
+
+### Fixed
+
+- Website worker creation now produces credentials accepted by the production Stratum authenticator.
+- Production realtime monitoring no longer depends on the development dashboard flag.
+- Docker Compose passes multi-upstream, reconnect, share-queue, job-cache, and VarDiff settings.
+- Full-release packaging excludes Git metadata and uses a regenerated payload manifest.
+
+### Security
+
+- Passwords and worker secrets use versioned scrypt hashes.
+- Refresh tokens and API keys are persisted only as hashes.
+- Browser tokens use HttpOnly SameSite=Strict cookies and server-side session revocation.
+- TOTP secrets use AES-256-GCM with a deployment-provided key.
+- Authentication, worker, API-key, profile, and administrator mutations are audited.
 
 ### Known gaps
 
-- Production email delivery provider, API-key request authentication, Docker integration, and database migration verification remain pending.
-- Reward settlement, wallet orchestration, and payout remain disabled.
+- Provider-specific notification delivery, distributed API rate limiting, public TLS automation, DDoS service, and IP reputation remain pending.
+- Reward settlement, ledger posting, wallet orchestration, and payouts remain disabled.
+- Full pnpm/Prisma/Docker build and integration validation must run in the target environment.
 
 ## [0.2.0-alpha.6] - 2026-07-31
 

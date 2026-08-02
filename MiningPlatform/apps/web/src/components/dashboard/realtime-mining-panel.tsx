@@ -1,44 +1,30 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
+import type { HashrateUpdatedPayload } from '@mining/shared';
+import { ApiRequestError, apiRequest } from '@/services/api-client';
 
-interface MiningSocket {
-  on(event: string, listener: (payload: any) => void): MiningSocket;
-  disconnect(): void;
-}
-import type {
-  HashrateUpdatedPayload,
-  MinerSessionAuthorizedPayload,
-  MinerSessionDisconnectedPayload,
-} from '@mining/shared';
+const configuredSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+const SOCKET_URL = configuredSocketUrl === undefined ? 'http://localhost:4000' : configuredSocketUrl.replace(/\/$/, '');
+const SOCKET_NAMESPACE_URL = `${SOCKET_URL}/mining`;
 
-const DEVELOPMENT_WORKER_ID =
-  process.env.NEXT_PUBLIC_DEVELOPMENT_WORKER_ID ?? 'dev-7d9a4df2e77952c0657de069';
-const DEVELOPMENT_TOKEN =
-  process.env.NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN ?? 'local-development-dashboard';
-
-interface WorkerSnapshot {
-  id: string;
-  name: string;
-  status: string;
+interface DashboardOverview {
+  workers: { total: number; byStatus: Record<string, number> };
+  shares: { accepted: number; rejected: number; byStatus: Record<string, number> };
   hashrate5m: string;
-  acceptedShares5m: number;
-  rejectedShares5m: number;
-  recordedAt: string | null;
+  unreadNotifications: number;
+  workerSnapshots: Array<{ workerId: string; hashrate: string }>;
+  generatedAt: string;
+  accounting: { enabled: boolean; reason: string };
 }
 
-function formatHashrate(value: string): string {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) return '0 H/s';
-  const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s'];
-  let scaled = number;
+function formatHashrate(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '0 H/s';
+  const units = ['H/s', 'KH/s', 'MH/s', 'GH/s', 'TH/s', 'PH/s', 'EH/s'];
+  let scaled = value;
   let unit = 0;
   while (scaled >= 1_000 && unit < units.length - 1) {
     scaled /= 1_000;
@@ -48,74 +34,69 @@ function formatHashrate(value: string): string {
 }
 
 export function RealtimeMiningPanel() {
+  const router = useRouter();
+  const [overview, setOverview] = useState<DashboardOverview>();
+  const [workerHashrates, setWorkerHashrates] = useState<Record<string, number>>({});
   const [connected, setConnected] = useState(false);
-  const [workerStatus, setWorkerStatus] = useState('OFFLINE');
-  const [hashrate, setHashrate] = useState('0');
-  const [acceptedShares, setAcceptedShares] = useState(0);
-  const [rejectedShares, setRejectedShares] = useState(0);
-  const [recordedAt, setRecordedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
-    void fetch(`${apiBase}/monitoring/development/workers/${DEVELOPMENT_WORKER_ID}/snapshot`, {
-      headers: { 'x-development-dashboard-token': DEVELOPMENT_TOKEN },
-    })
-      .then((response) => (response.ok ? (response.json() as Promise<WorkerSnapshot>) : null))
-      .then((snapshot) => {
-        if (!snapshot) return;
-        setWorkerStatus(snapshot.status);
-        setHashrate(snapshot.hashrate5m);
-        setAcceptedShares(snapshot.acceptedShares5m);
-        setRejectedShares(snapshot.rejectedShares5m);
-        setRecordedAt(snapshot.recordedAt);
+    void apiRequest<DashboardOverview>('/monitoring/dashboard/overview')
+      .then((data) => {
+        setOverview(data);
+        setWorkerHashrates(Object.fromEntries(data.workerSnapshots.map((snapshot) => [snapshot.workerId, Number(snapshot.hashrate)])));
       })
-      .catch(() => undefined);
+      .catch((cause: unknown) => {
+        if (cause instanceof ApiRequestError && cause.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        setError('Ringkasan produksi tidak dapat dimuat.');
+      });
 
-    const socket = io('/mining', {
+    const socket = io(SOCKET_NAMESPACE_URL, {
       path: '/socket.io',
       withCredentials: true,
-      auth: { token: DEVELOPMENT_TOKEN },
-    } as never) as unknown as MiningSocket;
+    });
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('hashrate.updated', (payload: HashrateUpdatedPayload) => {
-      if (payload.workerId !== DEVELOPMENT_WORKER_ID) return;
-      setHashrate(payload.hashesPerSecond);
-      setAcceptedShares(payload.acceptedShares);
-      setRejectedShares(payload.rejectedShares);
-      setRecordedAt(payload.recordedAt);
+      setWorkerHashrates((current) => ({ ...current, [payload.workerId]: Number(payload.hashesPerSecond) }));
+      setOverview((current) => current ? {
+        ...current,
+        shares: {
+          ...current.shares,
+          accepted: current.shares.accepted + payload.acceptedShares,
+          rejected: current.shares.rejected + payload.rejectedShares,
+        },
+        generatedAt: payload.recordedAt,
+      } : current);
     });
-    socket.on('worker.online', (payload: MinerSessionAuthorizedPayload) => {
-      if (payload.workerId === DEVELOPMENT_WORKER_ID) setWorkerStatus('ONLINE');
-    });
-    socket.on('worker.offline', (payload: MinerSessionDisconnectedPayload) => {
-      if (payload.workerId === DEVELOPMENT_WORKER_ID) setWorkerStatus('OFFLINE');
-    });
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+    return () => socket.disconnect();
+  }, [router]);
+
+  const totalHashrate = useMemo(
+    () => Object.values(workerHashrates).reduce((sum, value) => sum + value, 0),
+    [workerHashrates],
+  );
 
   const cards = [
-    ['Worker', workerStatus],
-    ['Hashrate 5 Menit', formatHashrate(hashrate)],
-    ['Accepted Share', acceptedShares.toString()],
-    ['Rejected Share', rejectedShares.toString()],
+    ['Workers', overview?.workers.total.toString() ?? '—'],
+    ['Online', (overview?.workers.byStatus.ONLINE ?? 0).toString()],
+    ['Hashrate 5 Menit', formatHashrate(totalHashrate || Number(overview?.hashrate5m ?? 0))],
+    ['Accepted / Rejected', overview ? `${overview.shares.accepted} / ${overview.shares.rejected}` : '—'],
   ];
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Pipeline Mining Realtime</h2>
-          <p className="text-sm text-[var(--muted)]">
-            Data pengembangan dari Stratum, outbox, Redis Stream, mining worker, dan WebSocket.
-          </p>
+          <h2 className="text-lg font-semibold">Dashboard Mining Produksi</h2>
+          <p className="text-sm text-[var(--muted)]">Snapshot PostgreSQL dan pembaruan Redis Stream melalui WebSocket terautentikasi.</p>
         </div>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-[var(--muted)]">
-          WebSocket {connected ? 'terhubung' : 'terputus'}
-        </span>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-[var(--muted)]">WebSocket {connected ? 'terhubung' : 'terputus'}</span>
       </div>
+      {error && <p className="rounded-xl border border-red-300/20 bg-red-300/5 p-3 text-sm text-red-100">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map(([label, value]) => (
           <article key={label} className="rounded-2xl border border-white/10 bg-[var(--surface)] p-5">
@@ -124,9 +105,10 @@ export function RealtimeMiningPanel() {
           </article>
         ))}
       </div>
-      <p className="text-xs text-[var(--muted)]">
-        Pembaruan terakhir: {recordedAt ? new Date(recordedAt).toLocaleString('id-ID') : 'belum ada share tervalidasi'}
-      </p>
+      <div className="rounded-2xl border border-amber-300/15 bg-amber-300/5 p-4 text-sm text-amber-100">
+        Accounting tetap dinonaktifkan: {overview?.accounting.reason ?? 'reward settlement, wallet orchestration, dan payout belum melewati release gate.'}
+      </div>
+      <p className="text-xs text-[var(--muted)]">Pembaruan terakhir: {overview?.generatedAt ? new Date(overview.generatedAt).toLocaleString('id-ID') : 'belum tersedia'}</p>
     </section>
   );
 }

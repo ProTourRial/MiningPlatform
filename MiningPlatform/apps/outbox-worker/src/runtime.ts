@@ -9,6 +9,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { prisma } from '@mining/database';
 import { RedisStreamEventBus, type DomainEvent } from '@mining/event-bus';
 import { createLogger } from '@mining/logger';
+import { deliverControlPlaneEmail } from './email-delivery.js';
 
 const buildInfo = getBuildInfo('outbox-worker');
 
@@ -85,11 +86,13 @@ async function dispatchBatch(): Promise<number> {
         idempotencyKey: claimed.idempotencyKey,
         payload: claimed.payload,
       };
+      const emailDelivered = await deliverControlPlaneEmail(event);
       await publisher.publish(event);
       await prisma.outboxEvent.update({
         where: { id: claimed.id },
         data: { status: 'PUBLISHED', publishedAt: new Date(), lastError: null },
       });
+      logger.info({ eventId: event.eventId, eventName: event.eventName, emailDelivered }, 'outbox event dispatched');
       dispatched += 1;
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Unknown outbox dispatch error';

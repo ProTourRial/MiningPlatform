@@ -41,6 +41,29 @@ export class HealthService implements OnModuleDestroy {
     };
   }
 
+
+  async domain() {
+    const staleThreshold = new Date(Date.now() - 5 * 60 * 1_000);
+    const [pendingOutbox, staleOutbox, failedOutbox, upstreamPools, activeSessions, lockedCredentials] = await Promise.all([
+      prisma.outboxEvent.count({ where: { status: 'PENDING' } }),
+      prisma.outboxEvent.count({ where: { status: { in: ['PENDING', 'PROCESSING'] }, availableAt: { lt: staleThreshold } } }),
+      prisma.outboxEvent.count({ where: { status: { in: ['FAILED', 'DEAD_LETTER'] } } }),
+      prisma.upstreamPool.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.minerSession.count({ where: { status: { in: ['AUTHORIZED', 'ACTIVE', 'DEGRADED'] } } }),
+      prisma.workerCredential.count({ where: { lockedUntil: { gt: new Date() } } }),
+    ]);
+    const degraded = staleOutbox > 0 || failedOutbox > 0 || upstreamPools.some((pool) => ['DEGRADED', 'CIRCUIT_OPEN', 'OFFLINE'].includes(pool.status));
+    return {
+      status: degraded ? 'degraded' : 'ok',
+      outbox: { pending: pendingOutbox, stale: staleOutbox, failedOrDeadLetter: failedOutbox },
+      upstreamPools,
+      mining: { activeSessions },
+      security: { lockedWorkerCredentials: lockedCredentials },
+      accounting: { enabled: false, payoutsEnabled: process.env.PAYOUTS_ENABLED === 'true' },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   async onModuleDestroy(): Promise<void> {
     if (this.redis?.isOpen) await this.redis.quit();
     await prisma.$disconnect();

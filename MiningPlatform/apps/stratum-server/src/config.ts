@@ -112,17 +112,28 @@ export function loadStratumConfig(): StratumServerConfig {
     throw new Error('Production Stratum requires UPSTREAM_DRIVER=tcp or multi');
   }
 
-  const upstreamHost = process.env.UPSTREAM_HOST ?? '127.0.0.1';
+  const upstreamPoolsJson = process.env.UPSTREAM_POOLS_JSON;
+  if (upstreamDriver === 'multi' && !upstreamPoolsJson?.trim()) {
+    throw new Error('UPSTREAM_DRIVER=multi requires a non-empty UPSTREAM_POOLS_JSON array');
+  }
+  if (
+    upstreamDriver === 'tcp' &&
+    (!process.env.UPSTREAM_HOST?.trim() || !process.env.UPSTREAM_USERNAME?.trim() || !process.env.UPSTREAM_PASSWORD?.trim())
+  ) {
+    throw new Error('UPSTREAM_DRIVER=tcp requires UPSTREAM_HOST, UPSTREAM_USERNAME, and UPSTREAM_PASSWORD');
+  }
+
+  const upstreamHost = process.env.UPSTREAM_HOST?.trim() || '127.0.0.1';
   const upstreamPort = positiveInteger(process.env.UPSTREAM_PORT, 3334);
   const upstreamTls = process.env.UPSTREAM_TLS === 'true';
   const upstreamServerName = process.env.UPSTREAM_SERVER_NAME;
-  const upstreamUsername = process.env.UPSTREAM_USERNAME ?? 'upstream.account';
-  const upstreamPassword = process.env.UPSTREAM_PASSWORD ?? 'x';
-  const upstreamUserAgent = process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.3.0';
+  const upstreamUsername = process.env.UPSTREAM_USERNAME?.trim() || 'unused';
+  const upstreamPassword = process.env.UPSTREAM_PASSWORD?.trim() || 'unused';
+  const upstreamUserAgent = process.env.UPSTREAM_USER_AGENT ?? 'MiningPlatform/0.3.0-alpha.2';
   const upstreamConnectTimeoutMs = positiveInteger(process.env.UPSTREAM_CONNECT_TIMEOUT_MS, 5_000);
   const upstreamResponseTimeoutMs = positiveInteger(process.env.UPSTREAM_RESPONSE_TIMEOUT_MS, 10_000);
   const maximumLineBytes = positiveInteger(process.env.STRATUM_MAX_LINE_BYTES, 16_384);
-  const upstreamPools = parseUpstreamPoolsJson(process.env.UPSTREAM_POOLS_JSON, {
+  const upstreamPools = parseUpstreamPoolsJson(upstreamPoolsJson, {
     host: upstreamHost,
     port: upstreamPort,
     tls: upstreamTls,

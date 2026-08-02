@@ -13,53 +13,71 @@ const COST = 16_384;
 const BLOCK_SIZE = 8;
 const PARALLELIZATION = 1;
 
-function derive(value: string, salt: Buffer, keyLength: number, cost: number, blockSize: number, parallelization: number) {
-  return new Promise<Buffer>((resolve, reject) => {
-    nodeScrypt(
-      value,
-      salt,
-      keyLength,
-      { N: cost, r: blockSize, p: parallelization, maxmem: 64 * 1024 * 1024 },
-      (error, derivedKey) => (error ? reject(error) : resolve(derivedKey)),
-    );
+function derive(
+  value: string,
+  salt: Buffer,
+  keyLength: number,
+  options: { N: number; r: number; p: number; maxmem: number },
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    nodeScrypt(value, salt, keyLength, options, (error, derivedKey) => {
+      if (error) reject(error);
+      else resolve(derivedKey);
+    });
   });
 }
 
-function parsePositive(value: string | undefined): number {
+function positiveInteger(value: string, field: string): number {
   const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error('Invalid password hash parameter');
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error(`Invalid ${field} in password hash`);
   return parsed;
 }
 
 export function assertPasswordPolicy(password: string): void {
-  if (password.length < 12) throw new Error('Password must contain at least 12 characters');
-  if (password.length > 256) throw new Error('Password is too long');
+  if (password.length < 12 || password.length > 128) {
+    throw new Error('Password must contain between 12 and 128 characters');
+  }
   if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-    throw new Error('Password must include uppercase, lowercase, and numeric characters');
+    throw new Error('Password must contain uppercase, lowercase, and numeric characters');
   }
 }
 
 export async function hashPassword(password: string, salt = randomBytes(16)): Promise<string> {
   assertPasswordPolicy(password);
-  const derived = await derive(password, salt, KEY_LENGTH, COST, BLOCK_SIZE, PARALLELIZATION);
-  return [FORMAT, VERSION, COST, BLOCK_SIZE, PARALLELIZATION, salt.toString('base64url'), derived.toString('base64url')].join('$');
+  const derived = await derive(password, salt, KEY_LENGTH, {
+    N: COST,
+    r: BLOCK_SIZE,
+    p: PARALLELIZATION,
+    maxmem: 64 * 1024 * 1024,
+  });
+  return [
+    FORMAT,
+    VERSION,
+    String(COST),
+    String(BLOCK_SIZE),
+    String(PARALLELIZATION),
+    salt.toString('base64url'),
+    derived.toString('base64url'),
+  ].join('$');
 }
 
 export async function verifyPassword(password: string, encodedHash: string): Promise<boolean> {
   const [format, version, costRaw, blockRaw, parallelRaw, saltRaw, hashRaw, extra] = encodedHash.split('$');
   if (extra !== undefined || format !== FORMAT || version !== VERSION || !saltRaw || !hashRaw) return false;
+
   try {
-    const expected = Buffer.from(hashRaw, 'base64url');
+    const cost = positiveInteger(costRaw ?? '', 'cost');
+    const blockSize = positiveInteger(blockRaw ?? '', 'block size');
+    const parallelization = positiveInteger(parallelRaw ?? '', 'parallelization');
     const salt = Buffer.from(saltRaw, 'base64url');
-    if (expected.length !== KEY_LENGTH || salt.length < 16) return false;
-    const actual = await derive(
-      password,
-      salt,
-      expected.length,
-      parsePositive(costRaw),
-      parsePositive(blockRaw),
-      parsePositive(parallelRaw),
-    );
+    const expected = Buffer.from(hashRaw, 'base64url');
+    if (salt.length < 16 || expected.length !== KEY_LENGTH) return false;
+    const actual = await derive(password, salt, expected.length, {
+      N: cost,
+      r: blockSize,
+      p: parallelization,
+      maxmem: 64 * 1024 * 1024,
+    });
     return timingSafeEqual(actual, expected);
   } catch {
     return false;

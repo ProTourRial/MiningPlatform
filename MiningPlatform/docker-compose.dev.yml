@@ -12,6 +12,9 @@ services:
   api:
     environment:
       NODE_ENV: development
+      APP_URL: http://localhost:3000
+      AUTH_SECURE_COOKIES: "false"
+      ENABLE_REALTIME_GATEWAY: "true"
       ENABLE_DEVELOPMENT_DASHBOARD: "true"
       ENABLE_SWAGGER: "true"
       DEVELOPMENT_DASHBOARD_TOKEN: ${DEVELOPMENT_DASHBOARD_TOKEN:-local-development-dashboard}
@@ -20,6 +23,8 @@ services:
   web:
     build:
       args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+        NEXT_PUBLIC_SOCKET_URL: http://localhost:4000
         NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD: "true"
         NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN: ${NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN:-local-development-dashboard}
         NEXT_PUBLIC_DEVELOPMENT_WORKER_ID: ${NEXT_PUBLIC_DEVELOPMENT_WORKER_ID:-dev-7d9a4df2e77952c0657de069}

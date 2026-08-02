@@ -1,6 +1,6 @@
 {
   "name": "@mining/api",
-  "version": "0.3.0",
+  "version": "0.3.0-alpha.2",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
@@ -8,7 +8,7 @@
     "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('api tests not configured')\""
+    "test": "node --import tsx --test --test-concurrency=1 src/*.test.ts"
   },
   "dependencies": {
     "@mining/build-info": "workspace:*",

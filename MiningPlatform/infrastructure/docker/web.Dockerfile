@@ -5,13 +5,17 @@
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.13.1 --activate
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json eslint.config.mjs ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json eslint.config.mjs ./
 COPY apps ./apps
 COPY packages ./packages
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
+ARG NEXT_PUBLIC_API_URL=/api/v1
+ARG NEXT_PUBLIC_SOCKET_URL=
 ARG NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD=false
 ARG NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN=local-development-dashboard
 ARG NEXT_PUBLIC_DEVELOPMENT_WORKER_ID=dev-7d9a4df2e77952c0657de069
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
 ENV NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD=$NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD
 ENV NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN=$NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN
 ENV NEXT_PUBLIC_DEVELOPMENT_WORKER_ID=$NEXT_PUBLIC_DEVELOPMENT_WORKER_ID

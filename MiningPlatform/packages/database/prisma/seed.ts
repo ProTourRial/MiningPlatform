@@ -51,6 +51,16 @@ async function main() {
         emailVerifiedAt: new Date(),
       },
     });
+    await prisma.userSecurity.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, recoveryCodesHash: [] },
+    });
+    await prisma.userProfile.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id },
+    });
     const miningAccount = await prisma.miningAccount.upsert({
       where: { userId_assetId: { userId: user.id, assetId: btc.id } },
       update: {},

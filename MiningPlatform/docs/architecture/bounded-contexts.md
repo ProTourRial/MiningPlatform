@@ -2,12 +2,12 @@
 
 Owner: Abia Nugrahanto  
 Status: Accepted baseline  
-Version: 0.3.0
+Version: 0.3.0-alpha.1
 
 | Context | Tanggung jawab | Tidak boleh melakukan | Deployment saat ini |
 |---|---|---|---|
-| Identity and Access | akun, session web, 2FA, RBAC | memvalidasi share | `api` (implemented foundation) |
-| Worker Management | worker CRUD, credential lifecycle, ownership | menerima `mining.submit` | `api` dan server CLI |
+| Identity and Access | akun, session web, 2FA, RBAC | memvalidasi share | `api` (future implementation) |
+| Worker Management | worker CRUD, credential lifecycle, ownership | menerima `mining.submit` | `api` dan CLI sementara |
 | Mining Sessions | koneksi Stratum dan session state | menghitung saldo | `stratum-server` |
 | Share Processing | validasi SHA-256d, duplicate, stale, state share | posting ledger | `stratum-server`, `mining-worker` |
 | Upstream Pool Management | koneksi, job, submit, keputusan upstream | membuat reward final | `stratum-server` |

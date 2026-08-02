@@ -5,9 +5,10 @@
  */
 
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
 import { HealthController } from './health.controller.js';
 import { HealthService } from './health.service.js';
 import { MetricsController } from './metrics.controller.js';
 
-@Module({ controllers: [HealthController, MetricsController], providers: [HealthService], exports: [HealthService] })
+@Module({ imports: [AuthModule], controllers: [HealthController, MetricsController], providers: [HealthService] })
 export class HealthModule {}

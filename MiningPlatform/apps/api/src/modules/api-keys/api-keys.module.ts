@@ -1,14 +1,8 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
 import { Module } from '@nestjs/common';
-import { AuditCoreModule } from '../audit/audit-core.module';
-import { AuthModule } from '../auth/auth.module';
-import { ApiKeysController } from './api-keys.controller';
-import { ApiKeysService } from './api-keys.service';
+import { AuthModule } from '../auth/auth.module.js';
+import { ApiKeysController } from './api-keys.controller.js';
+import { ApiKeysService } from './api-keys.service.js';
 
-@Module({ imports: [AuthModule, AuditCoreModule], controllers: [ApiKeysController], providers: [ApiKeysService] })
+@Module({ imports: [AuthModule], controllers: [ApiKeysController], providers: [ApiKeysService] })
 export class ApiKeysModule {}

@@ -16,17 +16,13 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { TransparencyModule } from './transparency/transparency.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OwnerModule } from './owner/owner.module';
-import { ApiKeysModule } from './api-keys/api-keys.module';
-import { CredentialsModule } from './credentials/credentials.module';
-import { AuditModule } from './audit/audit.module';
+import { ApiKeysModule } from './api-keys/api-keys.module.js';
 
 export const DomainModules = [
   AuthModule,
+  ApiKeysModule,
   UsersModule,
   WorkersModule,
-  CredentialsModule,
-  ApiKeysModule,
-  AuditModule,
   SharesModule,
   RewardsModule,
   LedgerModule,

@@ -192,6 +192,9 @@ importers:
       '@mining/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@mining/security':
+        specifier: workspace:*
+        version: link:../../packages/security
     devDependencies:
       '@types/node':
         specifier: 22.0.0

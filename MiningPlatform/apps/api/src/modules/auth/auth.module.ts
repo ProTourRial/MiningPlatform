@@ -5,19 +5,14 @@
  */
 
 import { Module } from '@nestjs/common';
-import { AuditCoreModule } from '../audit/audit-core.module';
-import { AccessTokenGuard } from './access-token.guard';
-import { AuthController } from './auth.controller';
-import { AuthRateLimitService } from './auth-rate-limit.service';
-import { AuthService } from './auth.service';
-import { AuthorizationService } from './authorization.service';
-import { IdentityDeliveryService } from './identity-delivery.service';
-import { PermissionsGuard } from './permissions.guard';
+import { AuthController } from './auth.controller.js';
+import { AuthGuard } from './auth.guard.js';
+import { AuthRateLimitGuard } from './auth-rate-limit.guard.js';
+import { AuthService } from './auth.service.js';
 
 @Module({
-  imports: [AuditCoreModule],
   controllers: [AuthController],
-  providers: [AuthService, AuthRateLimitService, AuthorizationService, IdentityDeliveryService, AccessTokenGuard, PermissionsGuard],
-  exports: [AuthService, AuthRateLimitService, AuthorizationService, AccessTokenGuard, PermissionsGuard],
+  providers: [AuthService, AuthGuard, AuthRateLimitGuard],
+  exports: [AuthGuard, AuthService],
 })
 export class AuthModule {}

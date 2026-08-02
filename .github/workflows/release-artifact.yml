@@ -1,0 +1,52 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: Release artifact
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: MiningPlatform
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm release:manifest
+      - run: pnpm release:manifest:verify
+      - name: Create source release
+        run: |
+          mkdir -p dist-release/MiningPlatform
+          rsync -a --exclude .git --exclude node_modules --exclude dist-release --exclude dist --exclude .next --exclude .turbo --exclude coverage --exclude packages/database/src/generated ./ dist-release/MiningPlatform/
+          cd dist-release
+          zip -qr "MiningPlatform-${GITHUB_REF_NAME}.zip" MiningPlatform
+          sha256sum "MiningPlatform-${GITHUB_REF_NAME}.zip" > "MiningPlatform-${GITHUB_REF_NAME}.zip.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MiningPlatform-${{ github.ref_name }}
+          path: |
+            MiningPlatform/dist-release/*.zip
+            MiningPlatform/dist-release/*.sha256
+          if-no-files-found: error

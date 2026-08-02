@@ -7,8 +7,10 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { prisma } from '@mining/database';
 import { RedisStreamEventConsumer } from '@mining/event-bus';
 import { createLogger } from '@mining/logger';
+import { verifyAccessToken } from '@mining/security';
 import {
   MiningEvents,
   type HashrateUpdatedPayload,
@@ -18,6 +20,7 @@ import {
   type ShareRejectedPayload,
 } from '@mining/shared';
 import type { Server, Socket } from 'socket.io';
+import { authRuntimeConfig } from '../auth/auth-config.js';
 import {
   developmentDashboardEnabled,
   developmentWorkerId,
@@ -46,18 +49,43 @@ export class MonitoringGateway implements OnModuleInit, OnModuleDestroy {
 
   constructor(private readonly runtimeState: MonitoringRuntimeState) {}
 
-  handleConnection(client: Socket): void {
-    const token = client.handshake.auth?.token;
-    if (!developmentDashboardEnabled() || !validDevelopmentToken(token)) {
+  async handleConnection(client: Socket): Promise<void> {
+    const authToken = typeof client.handshake.auth?.token === 'string' ? client.handshake.auth.token : undefined;
+    const cookieToken = client.handshake.headers.cookie
+      ?.split(';')
+      .map((part) => part.trim().split('='))
+      .find(([name]) => name === 'mp_access')
+      ?.slice(1)
+      .join('=');
+    const token = authToken ?? (cookieToken ? decodeURIComponent(cookieToken) : undefined);
+    if (developmentDashboardEnabled() && validDevelopmentToken(token)) {
+      await client.join(`worker:${developmentWorkerId()}`);
+      return;
+    }
+    if (!token) {
       client.disconnect(true);
       return;
     }
-    void client.join(`worker:${developmentWorkerId()}`);
+    try {
+      const config = authRuntimeConfig();
+      const claims = verifyAccessToken(token, config.jwtSecret, { issuer: config.issuer, audience: config.audience });
+      const session = await prisma.authSession.findFirst({
+        where: { id: claims.sid, userId: claims.sub, revokedAt: null, expiresAt: { gt: new Date() }, user: { status: 'ACTIVE', deletedAt: null } },
+        select: { userId: true },
+      });
+      if (!session) throw new Error('inactive session');
+      const workers = await prisma.worker.findMany({ where: { userId: session.userId, deletedAt: null }, select: { id: true } });
+      await client.join(`user:${session.userId}`);
+      await Promise.all(workers.map((worker) => client.join(`worker:${worker.id}`)));
+    } catch (error) {
+      logger.warn({ socketId: client.id, error }, 'realtime authentication failed');
+      client.disconnect(true);
+    }
   }
 
   onModuleInit(): void {
-    if (!developmentDashboardEnabled()) {
-      this.runtimeState.markDisconnected('Development realtime gateway is disabled');
+    if (process.env.ENABLE_REALTIME_GATEWAY === 'false') {
+      this.runtimeState.markDisconnected('Realtime gateway is disabled by configuration');
       return;
     }
     this.consumerLoop = this.runConsumerLoop();
