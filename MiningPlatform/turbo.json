@@ -19,7 +19,23 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "env": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "APP_URL",
+        "NODE_ENV",
+        "AUTH_JWT_SECRET",
+        "AUTH_ENCRYPTION_KEY",
+        "AUTH_IP_HASH_KEY",
+        "AUTH_EXPOSE_TEST_TOKENS",
+        "AUTH_SECURE_COOKIES",
+        "STRATUM_IP_HASH_KEY",
+        "STRATUM_DEV_MODE",
+        "STRATUM_AUTH_DRIVER",
+        "UPSTREAM_DRIVER",
+        "EMAIL_PROVIDER"
+      ]
     }
   }
 }

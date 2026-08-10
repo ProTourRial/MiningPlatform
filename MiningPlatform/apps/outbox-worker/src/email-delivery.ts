@@ -4,7 +4,6 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
 import { decryptSecret } from '@mining/security';
 
@@ -65,7 +64,12 @@ export function buildIdentityEmail(
   throw new Error(`Unsupported identity email event: ${eventName}`);
 }
 
-async function tokenForEvent(event: DomainEvent<IdentityEmailPayload>): Promise<string> {
+async function tokenForEvent(
+  event: DomainEvent<IdentityEmailPayload>,
+): Promise<string> {
+  const { prisma } = await import(
+    '@mining/database'
+  );
   const encryptionKey = required('AUTH_ENCRYPTION_KEY');
   if (event.eventName === 'identity.email-verification.requested.v1') {
     const token = await prisma.emailVerificationToken.findFirst({

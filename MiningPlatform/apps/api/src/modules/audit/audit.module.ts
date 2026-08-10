@@ -5,9 +5,15 @@
  */
 
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { AuditController } from './audit.controller';
-import { AuditCoreModule } from './audit-core.module';
+import { AuthModule } from '../auth/auth.module.js';
+import { AuditController } from './audit.controller.js';
+import { AuditCoreModule } from './audit-core.module.js';
 
-@Module({ imports: [AuthModule, AuditCoreModule], controllers: [AuditController] })
+@Module({
+  imports: [
+    AuthModule,
+    AuditCoreModule,
+  ],
+  controllers: [AuditController],
+})
 export class AuditModule {}

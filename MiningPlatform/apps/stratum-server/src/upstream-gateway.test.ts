@@ -201,8 +201,14 @@ test('relays a downstream share and waits for upstream acceptance', async () => 
 });
 
 test('keeps the downstream miner connected while failing over to a backup upstream', async () => {
-  const primary = new UpstreamStratumSimulator({ extranonce1: '11111111' });
-  const backup = new UpstreamStratumSimulator({ extranonce1: '22222222' });
+  const primary = new UpstreamStratumSimulator({
+  extranonce1: '11111111',
+});
+
+const backup = new UpstreamStratumSimulator({
+  extranonce1: '22222222',
+  difficulty: '0.0000005',
+});
   await primary.listen();
   await backup.listen();
   const eventStore = new CollectingEventStore();
