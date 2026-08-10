@@ -11,3 +11,11 @@ backups/**
 !backups/.gitkeep
 *.log
 *.zip
+
+# Generated workspace and maintenance artifacts
+.artifacts/
+**/.artifacts/
+**/.turbo/
+**/.cache/
+**/coverage/
+**/*.tsbuildinfo

@@ -17,3 +17,18 @@ backups/*
 !backups/.gitkeep
 
 .artifacts/
+
+# Generated workspace and maintenance artifacts
+node_modules/
+**/node_modules/
+.turbo/
+**/.turbo/
+.next/
+**/.next/
+dist/
+**/dist/
+coverage/
+**/coverage/
+.cache/
+**/.cache/
+packages/database/src/generated/
