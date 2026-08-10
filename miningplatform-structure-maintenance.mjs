@@ -38,7 +38,7 @@ const GENERATED_DIRECTORY_NAMES = new Set([
   'coverage',
   '.cache',
 ]);
-const GENERATED_FILE_SUFFIXES = ['.tsbuildinfo', '.log'];
+const GENERATED_FILE_SUFFIXES = ['.tsbuildinfo'];
 const TEXT_EXTENSIONS = new Set([
   '.md', '.txt', '.json', '.yaml', '.yml', '.mjs', '.js', '.cjs', '.ts', '.tsx',
   '.sh', '.ps1', '.prisma', '.sql', '.toml', '.env', '.example', '.gitignore',
@@ -200,7 +200,7 @@ async function collectGenerated(projectRoot) {
     }
     if (entry.isFile()) {
       if (GENERATED_FILE_SUFFIXES.some((suffix) => entry.name.endsWith(suffix))) files.push(absolute);
-      if (absolute === join(projectRoot, 'PROJECT_TREE.txt')) files.push(absolute);
+      // PROJECT_TREE.txt is intentionally preserved as a pre-alpha.3 structural snapshot.
     }
     return undefined;
   });
@@ -448,7 +448,7 @@ async function cleanupGenerated(manager, projectRoot) {
     '*.tsbuildinfo',
     '*.log',
     'packages/database/src/generated/',
-    'PROJECT_TREE.txt',
+    // PROJECT_TREE.txt intentionally not ignored during alpha.3 cleanup,
   ]);
 
   await appendIgnorePatterns(manager, join(projectRoot, '.dockerignore'), [
@@ -458,7 +458,7 @@ async function cleanupGenerated(manager, projectRoot) {
     '**/.cache/',
     '**/coverage/',
     '**/*.tsbuildinfo',
-    'PROJECT_TREE.txt',
+    // PROJECT_TREE.txt intentionally not ignored during alpha.3 cleanup,
   ]);
 }
 
