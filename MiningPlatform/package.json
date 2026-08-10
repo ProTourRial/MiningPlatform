@@ -6,6 +6,13 @@
   "description": "Mining Pool Management Platform monorepo",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.13.1",
+  "pnpm": {
+  "overrides": {
+    "framer-motion@12.0.0>motion-dom": "12.0.0",
+    "framer-motion@12.0.0>motion-utils": "12.0.0",
+    "motion-dom@12.0.0>motion-utils": "12.0.0"
+  }
+},
   "engines": {
     "node": ">=22.12.0",
     "pnpm": ">=10.0.0"

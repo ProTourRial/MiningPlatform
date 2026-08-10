@@ -6,6 +6,7 @@
 
 'use client';
 
+import type { Route } from 'next';
 import { FormEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -32,7 +33,16 @@ export function LoginForm() {
           totpCode: data.get('totpCode') || undefined,
         }),
       }, false);
-      router.push(search.get('next') || '/dashboard');
+      const requestedNext = search.get('next');
+
+const destination =
+  requestedNext &&
+  requestedNext.startsWith('/') &&
+  !requestedNext.startsWith('//')
+    ? requestedNext
+    : '/dashboard';
+
+router.push(destination as Route);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && JSON.stringify(error.payload).includes('TWO_FACTOR_REQUIRED')) {
