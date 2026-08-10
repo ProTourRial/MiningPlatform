@@ -3,7 +3,21 @@
   "compilerOptions": {
     "noEmit": true,
     "declaration": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "baseUrl": "..",
+    "paths": {
+      "@mining/mining-core": [
+        "packages/mining-core/src/index.ts"
+      ],
+      "@mining/database": [
+        "packages/database/src/index.ts"
+      ],
+      "@mining/security": [
+        "packages/security/src/index.ts"
+      ]
+    }
   },
-  "include": ["./*.ts"]
+  "include": [
+    "./*.ts"
+  ]
 }

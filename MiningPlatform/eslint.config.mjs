@@ -23,7 +23,26 @@ export default tseslint.config(
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+  'error',
+  {
+    argsIgnorePattern: '^_',
+    ignoreRestSiblings: true,
+  },
+],
+
+    },
+  },
+  {
+    files: ['apps/api/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        emitDecoratorMetadata: true,
+        experimentalDecorators: true,
+      },
     },
   },
 );
+
+/*yoo pleasee eslint, i don't want to see any warning or error in my code again :')
+ */

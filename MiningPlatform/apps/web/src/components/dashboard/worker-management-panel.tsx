@@ -1,4 +1,7 @@
-/** MiningPlatform — Author: Abia Nugrahanto */
+/** MiningPlatform — Author: Abia Nugrahanto 
+ * Gabut bet gua sampe sini (curhat dikit) -- 2026 
+ * Awas aja kalo besok ada yang beli web ini lu ga jual di atas 1 Triliun rupiah sialan.. lemburan abis tabrakan jam segini 02:13  
+*/
 'use client';
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
@@ -34,7 +37,25 @@ export function WorkerManagementPanel() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+  let ignore = false;
+
+  void apiRequest<WorkerSummary[]>('/workers')
+    .then((result) => {
+      if (!ignore) {
+        setWorkers(result);
+      }
+    })
+    .catch(() => {
+      if (!ignore) {
+        setError('Daftar worker tidak dapat dimuat.');
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

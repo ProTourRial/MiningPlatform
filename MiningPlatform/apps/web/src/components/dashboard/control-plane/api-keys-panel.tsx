@@ -26,8 +26,31 @@ export function ApiKeysPanel() {
   const [keys, setKeys] = useState<ApiKeyView[]>([]);
   const [oneTimeKey, setOneTimeKey] = useState('');
   const [message, setMessage] = useState('');
-  async function load() { setKeys(await apiFetch<ApiKeyView[]>('/api-keys')); }
-  useEffect(() => { void load(); }, []);
+  async function load() { 
+    setKeys(await apiFetch<ApiKeyView[]>('/api-keys')); }
+  useEffect(() => {
+  let ignore = false;
+
+  void apiFetch<ApiKeyView[]>('/api-keys')
+    .then((result) => {
+      if (!ignore) {
+        setKeys(result);
+      }
+    })
+    .catch((error) => {
+      if (!ignore) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'API key gagal dimuat',
+        );
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

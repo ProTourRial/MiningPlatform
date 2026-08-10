@@ -26,8 +26,34 @@ interface ProfileView {
 export function ProfilePanel() {
   const [profile, setProfile] = useState<ProfileView>();
   const [message, setMessage] = useState('');
-  async function load() { setProfile(await apiFetch<ProfileView>('/users/me')); }
-  useEffect(() => { void load(); }, []);
+  async function load() { 
+    setProfile(await apiFetch<ProfileView>('/users/me')); 
+  }
+
+  useEffect(() => {
+  let ignore = false;
+
+  void apiFetch<ProfileView>('/users/me')
+    .then((result) => {
+      if (!ignore) {
+        setProfile(result);
+      }
+    })
+    .catch((error) => {
+      if (!ignore) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Profil gagal dimuat',
+        );
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);

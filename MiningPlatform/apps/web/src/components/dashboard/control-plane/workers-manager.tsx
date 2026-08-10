@@ -57,7 +57,30 @@ export function WorkersManager() {
     setCredentials(await apiFetch<CredentialView[]>(`/credentials/workers/${workerId}`));
     setOneTimeSecret('');
   }
-  useEffect(() => { void loadWorkers(); }, []);
+  
+  useEffect(() => {
+  let ignore = false;
+
+  void apiFetch<WorkerView[]>('/workers')
+    .then((result) => {
+      if (!ignore) {
+        setWorkers(result);
+      }
+    })
+    .catch((error) => {
+      if (!ignore) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Worker gagal dimuat',
+        );
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function createWorker(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

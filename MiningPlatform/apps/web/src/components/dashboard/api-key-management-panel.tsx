@@ -16,7 +16,25 @@ export function ApiKeyManagementPanel() {
     try { setKeys(await apiRequest<ApiKeySummary[]>('/api-keys')); }
     catch { setError('API key tidak dapat dimuat.'); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+  let ignore = false;
+
+  void apiRequest<ApiKeySummary[]>('/api-keys')
+    .then((result) => {
+      if (!ignore) {
+        setKeys(result);
+      }
+    })
+    .catch(() => {
+      if (!ignore) {
+        setError('API key tidak dapat dimuat.');
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

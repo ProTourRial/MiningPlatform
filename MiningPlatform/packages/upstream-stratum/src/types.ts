@@ -66,7 +66,7 @@ export interface PoolAdapterCapabilities {
   supportsClientReconnect: boolean;
 }
 
-export interface PoolAdapterCallbacks extends UpstreamClientCallbacks {}
+export type PoolAdapterCallbacks = UpstreamClientCallbacks;
 
 export interface PoolAdapter {
   readonly id: string;

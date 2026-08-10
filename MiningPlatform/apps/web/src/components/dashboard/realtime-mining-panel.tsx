@@ -72,7 +72,9 @@ export function RealtimeMiningPanel() {
         generatedAt: payload.recordedAt,
       } : current);
     });
-    return () => socket.disconnect();
+    return () => {
+  socket.disconnect();
+};
   }, [router]);
 
   const totalHashrate = useMemo(

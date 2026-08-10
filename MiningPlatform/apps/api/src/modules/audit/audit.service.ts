@@ -5,11 +5,17 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { prisma } from '@mining/database';
+import { prisma, type Prisma } from '@mining/database';
 
 export interface AuditRecordInput {
   actorUserId?: string;
-  category: 'AUTH' | 'SECURITY' | 'ACCOUNT' | 'WORKER' | 'CREDENTIAL' | 'SYSTEM';
+  category:
+    | 'AUTH'
+    | 'SECURITY'
+    | 'ACCOUNT'
+    | 'WORKER'
+    | 'CREDENTIAL'
+    | 'SYSTEM';
   outcome?: 'SUCCESS' | 'FAILURE';
   action: string;
   resourceType: string;
@@ -18,7 +24,7 @@ export interface AuditRecordInput {
   requestId?: string;
   ipHash?: string;
   userAgentHash?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }
 
 @Injectable()

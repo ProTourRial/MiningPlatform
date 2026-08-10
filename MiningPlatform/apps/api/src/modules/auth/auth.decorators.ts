@@ -2,9 +2,11 @@
  * MiningPlatform
  * Author: Abia Nugrahanto
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ * This time "Abia" was tired to fixing decorator
  */
 
-import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
+import { createParamDecorator, SetMetadata } from '@nestjs/common';
+import type { ExecutionContext } from '@nestjs/common';
 
 export const AUTH_ROLES_KEY = 'mining:auth:roles';
 export const AUTH_SCOPES_KEY = 'mining:auth:scopes';

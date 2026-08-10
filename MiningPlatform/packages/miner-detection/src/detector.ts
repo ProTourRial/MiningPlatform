@@ -7,7 +7,6 @@
 import type {
   ComputeDeviceObservation,
   HardwareDetectionConfidence,
-  HardwareDetectionSource,
   HardwareType,
   MinerDetectionInput,
   MinerDetectionResult,

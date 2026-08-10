@@ -27,7 +27,29 @@ export function SecurityManagementPanel() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+ useEffect(() => {
+  let ignore = false;
+
+  void Promise.all([
+    apiRequest<MeResponse>('/users/me'),
+    apiRequest<SessionSummary[]>('/users/me/sessions'),
+  ])
+    .then(([profile, activeSessions]) => {
+      if (ignore) return;
+
+      setMe(profile);
+      setSessions(activeSessions);
+    })
+    .catch(() => {
+      if (!ignore) {
+        setError('Status keamanan tidak dapat dimuat.');
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function beginSetup() {
     setError(undefined);

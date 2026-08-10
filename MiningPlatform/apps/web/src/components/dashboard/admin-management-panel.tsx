@@ -27,7 +27,30 @@ export function AdminManagementPanel() {
         : 'Data admin tidak dapat dimuat.');
     }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+  let ignore = false;
+
+  void apiRequest<AdminUser[]>('/admin/users')
+    .then((result) => {
+      if (ignore) return;
+
+      setUsers(result);
+      setError(undefined);
+    })
+    .catch((cause: unknown) => {
+      if (ignore) return;
+
+      setError(
+        cause instanceof ApiRequestError && cause.status === 403
+          ? 'Akses admin memerlukan role ADMIN/OWNER dan TOTP yang sudah aktif.'
+          : 'Data admin tidak dapat dimuat.',
+      );
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function changeStatus(user: AdminUser) {
     const next = user.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';

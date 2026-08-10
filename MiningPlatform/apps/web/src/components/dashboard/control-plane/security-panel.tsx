@@ -41,10 +41,38 @@ export function SecurityPanel() {
       apiFetch<SessionView[]>('/auth/sessions'),
       apiFetch<ProfileSecurity>('/users/me'),
     ]);
+    
     setSessions(sessionData);
     setTotpEnabled(profile.security.totpEnabled);
   }
-  useEffect(() => { void load(); }, []);
+
+  useEffect(() => {
+  let ignore = false;
+
+  void Promise.all([
+    apiFetch<SessionView[]>('/auth/sessions'),
+    apiFetch<ProfileSecurity>('/users/me'),
+  ])
+    .then(([sessionData, profile]) => {
+      if (ignore) return;
+
+      setSessions(sessionData);
+      setTotpEnabled(profile.security.totpEnabled);
+    })
+    .catch((error) => {
+      if (!ignore) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : 'Status keamanan gagal dimuat',
+        );
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function setupTotp() {
     try { setEnrollment(await apiFetch('/auth/2fa/setup', { method: 'POST', body: '{}' })); setMessage('Tambahkan secret ke aplikasi authenticator, lalu masukkan kode enam digit.'); }

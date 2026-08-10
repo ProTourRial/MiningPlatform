@@ -12,7 +12,25 @@ export function NotificationSettingsPanel() {
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
   const load = useCallback(async () => { try { setChannels(await apiRequest<Channel[]>('/notifications/channels')); } catch { setError('Kanal notifikasi tidak dapat dimuat.'); } }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+  let ignore = false;
+
+  void apiRequest<Channel[]>('/notifications/channels')
+    .then((result) => {
+      if (!ignore) {
+        setChannels(result);
+      }
+    })
+    .catch(() => {
+      if (!ignore) {
+        setError('Kanal notifikasi tidak dapat dimuat.');
+      }
+    });
+
+  return () => {
+    ignore = true;
+  };
+}, []);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
