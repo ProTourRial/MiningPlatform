@@ -91,7 +91,7 @@ export function RealtimeMiningPanel() {
   }, [router]);
 
   useEffect(() => {
-    void loadOverview();
+    const initialLoadTimer = window.setTimeout(() => void loadOverview(), 0);
 
     const socket = io(socketNamespaceUrl, {
       path: '/socket.io',
@@ -115,6 +115,7 @@ export function RealtimeMiningPanel() {
     });
 
     return () => {
+      window.clearTimeout(initialLoadTimer);
       socket.disconnect();
     };
   }, [loadOverview]);

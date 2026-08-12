@@ -1,5 +1,29 @@
 # Changelog
 
+## [Unreleased] - 2026-08-13
+
+### Added
+
+- Professional Control Plane frontend with responsive navigation, authenticated operational dashboards, worker management, hashrate insights, and gated financial surfaces.
+- Lightweight Bitcoin reward feed backed by cached public block data for current subsidy and fee context.
+- A production-accessible `/control-plane-preview` route with representative data for Vercel review.
+
+### Changed
+
+- Production web requests now default to the same-origin `/api/v1` endpoint, while development keeps its explicit local API fallback.
+- Release, migration, Prisma generation, and Docker E2E workflows now use isolated CI configuration and deterministic dependency startup.
+
+### Fixed
+
+- Initial dashboard data loading is deferred to effect callbacks, satisfying React's `set-state-in-effect` rule without disabling lint safeguards.
+- Docker images include the Prisma author-header generator required by `db:generate`.
+- Fresh and upgrade migration checks sanitize Prisma-only URL parameters before invoking `psql`.
+- Release-manifest checks use the same payload boundary as manifest generation.
+
+### Removed
+
+- Superseded generic v0.3.0 release and migration verification scripts; the versioned alpha verification paths remain authoritative.
+
 ## [0.3.0-alpha.2] - 2026-08-03
 
 ### Added

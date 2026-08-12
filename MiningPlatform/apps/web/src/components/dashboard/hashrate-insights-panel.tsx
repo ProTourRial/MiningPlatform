@@ -50,9 +50,12 @@ export function HashrateInsightsPanel() {
   }, []);
 
   useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => void load(), 30_000);
-    return () => window.clearInterval(timer);
+    const initialLoadTimer = window.setTimeout(() => void load(), 0);
+    const refreshTimer = window.setInterval(() => void load(), 30_000);
+    return () => {
+      window.clearTimeout(initialLoadTimer);
+      window.clearInterval(refreshTimer);
+    };
   }, [load]);
 
   const ranked = useMemo(

@@ -26,7 +26,6 @@ import {
   Wifi,
 } from 'lucide-react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { BitcoinRewardFeed } from '@/components/dashboard/bitcoin-reward-feed';
 
 const navigation: Array<{ label: string; icon: LucideIcon; gated?: boolean }> = [
@@ -57,8 +56,6 @@ const workers = [
 ] as const;
 
 export default function ControlPlanePreviewPage() {
-  if (process.env.VERCEL_ENV === 'production') notFound();
-
   return (
     <main className="min-h-screen bg-[var(--background)] text-white lg:grid lg:grid-cols-[264px_1fr]">
       <aside className="hidden border-r border-white/8 bg-[#071320] lg:flex lg:min-h-screen lg:flex-col">
