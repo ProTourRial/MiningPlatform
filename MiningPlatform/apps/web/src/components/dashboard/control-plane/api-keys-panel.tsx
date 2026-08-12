@@ -6,7 +6,8 @@
 
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch } from '@/services/api-client';
 
 interface ApiKeyView {

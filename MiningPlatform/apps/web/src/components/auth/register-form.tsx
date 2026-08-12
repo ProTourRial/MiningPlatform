@@ -6,7 +6,8 @@
 
 'use client';
 
-import { FormEvent, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/services/api-client';
 

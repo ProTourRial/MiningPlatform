@@ -9,7 +9,14 @@ import type { ReactNode } from 'react';
 import './globals.css';
 import { AppProviders } from '@/components/providers/app-providers';
 
+const metadataBase = new URL(
+  process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000',
+);
+
 export const metadata: Metadata = {
+  metadataBase,
   applicationName: 'MiningPlatform',
   title: {
     default: 'MiningPlatform | Mining Pool Management & Farm Monitoring',
@@ -37,6 +44,20 @@ export const metadata: Metadata = {
     title: 'MiningPlatform | Mining Pool Management & Farm Monitoring',
     description:
       'Control plane untuk koneksi worker, validasi share, monitoring farm, reward accounting, payout, dan transparansi operasional.',
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'MiningPlatform Operations Control Plane',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MiningPlatform | Operations Control Plane',
+    description: 'Verifiable mining operations for worker, share, and hashrate monitoring.',
+    images: ['/og.png'],
   },
 };
 

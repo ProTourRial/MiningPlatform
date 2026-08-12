@@ -1,11 +1,11 @@
-/**
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
+/** MiningPlatform — Author: Abia Nugrahanto */
+import { HashrateInsightsPanel } from '@/components/dashboard/hashrate-insights-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 
 export default function Page() {
-  return <PageShell title="Hashrate" description="Grafik hashrate realtime dan rata-rata per worker." />;
+  return (
+    <PageShell title="Hashrate telemetry" description="Pantau distribusi performa worker menggunakan snapshot lima menit yang tervalidasi." eyebrow="Mining intelligence">
+      <HashrateInsightsPanel />
+    </PageShell>
+  );
 }

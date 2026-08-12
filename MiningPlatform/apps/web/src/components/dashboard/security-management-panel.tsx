@@ -1,7 +1,8 @@
 /** MiningPlatform — Author: Abia Nugrahanto */
 'use client';
 
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '@/services/api-client';
 
 interface SessionSummary { id: string; createdAt: string; lastUsedAt: string; expiresAt: string; ipHash?: string | null; }

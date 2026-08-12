@@ -80,6 +80,33 @@ a {
   background: #4a7087;
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #29485d transparent;
+}
+
+.dashboard-card {
+  border: 1px solid rgba(219, 232, 244, 0.09);
+  background: linear-gradient(145deg, rgba(15, 33, 52, 0.88), rgba(8, 23, 39, 0.94));
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-inset {
+  border: 1px solid rgba(219, 232, 244, 0.075);
+  background: rgba(255, 255, 255, 0.022);
+}
+
 .display-font {
   font-family: var(--font-display);
 }

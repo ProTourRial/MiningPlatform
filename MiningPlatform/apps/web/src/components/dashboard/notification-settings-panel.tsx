@@ -1,7 +1,8 @@
 /** MiningPlatform — Author: Abia Nugrahanto */
 'use client';
 
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '@/services/api-client';
 
 interface Channel { id: string; type: string; status: string; events: string[]; destinationFingerprint: string; createdAt: string; }

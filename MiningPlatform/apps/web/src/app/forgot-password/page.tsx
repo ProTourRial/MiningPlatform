@@ -2,7 +2,8 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useState } from 'react';
 import { AuthCard } from '@/components/ui/auth-card';
 import { API_BASE_URL } from '@/services/api-client';
 

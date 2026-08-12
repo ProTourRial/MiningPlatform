@@ -3,7 +3,8 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { FormEvent, Suspense, useState } from 'react';
+import type { FormEvent} from 'react';
+import { Suspense, useState } from 'react';
 import { AuthCard } from '@/components/ui/auth-card';
 import { API_BASE_URL } from '@/services/api-client';
 

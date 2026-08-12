@@ -35,7 +35,7 @@ export function Hero() {
               <Activity size={13} />
               BTC · SHA-256 · Upstream Gateway
             </span>
-            <span className="mono-font text-[10px] uppercase tracking-[0.18em] text-[#8298aa]">v0.2 development pipeline</span>
+            <span className="mono-font text-[10px] uppercase tracking-[0.18em] text-[#8298aa]">v0.3 control plane alpha</span>
           </div>
 
           <h1 className="display-font max-w-5xl text-[clamp(3.4rem,7.4vw,7.4rem)] font-black uppercase leading-[0.87] tracking-[-0.065em] text-[#f5fbff]">

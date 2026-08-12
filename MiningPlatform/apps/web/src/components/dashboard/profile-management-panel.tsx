@@ -1,7 +1,8 @@
 /** MiningPlatform — Author: Abia Nugrahanto */
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useEffect, useState } from 'react';
 import { apiRequest } from '@/services/api-client';
 
 interface ProfileResponse {

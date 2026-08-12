@@ -6,7 +6,7 @@
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL
-  ?? 'http://localhost:4000/api/v1';
+  ?? (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:4000/api/v1');
 
 export class ApiRequestError extends Error {
   constructor(
@@ -21,7 +21,6 @@ export class ApiRequestError extends Error {
 
 /**
  * Backward-compatible alias for older Control Plane components.
- * Abia was tired to fixing this, so he made this alias for backward compatibility.
  * New code should prefer ApiRequestError.
  */
 export { ApiRequestError as ApiError };
