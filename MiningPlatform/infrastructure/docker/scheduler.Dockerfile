@@ -8,6 +8,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json eslint.config.mjs ./
 COPY apps ./apps
 COPY packages ./packages
+COPY scripts/add-author-headers.mjs ./scripts/add-author-headers.mjs
 RUN pnpm install --frozen-lockfile
 ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 RUN pnpm db:generate \
