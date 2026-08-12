@@ -13,7 +13,18 @@ const outputPath = resolve(process.argv[3] ?? resolve(payloadRoot, 'release-mani
 const artifactType = process.argv[4] ?? 'full-release';
 const suppliedPatchChecksum = process.argv[5];
 
-const excludedDirectories = new Set(['.git', '.next', '.turbo', 'coverage', 'dist', 'dist-release', 'node_modules']);
+const excludedDirectories = new Set([
+  '.git',
+  '.next',
+  '.turbo',
+  '.artifacts',
+  '.pnpm-store',
+  '.cache',
+  'coverage',
+  'dist',
+  'dist-release',
+  'node_modules',
+]);
 
 async function walk(directory) {
   const output = [];
@@ -26,19 +37,48 @@ async function walk(directory) {
   return output;
 }
 
+function isExcludedFile(path) {
+  const name = path.split('/').at(-1);
+
+  return (
+    path === 'release-manifest.json'
+    || path.endsWith('.sha256')
+    || path.endsWith('.tsbuildinfo')
+    || path.endsWith('.log')
+    || path.startsWith('packages/database/src/generated/')
+    || name === '.env'
+    || (
+      name.startsWith('.env.')
+      && name !== '.env.example'
+      && name !== '.env.ci.example'
+    )
+  );
+}
+
+function canonicalizeForChecksum(content) {
+  return Buffer.from(
+    content.toString('latin1').replaceAll('\r\n', '\n'),
+    'latin1',
+  );
+}
+
 const files = (await walk(payloadRoot))
-  .map((absolute) => ({ absolute, path: relative(payloadRoot, absolute).split(sep).join('/') }))
-  .filter((entry) =>
-    entry.path !== 'release-manifest.json' &&
-    !entry.path.endsWith('.sha256') &&
-    !entry.path.startsWith('packages/database/src/generated/')
-  )
-  .sort((left, right) => left.path.localeCompare(right.path));
+  .map((absolute) => ({
+    absolute,
+    path: relative(payloadRoot, absolute).split(sep).join('/'),
+  }))
+  .filter((entry) => !isExcludedFile(entry.path))
+  .sort((left, right) => {
+    if (left.path < right.path) return -1;
+    if (left.path > right.path) return 1;
+    return 0;
+  });
 const hash = createHash('sha256');
 for (const file of files) {
   hash.update(file.path, 'utf8');
   hash.update('\0');
-  hash.update(await readFile(file.absolute));
+  const content = await readFile(file.absolute);
+  hash.update(canonicalizeForChecksum(content));
   hash.update('\0');
 }
 const payloadChecksum = hash.digest('hex');
@@ -54,7 +94,7 @@ const manifest = {
   compatibleFrom: ['0.3.0-alpha.1', '0.2.0-alpha.6'],
   patchChecksum,
   payloadChecksum,
-  checksumScope: 'sha256-payload-v1 excluding release-manifest.json and *.sha256',
+  checksumScope: 'sha256-payload-v2 with canonical LF and generated-file exclusions',
   payloadFileCount: files.length,
   buildDate: process.env.BUILD_DATE ?? '2026-08-03T04:33:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',

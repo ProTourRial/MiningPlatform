@@ -22,6 +22,8 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
   throw new Error(`Set MIGRATION_TEST_ACK=${expectedAck} after confirming the database is disposable`);
 }
 
+const psqlUrl = new URL(process.env.DATABASE_URL);
+psqlUrl.searchParams.delete('schema');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 const targetMigration = '20260803040000_auth_session_rotation_hardening';
@@ -43,7 +45,11 @@ function run(command, args, options = {}) {
 }
 
 function psql(args) {
-  run('psql', [process.env.DATABASE_URL, '--set', 'ON_ERROR_STOP=1', ...args], { redactArgs: true });
+  run(
+    'psql',
+    [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', ...args],
+    { redactArgs: true },
+  );
 }
 
 psql(['--command', 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;']);
