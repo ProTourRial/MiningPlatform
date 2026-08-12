@@ -43,7 +43,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
       - name: Start dependencies
-        run: docker compose --env-file .env.ci.example up -d postgres redis
+        run: docker compose --env-file .env.ci.example up -d --wait --wait-timeout 120 postgres redis
       - name: Apply database migrations
         run: pnpm db:migrate:deploy
         env:
