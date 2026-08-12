@@ -40,6 +40,8 @@ jobs:
         run: docker compose --env-file .env.ci.example config --quiet
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
       - name: Start dependencies
         run: docker compose --env-file .env.ci.example up -d postgres redis
       - name: Apply database migrations
