@@ -54,7 +54,7 @@ jobs:
         run: node scripts/wait-for-http.mjs http://127.0.0.1/api/v1/health/ready 180000
       - name: Verify public endpoints
         run: |
-          curl --fail --silent http://127.0.0.1/api/v1/version
+          curl --fail --silent http://127.0.0.1/version
           curl --fail --silent http://127.0.0.1/api/v1/wallets/status
       - name: Dump logs on failure
         if: failure()
