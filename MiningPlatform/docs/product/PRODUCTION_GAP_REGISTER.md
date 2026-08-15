@@ -3,7 +3,7 @@
 - Status: Active engineering register
 - Authority: [`../../PROJECT_VISION.md`](../../PROJECT_VISION.md)
 - Implementation policy: [`PRODUCT_CONSTITUTION.md`](PRODUCT_CONSTITUTION.md)
-Baseline audited: 2026-08-16 (`0.3.0-alpha.4` workspace)
+  Baseline audited: 2026-08-16 (`0.3.0-alpha.5` workspace)
 
 ## Purpose
 
@@ -43,6 +43,15 @@ Pada validasi lanjutan alpha.4 tanggal 2026-08-16:
 - Docker API/web/Nginx E2E lulus untuk readiness, versi alpha.4/schema 9, dan wallet disabled;
 - semua kontainer, network, serta volume disposable dibersihkan setelah pengujian.
 
+Pada validasi financial-truth alpha.5 tanggal 2026-08-16:
+
+- 10/10 migration lulus dari database kosong dan rehearsal upgrade schema v9 ke v10 mempertahankan serta menormalisasi data reward/reconciliation legacy;
+- reward-engine lulus 11/11 dan accounting conversion lulus 2/2;
+- concurrency/duplicate-delivery test membuktikan satu contribution fact dan satu settlement posting;
+- end-to-end internal trace membuktikan fee 50 bps, jurnal decimal+atomic berimbang, immutable facts, equal-and-opposite reversal, saldo liability kembali nol, dan payout tetap nol;
+- targeted typecheck untuk accounting-worker, mining-worker, API, dan operator scripts lulus;
+- local root gates pass for alpha.5: lint 27/27, typecheck 41/41, tests 41/41, production build 27/27, 21 Next.js routes, Compose/static checks, and managed/release manifest verification; repository CI remains mandatory after publication.
+
 Validasi tersebut membuktikan baseline source dapat dibangun secara tipe dan fungsi yang diuji. Validasi tersebut **tidak** membuktikan provider compatibility, production load, custody, payout, conversion, legal compliance, atau kesiapan dana nyata.
 
 ## Current capability map
@@ -59,9 +68,9 @@ Validasi tersebut membuktikan baseline source dapat dibangun secara tipe dan fun
 | Identity & sessions       | FOUNDATION  | Registration, email tokens, password reset, JWT, atomic refresh rotation, replay revocation, TOTP, API keys                     | Passkey/OAuth decision, general step-up framework, edge/distributed abuse controls       |
 | Internal RBAC             | FOUNDATION  | USER/ADMIN/OWNER dan TOTP untuk admin routes                                                                                    | SUPPORT/OPERATOR/FINANCE/TREASURY/SECURITY/COMPLIANCE serta separation of duties         |
 | Event Plane               | FOUNDATION  | PostgreSQL outbox, Redis Stream transport, retry/dead letter, idempotency contracts                                             | Docker multi-replica/partition/recovery/lag tests dan operational ownership              |
-| Reward Engine             | FOUNDATION  | Deterministic `FOLLOW_UPSTREAM` allocation helper                                                                               | Durable contribution aggregation, settlement workflow, policy snapshots, rounding policy |
-| Ledger                    | FOUNDATION  | Schema, one-sided/non-negative checks, deferred balance constraint, helper test                                                 | Posting service, immutable lifecycle, reversal, projection, API, concurrency tests       |
-| Reconciliation            | FOUNDATION  | `UpstreamReconciliation` schema                                                                                                 | Import adapters, exception workflow, tolerances, approvals, periodic jobs, reports       |
+| Reward Engine             | IN_PROGRESS | Durable accepted-share facts, deterministic atomic allocation, fee snapshot, settlement state transitions, concurrency evidence | Provider settlement fixtures, multi-replica recovery, operational scale evidence         |
+| Ledger                    | IN_PROGRESS | Transactional posting, decimal+atomic balance checks, immutable lifecycle, reversal, user projection/API, concurrency evidence  | Reconciliation resolution approval, reporting, load/partition evidence                   |
+| Reconciliation            | IN_PROGRESS | OWNER+TOTP import, checksum/source identity, zero-tolerance fail-closed exception detection, audit trace                        | Explicit approval/resolution workflow, provider adapter/reports, operational ownership   |
 | Payout address            | FOUNDATION  | Schema only                                                                                                                     | Asset/network route, validation, step-up, cooldown, allowlist, audit, UI/API             |
 | Payout                    | NOT_STARTED | Status schema and scaffold controller                                                                                           | Eligibility, reservation, batching, approval, signing, broadcast, confirmation, recovery |
 | Blockchain adapter        | NOT_STARTED | Interface exists                                                                                                                | `BitcoinRpcAdapter` methods currently throw `not implemented`                            |
@@ -104,7 +113,7 @@ Evidence accepted locally on 2026-08-13; see [`../releases/v0.3.0-alpha.3-valida
 
 ### P0.2 — Mining truth against real upstreams
 
-Status: `FOUNDATION`
+Status: `IN_PROGRESS`
 
 Required:
 
@@ -120,7 +129,7 @@ External dependency: provider accounts/endpoints and permission to run controlle
 
 ### P0.3 — Financial truth
 
-Status: `FOUNDATION`
+Status: `IN_PROGRESS`
 
 Required:
 
@@ -134,6 +143,13 @@ Required:
 8. Expose authenticated reward, ledger, balance, and audit-trace read APIs.
 
 Exit evidence: concurrency, duplicate-delivery, rounding, reversal, partial failure, and end-to-end trace tests from share to reconciled balance.
+
+Alpha.5 progress:
+
+- items 1–6 and 8 are implemented for the internal `FOLLOW_UPSTREAM` path with schema v10, transactional outbox, atomic accounting, authenticated user reads, and local disposable-database evidence;
+- item 7 is fail-closed through exact reconciliation and explicit exception creation, but operator approval/resolution remains pending;
+- selected-provider evidence, multi-replica event recovery, load/soak, and operational reporting remain required before `COMPLETE`;
+- payout eligibility is not derived from this alpha and `PAYOUTS_ENABLED=false` remains mandatory.
 
 ### P0.4 — Controlled funds
 

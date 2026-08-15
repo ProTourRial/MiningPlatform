@@ -8,9 +8,9 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.3.0-alpha.4`
+Versi saat ini: `0.3.0-alpha.5`
 
-Rilis ini merupakan **Project Vision authority, versioned fee policy, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` kini menjadi otoritas tertinggi. Default fee awal 0,5% disimpan sebagai policy terversi 50 basis points. Multi-upstream kini memiliki koordinasi circuit breaker Redis lintas-replika dengan satu half-open probe, sedangkan shared multiplexing tetap ditahan oleh ADR-0010 sampai seluruh invariant provider terbukti. Registrasi, verifikasi email, login/logout, sesi JWT dan refresh token, reset password, TOTP 2FA, RBAC, Worker CRUD, kredensial Stratum produksi, API key, profil, dashboard produksi, share queue, dan VarDiff foundation sudah tersedia.
+Rilis ini merupakan **financial-truth, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Default fee awal 0,5% disimpan sebagai policy terversi 50 basis points dan dibekukan per allocation. Share yang diterima upstream kini dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection melalui accounting-worker. Multi-upstream memiliki koordinasi circuit breaker Redis lintas-replika, sedangkan shared multiplexing tetap ditahan oleh ADR-0010 sampai invariant provider terbukti.
 
 Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
@@ -18,7 +18,7 @@ Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 - distributed API rate limiting, IP reputation, managed DDoS protection, dan otomatisasi sertifikat publik;
 - fixture serta soak/failover test terhadap upstream pool produksi yang dipilih;
 - migration fresh dan rehearsal upgrade alpha.3 serta integration test PostgreSQL lokal telah lulus; validasi penuh alpha.4, Docker E2E, dan workflow repository target tetap menjadi gate sebelum upload;
-- reward settlement, contribution accounting, dan balance projection;
+- reconciliation exception approval/resolution dan selected-provider settlement evidence;
 - wallet signing, payout approval, dan payout nyata;
 - load, stress, soak, dan chaos testing.
 
@@ -80,6 +80,7 @@ apps/
   upstream-simulator/  Local Stratum V1 upstream simulator
   outbox-worker/       PostgreSQL outbox dispatcher ke Redis Stream
   mining-worker/       Event projection dan hashrate aggregation
+  accounting-worker/   Contribution, settlement, fee snapshot, ledger, reconciliation, dan reversal
   wallet-worker/       Boundary wallet, tetap nonaktif
   scheduler/           Central scheduler foundation
   monitoring-agent/    Universal inventory dan telemetry agent foundation
@@ -95,7 +96,7 @@ packages/
   state-machine/       Finite state transition guard
   security/            Password scrypt, JWT HMAC, TOTP, AES-GCM, dan worker credential helpers
   ledger/              Double-entry invariants
-  reward-engine/       FOLLOW_UPSTREAM allocation foundation
+  reward-engine/       Exact atomic FOLLOW_UPSTREAM allocation and fee policy resolution
 ```
 
 ## Persyaratan

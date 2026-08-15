@@ -81,17 +81,17 @@ const patchChecksum =
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0-alpha.4',
-  releaseName: 'Distributed Upstream Health',
+  version: '0.3.0-alpha.5',
+  releaseName: 'Financial Truth Foundation',
   artifactType,
-  schemaVersion: 9,
-  migration: '20260813010000_versioned_fee_policy',
-  compatibleFrom: ['0.3.0-alpha.3', '0.3.0-alpha.2', '0.3.0-alpha.1', '0.2.0-alpha.6'],
+  schemaVersion: 10,
+  migration: '20260816020000_financial_truth_foundation',
+  compatibleFrom: ['0.3.0-alpha.4', '0.3.0-alpha.3', '0.3.0-alpha.2', '0.3.0-alpha.1'],
   patchChecksum,
   payloadChecksum,
   checksumScope: 'sha256-payload-v2 with canonical LF and generated-file exclusions',
   payloadFileCount: files.length,
-  buildDate: process.env.BUILD_DATE ?? '2026-08-15T00:00:00+07:00',
+  buildDate: process.env.BUILD_DATE ?? '2026-08-16T00:00:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',
   author: 'Abia Nugrahanto',
 };

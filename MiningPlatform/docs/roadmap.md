@@ -18,13 +18,15 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.4
+## Current Checkpoint: v0.3.0-alpha.5
 
 Implemented:
 
 - Root Project Vision ditetapkan sebagai lapisan dokumentasi tertinggi, dengan Product Constitution dan Production Gap Register sebagai dokumen pelaksana.
 - Default fee awal 0,5% dipindahkan ke versioned database policy (50 basis points), lengkap dengan scope, effective window, resolver deterministik, dan immutable allocation snapshot foundation.
 - Redis distributed upstream health, single cross-replica half-open probe, fail-open local fallback, and ADR-0010 safe multiplexing boundary.
+- Immutable upstream-accepted contribution facts, atomic settlement import, deterministic 50 bps fee snapshots, balanced ledger posting, liability balance projection, and equal-and-opposite reversals under ADR-0011.
+- Authenticated reward/ledger/balance read APIs plus OWNER+TOTP settlement import and reversal commands.
 - v0.2.0-alpha.6 mining foundation, multi-upstream registry, circuit breaker, failover, provider-scoped jobs, bounded share queue, and VarDiff foundation.
 - Official domain architecture, bounded contexts, context map, data flow, event flow, event catalog, and canonical ADR set.
 - Registration, transactional email verification, login/logout, access token, atomic token-family refresh rotation/replay revocation, password reset, and TOTP 2FA.
@@ -37,11 +39,11 @@ Implemented:
 
 Release blockers:
 
-- Successful alpha.4 static, pnpm, Prisma, PostgreSQL, Redis, Docker, and browser validation in the target GitHub repository.
+- Successful alpha.5 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, and repository CI validation on the exact commit.
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.
-- Reward settlement, automatic ledger posting, balance projection, reconciliation, wallet orchestration, and payouts.
+- Reconciliation exception approval/resolution, provider settlement evidence, wallet orchestration, and payouts.
 - Load, stress, and chaos validation.
 
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation

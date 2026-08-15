@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.3.0-alpha.5] - 2026-08-16
+
+### Added
+
+- Schema v10 financial-truth foundation with immutable accepted-share contribution facts, reward-period contribution snapshots, exact atomic-unit settlement fields, and atomic journal lines.
+- `accounting-worker` for idempotent contribution ingestion, deterministic `FOLLOW_UPSTREAM` allocation, versioned fee-policy snapshots, balanced posting, reconciliation closure, audit records, and transactional outbox events.
+- OWNER+TOTP settlement import CLI with explicit confirmation, immutable source reference, SHA-256 checksum, zero-tolerance reconciliation, and duplicate/conflict detection.
+- Equal-and-opposite journal reversal CLI; posted journal entries, lines, allocations, and contribution snapshots are protected by database immutability triggers.
+- Authenticated reward, reward-period audit trace, ledger-entry, and balance endpoints with user isolation and `rewards:read`/`ledger:read` API-key scopes.
+- ADR-0011, financial-truth operations runbook, fresh/upgrade v10 migration verifier, and end-to-end accounting integration test.
+
+### Changed
+
+- Initial platform fee remains **0.5% (50 basis points)** and now becomes an immutable policy snapshot on every persisted allocation.
+- Gross reward and provider costs use deterministic largest-remainder allocation; per-account platform fees round down at the atomic boundary in the user's favour.
+- User balances are calculated exclusively from user-liability lines in posted/reversed journals; no mutable balance field is authoritative.
+- Mining projection writes a durable contribution event only after upstream acceptance and now acknowledges unrelated domain events without incorrectly dead-lettering them.
+- Release metadata advances to `0.3.0-alpha.5`, schema version 10, and migration `20260816020000_financial_truth_foundation`.
+
+### Fixed
+
+- Journal-line database validation now requires decimal and atomic amounts to represent the exact same asset value, in addition to balancing both representations.
+- The v9-to-v10 verifier now creates its own deterministic legacy fixture instead of depending on optional development seed data, and invokes pnpm without the deprecated shell path.
+- The end-to-end accounting harness now uses per-run fixture identities, so the same disposable database can be validated repeatedly without uniqueness collisions.
+- The PostgreSQL authentication integration test now provisions isolated test-only cryptographic configuration instead of depending on ambient machine secrets.
+- Managed-source checksums now canonicalize CRLF to LF, keeping verification stable across Windows and Linux checkouts.
+
+### Safety boundary
+
+- Settlement variance is fail-closed: alpha.5 requires zero atomic tolerance and creates no allocation or journal for an exception.
+- Payouts, wallet signing, transaction broadcast, conversion, and real funds remain disabled.
+- Exception approval/resolution, selected-provider evidence, multi-replica event recovery, load/soak evidence, and controlled-funds gates remain pending.
+
+### Validation evidence
+
+- Reward-engine tests pass 11/11, including exact remainders, user-favouring 50 bps rounding, and per-account cost-cap edge cases.
+- Accounting unit tests pass 2/2; mining-worker, accounting-worker, API, and operator scripts pass targeted typechecks.
+- PostgreSQL disposable validation passes all 10 migrations from empty, formal v9-to-v10 upgrade/backfill, and repeatable financial trace tests for concurrent duplicate delivery, exact 50 bps fee, decimal/atomic consistency, balanced journal, immutable facts, reversal, zero projected balance after reversal, and zero payouts.
+- All local commit gates pass: lint 27/27, typecheck 41/41, tests 41/41, production build 27/27 with 21 generated Next.js routes, alpha.5 static checks, Compose configuration, a 502-file managed-source manifest, and a 503-file release manifest.
+
+### Development assistance
+
+- OpenAI Codex assisted with architecture review, implementation, documentation, automated tests, migration and release validation, and engineering gap analysis for this project.
+- Product ownership, requirements, final decisions, approvals, and release responsibility remain with Abia Nugrahanto.
+
 ## [0.3.0-alpha.4] - 2026-08-15
 
 ### Added

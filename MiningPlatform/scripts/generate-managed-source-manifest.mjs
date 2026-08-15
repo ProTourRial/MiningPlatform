@@ -26,6 +26,10 @@ const excludedDirectories = new Set([
   '.cache',
 ]);
 
+function canonicalizeForChecksum(content) {
+  return Buffer.from(content.toString('latin1').replaceAll('\r\n', '\n'), 'latin1');
+}
+
 async function walk(directory) {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -47,7 +51,7 @@ for (const absolute of await walk(root)) {
     path.startsWith('packages/database/src/generated/')
   )
     continue;
-  const contents = await readFile(absolute);
+  const contents = canonicalizeForChecksum(await readFile(absolute));
   entries.push({
     path,
     sha256: createHash('sha256').update(contents).digest('hex'),
@@ -66,8 +70,8 @@ for (const entry of entries) {
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0-alpha.4',
-  releaseName: 'Distributed Upstream Health',
+  version: '0.3.0-alpha.5',
+  releaseName: 'Financial Truth Foundation',
   packagingRevision: 'r1',
   verificationMode: 'managed-files-only',
   extraFilesPolicy: 'ignored',

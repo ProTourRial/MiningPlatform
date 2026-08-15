@@ -4,14 +4,32 @@ import { prisma } from '@mining/database';
 import { generateOpaqueToken, hashOpaqueToken } from '@mining/security';
 import type { CreateApiKeyDto } from './api-keys.dto.js';
 
-const ALLOWED_SCOPES = new Set(['workers:read', 'workers:write', 'dashboard:read', 'profile:read', 'notifications:write']);
+const ALLOWED_SCOPES = new Set([
+  'workers:read',
+  'workers:write',
+  'rewards:read',
+  'ledger:read',
+  'dashboard:read',
+  'profile:read',
+  'notifications:write',
+]);
 
 @Injectable()
 export class ApiKeysService {
   list(userId: string) {
     return prisma.apiKey.findMany({
       where: { userId },
-      select: { id: true, keyId: true, name: true, scopes: true, status: true, expiresAt: true, lastUsedAt: true, createdAt: true, revokedAt: true },
+      select: {
+        id: true,
+        keyId: true,
+        name: true,
+        scopes: true,
+        status: true,
+        expiresAt: true,
+        lastUsedAt: true,
+        createdAt: true,
+        revokedAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -22,17 +40,39 @@ export class ApiKeysService {
       throw new BadRequestException(`Allowed scopes: ${[...ALLOWED_SCOPES].join(', ')}`);
     }
     const expiresAt = dto.expiresAt ? new Date(dto.expiresAt) : undefined;
-    if (expiresAt && expiresAt <= new Date()) throw new BadRequestException('expiresAt must be in the future');
+    if (expiresAt && expiresAt <= new Date())
+      throw new BadRequestException('expiresAt must be in the future');
     const keyId = generateOpaqueToken('mpk', 12);
     const secret = generateOpaqueToken('mps', 32);
     const token = `${keyId}.${secret}`;
     const apiKey = await prisma.$transaction(async (tx) => {
       const created = await tx.apiKey.create({
-        data: { userId, keyId, secretHash: hashOpaqueToken(token), name: dto.name.trim(), scopes, expiresAt },
-        select: { id: true, keyId: true, name: true, scopes: true, status: true, expiresAt: true, createdAt: true },
+        data: {
+          userId,
+          keyId,
+          secretHash: hashOpaqueToken(token),
+          name: dto.name.trim(),
+          scopes,
+          expiresAt,
+        },
+        select: {
+          id: true,
+          keyId: true,
+          name: true,
+          scopes: true,
+          status: true,
+          expiresAt: true,
+          createdAt: true,
+        },
       });
       await tx.auditLog.create({
-        data: { actorUserId: userId, action: 'API_KEY_CREATED', resourceType: 'ApiKey', resourceId: created.id, metadata: { scopes } },
+        data: {
+          actorUserId: userId,
+          action: 'API_KEY_CREATED',
+          resourceType: 'ApiKey',
+          resourceId: created.id,
+          metadata: { scopes },
+        },
       });
       return created;
     });
@@ -45,7 +85,14 @@ export class ApiKeysService {
       data: { status: 'REVOKED', revokedAt: new Date() },
     });
     if (result.count === 0) throw new NotFoundException('Active API key not found');
-    await prisma.auditLog.create({ data: { actorUserId: userId, action: 'API_KEY_REVOKED', resourceType: 'ApiKey', resourceId: id } });
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: userId,
+        action: 'API_KEY_REVOKED',
+        resourceType: 'ApiKey',
+        resourceId: id,
+      },
+    });
     return { revoked: true };
   }
 }

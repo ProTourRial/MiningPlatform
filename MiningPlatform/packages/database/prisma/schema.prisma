@@ -177,6 +177,13 @@ enum RewardStatus {
   FAILED
 }
 
+enum ReconciliationStatus {
+  PENDING
+  MATCHED
+  EXCEPTION
+  RESOLVED
+}
+
 enum LedgerAccountType {
   ASSET
   LIABILITY
@@ -459,26 +466,29 @@ model Asset {
   reconciliations       UpstreamReconciliation[]
   stratumJobs           StratumJob[]
   feePolicies           MiningFeePolicy[]
+  contributionFacts     ContributionFact[]
 }
 
 model MiningAccount {
-  id                 String             @id @default(cuid())
-  userId             String
-  assetId            String
-  feePolicyId        String
-  username           String             @unique
-  rewardMethod       RewardMethod       @default(FOLLOW_UPSTREAM)
-  platformFeePercent Decimal            @db.Decimal(7, 4)
-  enabled            Boolean            @default(true)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  deletedAt          DateTime?
-  user               User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset              Asset              @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  feePolicy          MiningFeePolicy    @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
-  scopedFeePolicies  MiningFeePolicy[]  @relation("ScopedMiningAccountFeePolicy")
-  workers            Worker[]
-  rewardAllocations  RewardAllocation[]
+  id                  String                     @id @default(cuid())
+  userId              String
+  assetId             String
+  feePolicyId         String
+  username            String                     @unique
+  rewardMethod        RewardMethod               @default(FOLLOW_UPSTREAM)
+  platformFeePercent  Decimal                    @db.Decimal(7, 4)
+  enabled             Boolean                    @default(true)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  deletedAt           DateTime?
+  user                User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset               Asset                      @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  feePolicy           MiningFeePolicy            @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
+  scopedFeePolicies   MiningFeePolicy[]          @relation("ScopedMiningAccountFeePolicy")
+  workers             Worker[]
+  rewardAllocations   RewardAllocation[]
+  contributionFacts   ContributionFact[]
+  periodContributions RewardPeriodContribution[]
 
   @@unique([userId, assetId])
   @@index([assetId, enabled])
@@ -786,11 +796,34 @@ model Share {
   session                MinerSession          @relation(fields: [sessionId], references: [id], onDelete: Restrict)
   stratumJob             StratumJob?           @relation(fields: [stratumJobId], references: [id], onDelete: SetNull)
   difficultyAssignment   DifficultyAssignment? @relation(fields: [difficultyAssignmentId], references: [id], onDelete: SetNull)
+  contributionFact       ContributionFact?
 
   @@index([workerId, submittedAt])
   @@index([sessionId, submittedAt])
   @@index([stratumJobId, status])
   @@index([assetId, status, submittedAt])
+}
+
+model ContributionFact {
+  id                 String        @id @default(cuid())
+  sourceEventId      String        @unique
+  shareId            String        @unique
+  miningAccountId    String
+  assetId            String
+  upstreamPoolId     String
+  rewardPeriodId     String?
+  acceptedDifficulty Decimal       @db.Decimal(38, 12)
+  acceptedAt         DateTime
+  correlationId      String
+  createdAt          DateTime      @default(now())
+  share              Share         @relation(fields: [shareId], references: [id], onDelete: Restrict)
+  miningAccount      MiningAccount @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset              Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool       UpstreamPool  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  rewardPeriod       RewardPeriod? @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+
+  @@index([assetId, upstreamPoolId, acceptedAt])
+  @@index([rewardPeriodId, miningAccountId])
 }
 
 model HashrateBucket {
@@ -828,28 +861,59 @@ model HashrateSnapshot {
 }
 
 model RewardPeriod {
-  id                   String                  @id @default(cuid())
-  assetId              String
-  upstreamPoolId       String?
-  method               RewardMethod
-  status               RewardStatus            @default(OPEN)
-  periodStart          DateTime
-  periodEnd            DateTime
-  grossReward          Decimal                 @default(0) @db.Decimal(36, 18)
-  upstreamFee          Decimal                 @default(0) @db.Decimal(36, 18)
-  networkFee           Decimal                 @default(0) @db.Decimal(36, 18)
-  platformFee          Decimal                 @default(0) @db.Decimal(36, 18)
-  distributableReward  Decimal                 @default(0) @db.Decimal(36, 18)
-  reconciliationStatus String                  @default("PENDING")
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  asset                Asset                   @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool         UpstreamPool?           @relation(fields: [upstreamPoolId], references: [id], onDelete: SetNull)
-  allocations          RewardAllocation[]
-  reconciliation       UpstreamReconciliation?
+  id                    String                     @id @default(cuid())
+  assetId               String
+  upstreamPoolId        String?
+  method                RewardMethod
+  status                RewardStatus               @default(OPEN)
+  periodStart           DateTime
+  periodEnd             DateTime
+  grossReward           Decimal                    @default(0) @db.Decimal(36, 18)
+  upstreamFee           Decimal                    @default(0) @db.Decimal(36, 18)
+  networkFee            Decimal                    @default(0) @db.Decimal(36, 18)
+  platformFee           Decimal                    @default(0) @db.Decimal(36, 18)
+  distributableReward   Decimal                    @default(0) @db.Decimal(36, 18)
+  reconciliationStatus  ReconciliationStatus       @default(PENDING)
+  strategyVersion       String                     @default("follow-upstream-atomic-v1")
+  settlementVersion     Int                        @default(1)
+  grossAtomic           BigInt                     @default(0)
+  upstreamFeeAtomic     BigInt                     @default(0)
+  networkFeeAtomic      BigInt                     @default(0)
+  platformFeeAtomic     BigInt                     @default(0)
+  distributableAtomic   BigInt                     @default(0)
+  userNetAtomic         BigInt                     @default(0)
+  totalContribution     Decimal                    @default(0) @db.Decimal(38, 12)
+  shareCount            Int                        @default(0)
+  allocatedAt           DateTime?
+  reconciledAt          DateTime?
+  closedAt              DateTime?
+  failureCode           String?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  asset                 Asset                      @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool          UpstreamPool?              @relation(fields: [upstreamPoolId], references: [id], onDelete: SetNull)
+  allocations           RewardAllocation[]
+  reconciliation        UpstreamReconciliation?
+  contributionFacts     ContributionFact[]
+  contributionSnapshots RewardPeriodContribution[]
 
-  @@unique([assetId, periodStart, periodEnd])
+  @@unique([assetId, upstreamPoolId, periodStart, periodEnd])
   @@index([status, periodEnd])
+}
+
+model RewardPeriodContribution {
+  id                 String        @id @default(cuid())
+  rewardPeriodId     String
+  miningAccountId    String
+  acceptedDifficulty Decimal       @db.Decimal(38, 12)
+  shareCount         Int
+  sourceDigest       String
+  createdAt          DateTime      @default(now())
+  rewardPeriod       RewardPeriod  @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+  miningAccount      MiningAccount @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+
+  @@unique([rewardPeriodId, miningAccountId])
+  @@index([miningAccountId, createdAt])
 }
 
 model RewardAllocation {
@@ -862,8 +926,18 @@ model RewardAllocation {
   feePolicySnapshot Json
   contribution      Decimal         @db.Decimal(38, 18)
   grossAmount       Decimal         @db.Decimal(36, 18)
+  upstreamFeeAmount Decimal         @default(0) @db.Decimal(36, 18)
+  networkFeeAmount  Decimal         @default(0) @db.Decimal(36, 18)
   platformFeeAmount Decimal         @db.Decimal(36, 18)
   netAmount         Decimal         @db.Decimal(36, 18)
+  contributionUnits BigInt          @default(0)
+  grossAtomic       BigInt          @default(0)
+  upstreamFeeAtomic BigInt          @default(0)
+  networkFeeAtomic  BigInt          @default(0)
+  platformFeeAtomic BigInt          @default(0)
+  netAtomic         BigInt          @default(0)
+  strategyVersion   String          @default("follow-upstream-atomic-v1")
+  roundingPolicy    String          @default("largest-remainder-user-favouring-v1")
   journalEntryId    String?         @unique
   createdAt         DateTime        @default(now())
   rewardPeriod      RewardPeriod    @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
@@ -899,10 +973,15 @@ model JournalEntry {
   referenceType    String
   referenceId      String
   description      String
+  correlationId    String
+  causationId      String?
+  entryVersion     Int                @default(1)
   status           JournalEntryStatus @default(PENDING)
   effectiveAt      DateTime
   postedAt         DateTime?
   reversedEntryId  String?            @unique
+  reversalReason   String?
+  reversedAt       DateTime?
   createdAt        DateTime           @default(now())
   lines            JournalLine[]
   rewardAllocation RewardAllocation?
@@ -921,6 +1000,8 @@ model JournalLine {
   assetId         String
   debit           Decimal       @default(0) @db.Decimal(36, 18)
   credit          Decimal       @default(0) @db.Decimal(36, 18)
+  debitAtomic     BigInt        @default(0)
+  creditAtomic    BigInt        @default(0)
   createdAt       DateTime      @default(now())
   journalEntry    JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Restrict)
   ledgerAccount   LedgerAccount @relation(fields: [ledgerAccountId], references: [id], onDelete: Restrict)
@@ -1043,6 +1124,7 @@ model UpstreamPool {
   reconciliations       UpstreamReconciliation[]
   upstreamSessions      UpstreamSession[]
   stratumJobs           StratumJob[]
+  contributionFacts     ContributionFact[]
 
   @@unique([assetId, name])
   @@unique([assetId, poolKey])
@@ -1051,23 +1133,36 @@ model UpstreamPool {
 }
 
 model UpstreamReconciliation {
-  id                     String       @id @default(cuid())
+  id                     String               @id @default(cuid())
   assetId                String
   upstreamPoolId         String
-  rewardPeriodId         String       @unique
-  upstreamGrossReward    Decimal      @db.Decimal(36, 18)
-  upstreamFee            Decimal      @db.Decimal(36, 18)
-  receivedAmount         Decimal      @db.Decimal(36, 18)
-  internalExpectedAmount Decimal      @db.Decimal(36, 18)
-  varianceAmount         Decimal      @db.Decimal(36, 18)
-  status                 String
-  sourceReference        String?
+  rewardPeriodId         String               @unique
+  upstreamGrossReward    Decimal              @db.Decimal(36, 18)
+  upstreamFee            Decimal              @db.Decimal(36, 18)
+  receivedAmount         Decimal              @db.Decimal(36, 18)
+  internalExpectedAmount Decimal              @db.Decimal(36, 18)
+  varianceAmount         Decimal              @db.Decimal(36, 18)
+  status                 ReconciliationStatus @default(PENDING)
+  sourceReference        String               @unique
+  sourceChecksum         String
+  importIdempotencyKey   String               @unique
+  upstreamGrossAtomic    BigInt
+  upstreamFeeAtomic      BigInt
+  networkFeeAtomic       BigInt
+  receivedAtomic         BigInt
+  internalExpectedAtomic BigInt
+  varianceAtomic         BigInt
+  toleranceAtomic        BigInt               @default(0)
+  exceptionCode          String?
+  exceptionMessage       String?
+  importedAt             DateTime             @default(now())
+  resolvedAt             DateTime?
   reconciledAt           DateTime?
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  asset                  Asset        @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool           UpstreamPool @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
-  rewardPeriod           RewardPeriod @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  asset                  Asset                @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool           UpstreamPool         @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  rewardPeriod           RewardPeriod         @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
 
   @@index([status, createdAt])
 }

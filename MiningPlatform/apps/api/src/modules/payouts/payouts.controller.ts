@@ -12,6 +12,11 @@ import { ApiTags } from '@nestjs/swagger';
 export class PayoutsController {
   @Get('status')
   getStatus() {
-    return { module: 'payouts', status: 'scaffolded' };
+    return {
+      module: 'payouts',
+      status: 'disabled',
+      enabled: false,
+      reason: 'P0.3 reconciliation resolution and every P0.4 controlled-funds gate are pending',
+    };
   }
 }

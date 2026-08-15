@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   allocateFollowUpstreamReward,
+  allocateSettledReward,
   resolveEffectiveFeePolicy,
   snapshotFeePolicy,
   type FeePolicyCandidate,
@@ -147,5 +148,119 @@ test('rejects ambiguous active fee policies at the same scope', () => {
         new Date('2026-08-13T00:00:00Z'),
       ),
     /Ambiguous active fee policies/,
+  );
+});
+
+test('allocates gross reward and provider costs exactly with deterministic remainders', () => {
+  const allocations = allocateSettledReward({
+    grossAtomic: 1_001n,
+    upstreamFeeAtomic: 10n,
+    networkFeeAtomic: 1n,
+    contributions: [
+      { miningAccountId: 'account-b', contributionUnits: 1n, feeBasisPoints: 50n },
+      { miningAccountId: 'account-a', contributionUnits: 2n, feeBasisPoints: 50n },
+    ],
+  });
+
+  assert.deepEqual(
+    allocations.map(({ miningAccountId, grossAtomic, upstreamFeeAtomic, networkFeeAtomic }) => ({
+      miningAccountId,
+      grossAtomic,
+      upstreamFeeAtomic,
+      networkFeeAtomic,
+    })),
+    [
+      {
+        miningAccountId: 'account-a',
+        grossAtomic: 667n,
+        upstreamFeeAtomic: 7n,
+        networkFeeAtomic: 1n,
+      },
+      {
+        miningAccountId: 'account-b',
+        grossAtomic: 334n,
+        upstreamFeeAtomic: 3n,
+        networkFeeAtomic: 0n,
+      },
+    ],
+  );
+  assert.equal(
+    allocations.reduce((sum, row) => sum + row.grossAtomic, 0n),
+    1_001n,
+  );
+  assert.equal(
+    allocations.reduce((sum, row) => sum + row.upstreamFeeAtomic, 0n),
+    10n,
+  );
+  assert.equal(
+    allocations.reduce((sum, row) => sum + row.networkFeeAtomic, 0n),
+    1n,
+  );
+  assert.equal(
+    allocations.reduce((sum, row) => sum + row.netAtomic + row.platformFeeAtomic, 0n),
+    990n,
+  );
+});
+
+test('applies per-account fee policies and rounds platform fees in the user favour', () => {
+  const allocations = allocateSettledReward({
+    grossAtomic: 100_001n,
+    upstreamFeeAtomic: 0n,
+    networkFeeAtomic: 0n,
+    contributions: [
+      { miningAccountId: 'default-fee', contributionUnits: 1n, feeBasisPoints: 50n },
+      { miningAccountId: 'custom-fee', contributionUnits: 1n, feeBasisPoints: 25n },
+    ],
+  });
+
+  assert.deepEqual(
+    allocations.map(({ miningAccountId, platformFeeAtomic }) => ({
+      miningAccountId,
+      platformFeeAtomic,
+    })),
+    [
+      { miningAccountId: 'custom-fee', platformFeeAtomic: 125n },
+      { miningAccountId: 'default-fee', platformFeeAtomic: 250n },
+    ],
+  );
+});
+
+test('rejects settlements whose costs exceed gross reward', () => {
+  assert.throws(
+    () =>
+      allocateSettledReward({
+        grossAtomic: 100n,
+        upstreamFeeAtomic: 101n,
+        networkFeeAtomic: 0n,
+        contributions: [
+          { miningAccountId: 'account-a', contributionUnits: 1n, feeBasisPoints: 50n },
+        ],
+      }),
+    /cannot exceed gross reward/,
+  );
+});
+
+test('caps independently rounded provider costs at each account gross allocation', () => {
+  const allocations = allocateSettledReward({
+    grossAtomic: 2n,
+    upstreamFeeAtomic: 1n,
+    networkFeeAtomic: 1n,
+    contributions: [
+      { miningAccountId: 'account-a', contributionUnits: 1n, feeBasisPoints: 50n },
+      { miningAccountId: 'account-b', contributionUnits: 1n, feeBasisPoints: 50n },
+    ],
+  });
+
+  assert.deepEqual(
+    allocations.map(({ miningAccountId, upstreamFeeAtomic, networkFeeAtomic, netAtomic }) => ({
+      miningAccountId,
+      upstreamFeeAtomic,
+      networkFeeAtomic,
+      netAtomic,
+    })),
+    [
+      { miningAccountId: 'account-a', upstreamFeeAtomic: 1n, networkFeeAtomic: 0n, netAtomic: 0n },
+      { miningAccountId: 'account-b', upstreamFeeAtomic: 0n, networkFeeAtomic: 1n, netAtomic: 0n },
+    ],
   );
 });

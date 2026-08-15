@@ -1,21 +1,21 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.4",
-  "releaseName": "Distributed Upstream Health",
+  "version": "0.3.0-alpha.5",
+  "releaseName": "Financial Truth Foundation",
   "artifactType": "full-release",
-  "schemaVersion": 9,
-  "migration": "20260813010000_versioned_fee_policy",
+  "schemaVersion": 10,
+  "migration": "20260816020000_financial_truth_foundation",
   "compatibleFrom": [
+    "0.3.0-alpha.4",
     "0.3.0-alpha.3",
     "0.3.0-alpha.2",
-    "0.3.0-alpha.1",
-    "0.2.0-alpha.6"
+    "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "af9a3285f3fb89834d4e5a3d67550ae9196ab6d3c9094c3b8922f8cf64339591",
+  "payloadChecksum": "1b9ddf668b7ebae4e44870b2a1f1f91a146e362cef3db302ce44a2a81f1d0a0c",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 484,
-  "buildDate": "2026-08-15T00:00:00+07:00",
+  "payloadFileCount": 503,
+  "buildDate": "2026-08-16T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }

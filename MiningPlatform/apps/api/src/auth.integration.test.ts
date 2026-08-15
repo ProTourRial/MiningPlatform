@@ -11,6 +11,10 @@ import { prisma } from '@mining/database';
 import { hashOpaqueToken } from '@mining/security';
 import { AuthService } from './modules/auth/auth.service.js';
 
+process.env.AUTH_JWT_SECRET = 'integration-test-only-jwt-secret-at-least-32-bytes';
+process.env.AUTH_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64url');
+process.env.AUTH_EXPOSE_TEST_TOKENS = 'true';
+
 async function ensureBitcoinAsset(): Promise<void> {
   await prisma.asset.upsert({
     where: { symbol: 'BTC' },

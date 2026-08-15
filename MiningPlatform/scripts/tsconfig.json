@@ -6,18 +6,11 @@
     "sourceMap": false,
     "baseUrl": "..",
     "paths": {
-      "@mining/mining-core": [
-        "packages/mining-core/src/index.ts"
-      ],
-      "@mining/database": [
-        "packages/database/src/index.ts"
-      ],
-      "@mining/security": [
-        "packages/security/src/index.ts"
-      ]
+      "@mining/mining-core": ["packages/mining-core/src/index.ts"],
+      "@mining/database": ["packages/database/src/index.ts"],
+      "@mining/security": ["packages/security/src/index.ts"],
+      "@mining/shared": ["packages/shared/src/index.ts"]
     }
   },
-  "include": [
-    "./*.ts"
-  ]
+  "include": ["./*.ts"]
 }

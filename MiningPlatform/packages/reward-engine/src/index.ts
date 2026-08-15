@@ -16,6 +16,22 @@ export type RewardAllocation = {
   netSats: bigint;
 };
 
+export type SettlementContribution = {
+  miningAccountId: string;
+  contributionUnits: bigint;
+  feeBasisPoints: bigint;
+};
+
+export type SettledRewardAllocation = {
+  miningAccountId: string;
+  contributionUnits: bigint;
+  grossAtomic: bigint;
+  upstreamFeeAtomic: bigint;
+  networkFeeAtomic: bigint;
+  platformFeeAtomic: bigint;
+  netAtomic: bigint;
+};
+
 export type FeePolicyScope =
   | 'PLATFORM_DEFAULT'
   | 'ASSET'
@@ -200,6 +216,138 @@ export function allocateFollowUpstreamReward(
       grossSats,
       platformFeeSats,
       netSats: grossSats - platformFeeSats,
+    };
+  });
+}
+
+function assertSettlementContributions(
+  contributions: readonly SettlementContribution[],
+): readonly SettlementContribution[] {
+  const ordered = [...contributions].sort((left, right) =>
+    left.miningAccountId.localeCompare(right.miningAccountId),
+  );
+  const seen = new Set<string>();
+  for (const contribution of ordered) {
+    if (!contribution.miningAccountId.trim()) throw new Error('Mining account ID is required');
+    if (seen.has(contribution.miningAccountId)) {
+      throw new Error(`Duplicate mining account contribution: ${contribution.miningAccountId}`);
+    }
+    if (contribution.contributionUnits <= 0n) {
+      throw new Error('Contribution units must be greater than zero');
+    }
+    if (contribution.feeBasisPoints < 0n || contribution.feeBasisPoints > 10_000n) {
+      throw new Error(`Invalid fee basis points: ${contribution.miningAccountId}`);
+    }
+    seen.add(contribution.miningAccountId);
+  }
+  return ordered;
+}
+
+function allocateByLargestRemainder(
+  totalAtomic: bigint,
+  contributions: readonly SettlementContribution[],
+  capacity?: ReadonlyMap<string, bigint>,
+): ReadonlyMap<string, bigint> {
+  if (totalAtomic < 0n) throw new Error('Settlement amount cannot be negative');
+  const totalContribution = contributions.reduce(
+    (sum, contribution) => sum + contribution.contributionUnits,
+    0n,
+  );
+  if (totalContribution <= 0n) return new Map();
+
+  const rows = contributions.map((contribution) => {
+    const numerator = totalAtomic * contribution.contributionUnits;
+    const maximum = capacity?.get(contribution.miningAccountId) ?? totalAtomic;
+    return {
+      miningAccountId: contribution.miningAccountId,
+      allocated: [numerator / totalContribution, maximum].reduce((left, right) =>
+        left < right ? left : right,
+      ),
+      remainder: numerator % totalContribution,
+      maximum,
+    };
+  });
+  let residual = totalAtomic - rows.reduce((sum, row) => sum + row.allocated, 0n);
+  const ranked = [...rows].sort((left, right) => {
+    if (left.remainder === right.remainder) {
+      return left.miningAccountId.localeCompare(right.miningAccountId);
+    }
+    return left.remainder > right.remainder ? -1 : 1;
+  });
+  while (residual > 0n) {
+    let progressed = false;
+    for (const row of ranked) {
+      if (residual === 0n) break;
+      if (row.allocated >= row.maximum) continue;
+      row.allocated += 1n;
+      residual -= 1n;
+      progressed = true;
+    }
+    if (!progressed) throw new Error('Settlement allocation exceeds account capacity');
+  }
+  return new Map(rows.map((row) => [row.miningAccountId, row.allocated]));
+}
+
+/**
+ * Allocates an imported upstream settlement in smallest asset units.
+ *
+ * Gross reward and provider costs use deterministic largest-remainder allocation.
+ * Platform fees round down per account, favouring the user at the atomic-unit boundary.
+ */
+export function allocateSettledReward(input: {
+  grossAtomic: bigint;
+  upstreamFeeAtomic: bigint;
+  networkFeeAtomic: bigint;
+  contributions: readonly SettlementContribution[];
+}): SettledRewardAllocation[] {
+  if (input.grossAtomic < 0n) throw new Error('Gross reward cannot be negative');
+  if (input.upstreamFeeAtomic < 0n || input.networkFeeAtomic < 0n) {
+    throw new Error('Settlement costs cannot be negative');
+  }
+  if (input.upstreamFeeAtomic + input.networkFeeAtomic > input.grossAtomic) {
+    throw new Error('Settlement costs cannot exceed gross reward');
+  }
+
+  const contributions = assertSettlementContributions(input.contributions);
+  if (contributions.length === 0) {
+    if (input.grossAtomic !== 0n) throw new Error('Non-zero settlement requires contributions');
+    return [];
+  }
+
+  const gross = allocateByLargestRemainder(input.grossAtomic, contributions);
+  const upstreamFees = allocateByLargestRemainder(input.upstreamFeeAtomic, contributions, gross);
+  const networkCapacity = new Map(
+    contributions.map((contribution) => [
+      contribution.miningAccountId,
+      (gross.get(contribution.miningAccountId) ?? 0n) -
+        (upstreamFees.get(contribution.miningAccountId) ?? 0n),
+    ]),
+  );
+  const networkFees = allocateByLargestRemainder(
+    input.networkFeeAtomic,
+    contributions,
+    networkCapacity,
+  );
+
+  return contributions.map((contribution) => {
+    const grossAtomic = gross.get(contribution.miningAccountId) ?? 0n;
+    const upstreamFeeAtomic = upstreamFees.get(contribution.miningAccountId) ?? 0n;
+    const networkFeeAtomic = networkFees.get(contribution.miningAccountId) ?? 0n;
+    const platformFeeAtomic = (grossAtomic * contribution.feeBasisPoints) / 10_000n;
+    const netAtomic = grossAtomic - upstreamFeeAtomic - networkFeeAtomic - platformFeeAtomic;
+    if (netAtomic < 0n) {
+      throw new Error(
+        `Settlement costs and platform fee exceed account gross reward: ${contribution.miningAccountId}`,
+      );
+    }
+    return {
+      miningAccountId: contribution.miningAccountId,
+      contributionUnits: contribution.contributionUnits,
+      grossAtomic,
+      upstreamFeeAtomic,
+      networkFeeAtomic,
+      platformFeeAtomic,
+      netAtomic,
     };
   });
 }

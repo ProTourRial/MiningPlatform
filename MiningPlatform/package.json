@@ -1,6 +1,6 @@
 {
   "name": "mining-platform",
-  "version": "0.3.0-alpha.4",
+  "version": "0.3.0-alpha.5",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
@@ -11,7 +11,7 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "pnpm prepare:workspace && turbo dev --filter=@mining/web --filter=@mining/api --filter=@mining/stratum-server --filter=@mining/mining-worker --filter=@mining/outbox-worker --filter=@mining/scheduler",
+    "dev": "pnpm prepare:workspace && turbo dev --filter=@mining/web --filter=@mining/api --filter=@mining/stratum-server --filter=@mining/mining-worker --filter=@mining/accounting-worker --filter=@mining/outbox-worker --filter=@mining/scheduler",
     "build": "pnpm db:generate && turbo build",
     "lint": "turbo lint",
     "typecheck": "pnpm db:generate && pnpm typecheck:scripts && turbo typecheck",
@@ -36,7 +36,7 @@
     "dev:upstream-simulator": "pnpm --filter @mining/upstream-simulator dev",
     "test:upstream": "pnpm --filter @mining/upstream-stratum test && pnpm --filter @mining/stratum-server test",
     "headers:author": "node scripts/add-author-headers.mjs",
-    "worker:credential": "tsx scripts/worker-credential-cli.ts",
+    "worker:credential": "tsx --tsconfig scripts/tsconfig.json scripts/worker-credential-cli.ts",
     "verify:alpha5:static": "node scripts/check-alpha5-upgrade.mjs",
     "verify:alpha5": "node scripts/verify-alpha5-release.mjs",
     "verify:alpha5:fast": "node scripts/verify-alpha5-release.mjs --skip-install --skip-build",
@@ -56,18 +56,24 @@
     "verify:v030-alpha1:fast": "node scripts/verify-v030-alpha1-release.mjs --static-only",
     "verify:migration:v030-alpha1:fresh": "node scripts/verify-v030-alpha1-migration.mjs fresh",
     "verify:migration:v030-alpha1:upgrade": "node scripts/verify-v030-alpha1-migration.mjs upgrade",
-    "user:role": "tsx scripts/user-role-cli.ts",
+    "user:role": "tsx --tsconfig scripts/tsconfig.json scripts/user-role-cli.ts",
     "verify:migration:v030-alpha2:fresh": "node scripts/verify-v030-alpha2-migration.mjs fresh",
     "verify:migration:v030-alpha2:upgrade": "node scripts/verify-v030-alpha2-migration.mjs upgrade",
     "test:integration:auth": "pnpm --filter @mining/api test",
     "verify:v030-alpha2:static": "node scripts/check-v030-alpha2.mjs",
     "verify:v030-alpha3:static": "node scripts/check-v030-alpha3.mjs",
     "verify:v030-alpha4:static": "node scripts/check-v030-alpha4.mjs",
+    "verify:v030-alpha5:static": "node scripts/check-v030-alpha5.mjs",
     "verify:migration:v030-alpha3:fresh": "node scripts/verify-v030-alpha3-migration.mjs fresh",
     "verify:migration:v030-alpha3:upgrade": "node scripts/verify-v030-alpha3-migration.mjs upgrade",
+    "verify:migration:v030-alpha5:fresh": "node scripts/verify-v030-alpha5-migration.mjs fresh",
+    "verify:migration:v030-alpha5:upgrade": "node scripts/verify-v030-alpha5-migration.mjs upgrade",
     "db:snapshot": "node scripts/database-snapshot.mjs backup",
     "db:restore": "node scripts/database-snapshot.mjs restore",
-    "verify:payment-addresses": "node scripts/validate-payment-addresses.mjs"
+    "verify:payment-addresses": "node scripts/validate-payment-addresses.mjs",
+    "settlement:import": "tsx --tsconfig scripts/tsconfig.json scripts/settlement-import-cli.ts",
+    "journal:reverse": "tsx --tsconfig scripts/tsconfig.json scripts/journal-reversal-cli.ts",
+    "test:integration:accounting": "tsx --tsconfig scripts/tsconfig.json scripts/financial-truth-integration.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

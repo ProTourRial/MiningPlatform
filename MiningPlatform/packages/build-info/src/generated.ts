@@ -8,9 +8,9 @@
  */
 
 export const RELEASE_DEFAULTS = Object.freeze({
-  version: '0.3.0-alpha.4',
+  version: '0.3.0-alpha.5',
   gitCommit: 'UNCOMMITTED',
-  buildDate: '2026-08-15T00:00:00+07:00',
-  schemaVersion: 9,
-  migration: '20260813010000_versioned_fee_policy',
+  buildDate: '2026-08-16T00:00:00+07:00',
+  schemaVersion: 10,
+  migration: '20260816020000_financial_truth_foundation',
 });
