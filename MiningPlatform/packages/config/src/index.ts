@@ -13,7 +13,7 @@ export const environmentSchema = z.object({
   MINING_ASSET: z.string().default('BTC'),
   MINING_ALGORITHM: z.string().default('SHA256'),
   REWARD_METHOD: z.literal('FOLLOW_UPSTREAM').default('FOLLOW_UPSTREAM'),
-  PLATFORM_FEE_PERCENT: z.coerce.number().min(0).max(100).default(2),
+  PLATFORM_FEE_PERCENT: z.coerce.number().min(0).max(100).default(0.5),
   PAYOUTS_ENABLED: z.enum(['true', 'false']).default('false'),
 });
 

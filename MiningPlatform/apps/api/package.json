@@ -1,6 +1,6 @@
 {
   "name": "@mining/api",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.4",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",

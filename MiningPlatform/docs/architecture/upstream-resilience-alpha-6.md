@@ -112,7 +112,8 @@ Production credentials must be injected through a secret manager; plaintext JSON
 ## Known limits
 
 - One upstream manager is created per downstream session.
-- Circuit state is not shared between gateway replicas.
+- Redis-backed circuit state is now shared between gateway replicas under [ADR-0010](../adr/0010-distributed-upstream-health-and-multiplexing.md). This post-alpha.6 enhancement uses Redis server time and a single half-open probe lease while retaining local fail-open safeguards.
+- Shared upstream multiplexing is intentionally not implemented until the ADR-0010 extranonce, credential-scope, job-ownership, backpressure, and provider-approval invariants can be proven.
 - No provider-specific captured fixture is bundled yet.
-- PostgreSQL and Redis integration, load, soak, and chaos tests remain pending.
+- Redis cross-client integration coverage is present; PostgreSQL multi-replica, load, soak, and chaos evidence remains pending.
 - Docker deployment is not part of the alpha.6 validation performed in the release environment.

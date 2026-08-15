@@ -16,7 +16,14 @@ const excludedFiles = new Set([
   'installed-release-manifest.json',
 ]);
 const excludedDirectories = new Set([
-  '.git', '.next', '.turbo', 'node_modules', 'dist', 'coverage', 'logs', '.cache',
+  '.git',
+  '.next',
+  '.turbo',
+  'node_modules',
+  'dist',
+  'coverage',
+  'logs',
+  '.cache',
 ]);
 
 async function walk(directory) {
@@ -24,7 +31,7 @@ async function walk(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.isDirectory() && excludedDirectories.has(entry.name)) continue;
     const absolute = resolve(directory, entry.name);
-    if (entry.isDirectory()) files.push(...await walk(absolute));
+    if (entry.isDirectory()) files.push(...(await walk(absolute)));
     else if (entry.isFile()) files.push(absolute);
   }
   return files;
@@ -33,9 +40,19 @@ async function walk(directory) {
 const entries = [];
 for (const absolute of await walk(root)) {
   const path = relative(root, absolute).split(sep).join('/');
-  if (excludedFiles.has(path) || path.endsWith('.sha256')) continue;
+  if (
+    excludedFiles.has(path) ||
+    path.endsWith('.sha256') ||
+    path.endsWith('.tsbuildinfo') ||
+    path.startsWith('packages/database/src/generated/')
+  )
+    continue;
   const contents = await readFile(absolute);
-  entries.push({ path, sha256: createHash('sha256').update(contents).digest('hex'), size: contents.length });
+  entries.push({
+    path,
+    sha256: createHash('sha256').update(contents).digest('hex'),
+    size: contents.length,
+  });
 }
 entries.sort((left, right) => left.path.localeCompare(right.path));
 
@@ -49,8 +66,8 @@ for (const entry of entries) {
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0',
-  releaseName: 'Identity & Access',
+  version: '0.3.0-alpha.4',
+  releaseName: 'Distributed Upstream Health',
   packagingRevision: 'r1',
   verificationMode: 'managed-files-only',
   extraFilesPolicy: 'ignored',

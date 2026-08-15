@@ -1,18 +1,11 @@
 {
   "name": "mining-platform",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.4",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.13.1",
-  "pnpm": {
-  "overrides": {
-    "framer-motion@12.0.0>motion-dom": "12.0.0",
-    "framer-motion@12.0.0>motion-utils": "12.0.0",
-    "motion-dom@12.0.0>motion-utils": "12.0.0"
-  }
-},
   "engines": {
     "node": ">=22.12.0",
     "pnpm": ">=10.0.0"
@@ -68,6 +61,10 @@
     "verify:migration:v030-alpha2:upgrade": "node scripts/verify-v030-alpha2-migration.mjs upgrade",
     "test:integration:auth": "pnpm --filter @mining/api test",
     "verify:v030-alpha2:static": "node scripts/check-v030-alpha2.mjs",
+    "verify:v030-alpha3:static": "node scripts/check-v030-alpha3.mjs",
+    "verify:v030-alpha4:static": "node scripts/check-v030-alpha4.mjs",
+    "verify:migration:v030-alpha3:fresh": "node scripts/verify-v030-alpha3-migration.mjs fresh",
+    "verify:migration:v030-alpha3:upgrade": "node scripts/verify-v030-alpha3-migration.mjs upgrade",
     "db:snapshot": "node scripts/database-snapshot.mjs backup",
     "db:restore": "node scripts/database-snapshot.mjs restore",
     "verify:payment-addresses": "node scripts/validate-payment-addresses.mjs"

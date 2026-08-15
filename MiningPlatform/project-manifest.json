@@ -1,12 +1,15 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.2",
-  "generated_files": 409,
+  "version": "0.3.0-alpha.4",
+  "generated_files": 483,
+  "primary_product_reference": "PROJECT_VISION.md",
+  "product_constitution": "docs/product/PRODUCT_CONSTITUTION.md",
+  "production_gap_register": "docs/product/PRODUCTION_GAP_REGISTER.md",
   "baseline": {
     "asset": "BTC",
     "algorithm": "SHA256",
     "reward_method": "FOLLOW_UPSTREAM",
-    "platform_fee_percent": 2,
+    "platform_fee_percent": 0.5,
     "user_deposit": false,
     "ledger": "double-entry",
     "event_delivery": "at-least-once",
@@ -17,9 +20,21 @@
     "scheduler": "centralized"
   },
   "target_release": "0.3.0",
-  "architecture_baseline": "ADR-0001 through ADR-0009",
-  "release_status": "control-plane-hardening-alpha",
+  "architecture_baseline": "ADR-0001 through ADR-0010",
+  "release_status": "distributed-upstream-health-alpha",
   "implemented": {
+    "product_authority": [
+      "project-vision-highest-documentation-layer",
+      "product-constitution-release-invariants",
+      "production-gap-register-critical-path"
+    ],
+    "fee_policy": [
+      "initial-default-50-basis-points",
+      "versioned-effective-policy-schema",
+      "scoped-deterministic-policy-resolution",
+      "immutable-reward-allocation-policy-snapshot-foundation",
+      "legacy-account-and-allocation-migration"
+    ],
     "landing_page": [
       "responsive-mining-design",
       "alpha-boundary-copy",
@@ -73,14 +88,15 @@
       "authenticated-production-websocket-rooms"
     ],
     "database": [
-      "40-model-prisma-schema",
+      "42-model-prisma-schema",
       "baseline-migration",
       "hardening-migration",
       "universal-miner-detection-migration",
       "production-miner-identity-migration",
       "ledger-database-constraints",
       "upstream-resilience-migration",
-      "control-plane-foundation-migration"
+      "control-plane-foundation-migration",
+      "versioned-fee-policy-migration"
     ],
     "operations": [
       "liveness-readiness",
@@ -131,7 +147,12 @@
       "provider-scoped-job-routing",
       "bounded-share-queue",
       "health-and-failover-events",
-      "vardiff-foundation"
+      "vardiff-foundation",
+      "redis-distributed-circuit-state",
+      "single-cross-replica-half-open-probe",
+      "redis-authoritative-lease-time",
+      "coordinator-fail-open-local-fallback",
+      "safe-shared-multiplexing-architecture-decision"
     ],
     "control_plane": [
       "registration-and-email-verification",
@@ -159,9 +180,7 @@
     "load-and-soak-tests",
     "provider-specific-captured-fixtures",
     "shared-upstream-multiplexing",
-    "distributed-upstream-health-state",
     "production-vardiff-validation",
-    "full-pnpm-prisma-next-nest-build-validation",
     "distributed-auth-rate-limiting-and-edge-ddos-controls",
     "reward-ledger-wallet-payout-production-gates",
     "ci-execution-must-be-confirmed-green-on-github",
@@ -173,30 +192,11 @@
     "alertmanager-routing-and-on-call-ownership",
     "production-backup-restore-drill"
   ],
-  "known_environment_limitations": [
-    "pnpm-10.13.1-not-cached-and-package-registry-unavailable-in-packaging-environment",
-    "prisma-client-generation-and-engine-validation-not-executed-in-packaging-environment",
-    "postgres-redis-integration-and-migration-workflows-prepared-but-not-executed",
-    "docker-compose-e2e-workflow-prepared-but-not-executed",
-    "load-stress-soak-and-chaos-tests-deferred"
-  ],
+  "known_environment_limitations": ["load-stress-soak-and-chaos-tests-deferred"],
   "author": "Abia Nugrahanto",
   "universal_hardware": {
-    "types": [
-      "CPU",
-      "GPU",
-      "FPGA",
-      "ASIC",
-      "HYBRID",
-      "OTHER",
-      "UNKNOWN"
-    ],
-    "detection": [
-      "STRATUM_USER_AGENT",
-      "USER_DECLARED",
-      "MONITORING_AGENT",
-      "MINER_API"
-    ],
+    "types": ["CPU", "GPU", "FPGA", "ASIC", "HYBRID", "OTHER", "UNKNOWN"],
+    "detection": ["STRATUM_USER_AGENT", "USER_DECLARED", "MONITORING_AGENT", "MINER_API"],
     "active_algorithm": "SHA256",
     "universal_algorithms": false
   },
@@ -205,29 +205,17 @@
     "lockfile_version": "9.0",
     "install_command": "pnpm install --frozen-lockfile"
   },
-  "schema_version": 8,
+  "schema_version": 9,
   "release_manifest": "release-manifest.json",
   "build_metadata": {
     "api_endpoint": "GET /version",
     "binary_flag": "--version",
-    "fields": [
-      "version",
-      "commit",
-      "buildDate",
-      "schemaVersion",
-      "migration",
-      "component"
-    ]
+    "fields": ["version", "commit", "buildDate", "schemaVersion", "migration", "component"]
   },
-  "credential_cli": [
-    "create",
-    "rotate",
-    "revoke",
-    "list"
-  ],
+  "credential_cli": ["create", "rotate", "revoke", "list"],
   "database_summary": {
-    "models": 41,
-    "enums": 29,
-    "latest_migration": "20260803040000_auth_session_rotation_hardening"
+    "models": 42,
+    "enums": 31,
+    "latest_migration": "20260813010000_versioned_fee_policy"
   }
 }

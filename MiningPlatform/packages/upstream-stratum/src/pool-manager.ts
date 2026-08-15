@@ -7,6 +7,10 @@
 import type { BitcoinMiningJob } from '@mining/mining-core';
 import { exponentialBackoffMs } from './backoff.js';
 import { GatewayJobRouter } from './gateway-job-router.js';
+import type {
+  DistributedPoolHealthCoordinator,
+  PoolConnectionReservation,
+} from './health-coordinator.js';
 import { StratumV1PoolAdapter } from './pool-adapter.js';
 import { BoundedShareQueue } from './share-queue.js';
 import type {
@@ -58,10 +62,8 @@ export interface MultiUpstreamManagerOptions {
   jobCacheMaximumEntries?: number;
   random?: () => number;
   now?: () => Date;
-  adapterFactory?: (
-    pool: UpstreamPoolDefinition,
-    callbacks: PoolAdapterCallbacks,
-  ) => PoolAdapter;
+  healthCoordinator?: DistributedPoolHealthCoordinator;
+  adapterFactory?: (pool: UpstreamPoolDefinition, callbacks: PoolAdapterCallbacks) => PoolAdapter;
 }
 
 export class UpstreamUnavailableError extends Error {
@@ -98,7 +100,8 @@ export class MultiUpstreamPoolManager {
     private readonly options: MultiUpstreamManagerOptions,
     private readonly callbacks: MultiUpstreamManagerCallbacks = {},
   ) {
-    if (options.pools.length === 0) throw new Error('At least one upstream pool must be configured');
+    if (options.pools.length === 0)
+      throw new Error('At least one upstream pool must be configured');
     const ids = new Set<string>();
     for (const definition of options.pools) {
       validatePoolDefinition(definition);
@@ -113,9 +116,13 @@ export class MultiUpstreamPoolManager {
     }
     this.now = options.now ?? (() => new Date());
     this.random = options.random ?? Math.random;
-    this.adapterFactory = options.adapterFactory ?? ((pool, callbacks) =>
-      new StratumV1PoolAdapter(pool.id, pool.endpoint, callbacks));
-    this.jobs = new GatewayJobRouter({ maximumEntries: options.jobCacheMaximumEntries ?? 512, now: this.now });
+    this.adapterFactory =
+      options.adapterFactory ??
+      ((pool, callbacks) => new StratumV1PoolAdapter(pool.id, pool.endpoint, callbacks));
+    this.jobs = new GatewayJobRouter({
+      maximumEntries: options.jobCacheMaximumEntries ?? 512,
+      now: this.now,
+    });
     this.queue = new BoundedShareQueue(
       options.shareQueueCapacity ?? 256,
       1,
@@ -162,18 +169,21 @@ export class MultiUpstreamPoolManager {
     const connected = await this.connectEligiblePools(attempted, signal);
     if (!connected) {
       this.setState('FAILED');
-      throw new UpstreamUnavailableError(`Could not connect to configured pools: ${attempted.join(', ')}`);
+      throw new UpstreamUnavailableError(
+        `Could not connect to configured pools: ${attempted.join(', ')}`,
+      );
     }
     const subscription = this.currentSubscription;
-    if (!subscription) throw new UpstreamUnavailableError('Active pool did not provide extranonce values');
+    if (!subscription)
+      throw new UpstreamUnavailableError('Active pool did not provide extranonce values');
     return subscription;
   }
-
 
   retargetCurrentJob(assignedDifficulty: string): BitcoinMiningJob | undefined {
     const poolId = this.activePoolId;
     if (!poolId) return undefined;
-    const active = this.jobs.activeRoutes()
+    const active = this.jobs
+      .activeRoutes()
       .filter((route) => route.poolId === poolId)
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())[0];
     if (!active) return undefined;
@@ -219,11 +229,13 @@ export class MultiUpstreamPoolManager {
     this.setState('RECOVERING');
     this.callbacks.onRecoveryStarted?.(previousPoolId, reason);
     this.jobs.invalidateAll();
-    this.queue.rejectPending(new UpstreamUnavailableError('Upstream failover invalidated queued shares'));
+    this.queue.rejectPending(
+      new UpstreamUnavailableError('Upstream failover invalidated queued shares'),
+    );
     if (previousPoolId) {
       const previous = this.runtimes.get(previousPoolId);
       if (previous) {
-        this.markFailure(previous, reason);
+        await this.markFailure(previous, reason);
         previous.generation += 1;
         previous.adapter?.close();
         previous.adapter = undefined;
@@ -273,19 +285,25 @@ export class MultiUpstreamPoolManager {
     for (const runtime of this.selectCandidates()) {
       if (this.stopped || signal?.aborted) return false;
       attempted.push(runtime.definition.id);
+      const reservation = await this.reserveConnectionAttempt(runtime);
+      if (!reservation.allowed) continue;
       try {
-        await this.connectRuntime(runtime, signal);
+        await this.connectRuntime(runtime, reservation.probeToken, signal);
         return true;
       } catch (error) {
         const parsed = error instanceof Error ? error : new Error(String(error));
-        this.markFailure(runtime, parsed);
+        await this.markFailure(runtime, parsed, reservation.probeToken);
         this.callbacks.onError?.(parsed, runtime.definition.id);
       }
     }
     return false;
   }
 
-  private async connectRuntime(runtime: PoolRuntime, signal?: AbortSignal): Promise<void> {
+  private async connectRuntime(
+    runtime: PoolRuntime,
+    probeToken?: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
     runtime.generation += 1;
     const generation = runtime.generation;
     runtime.adapter?.close();
@@ -312,7 +330,10 @@ export class MultiUpstreamPoolManager {
       onDisconnect: (disconnectReason) => {
         if (!this.isCurrent(runtime, generation) || this.stopped) return;
         void this.recover(disconnectReason).catch((error) => {
-          this.callbacks.onError?.(error instanceof Error ? error : new Error(String(error)), runtime.definition.id);
+          this.callbacks.onError?.(
+            error instanceof Error ? error : new Error(String(error)),
+            runtime.definition.id,
+          );
         });
       },
     });
@@ -329,6 +350,19 @@ export class MultiUpstreamPoolManager {
     runtime.lastConnectedAt = this.now();
     runtime.circuitOpenedUntil = undefined;
     runtime.lastError = undefined;
+    const coordinator = this.options.healthCoordinator;
+    if (coordinator) {
+      try {
+        const snapshot = await coordinator.recordConnectionSuccess({
+          pool: runtime.definition,
+          observedAt: runtime.lastConnectedAt,
+          probeToken,
+        });
+        this.mergeHealthSnapshot(runtime, snapshot);
+      } catch (error) {
+        this.reportCoordinatorError(error, runtime.definition.id, 'record success');
+      }
+    }
     this.setState('ACTIVE');
     this.callbacks.onActivePool?.(runtime.definition.id, previousPoolId);
     this.callbacks.onHealth?.(this.healthSnapshot(runtime));
@@ -344,22 +378,85 @@ export class MultiUpstreamPoolManager {
     const at = this.now();
     return [...this.runtimes.values()]
       .filter((runtime) => runtime.definition.enabled)
-      .filter((runtime) => !runtime.circuitOpenedUntil || runtime.circuitOpenedUntil.getTime() <= at.getTime())
-      .sort((left, right) =>
-        left.definition.priority - right.definition.priority ||
-        right.definition.weight - left.definition.weight ||
-        left.definition.id.localeCompare(right.definition.id),
+      .filter(
+        (runtime) =>
+          !runtime.circuitOpenedUntil || runtime.circuitOpenedUntil.getTime() <= at.getTime(),
+      )
+      .sort(
+        (left, right) =>
+          left.definition.priority - right.definition.priority ||
+          right.definition.weight - left.definition.weight ||
+          left.definition.id.localeCompare(right.definition.id),
       );
   }
 
-  private markFailure(runtime: PoolRuntime, error: Error): void {
+  private async reserveConnectionAttempt(runtime: PoolRuntime): Promise<PoolConnectionReservation> {
+    const coordinator = this.options.healthCoordinator;
+    if (!coordinator) return { allowed: true };
+    try {
+      const reservation = await coordinator.reserveConnectionAttempt({
+        pool: runtime.definition,
+        observedAt: this.now(),
+      });
+      if (reservation.snapshot) {
+        this.mergeHealthSnapshot(runtime, reservation.snapshot);
+        this.callbacks.onHealth?.(reservation.snapshot);
+      }
+      return reservation;
+    } catch (error) {
+      this.reportCoordinatorError(error, runtime.definition.id, 'reserve attempt');
+      return { allowed: true };
+    }
+  }
+
+  private async markFailure(
+    runtime: PoolRuntime,
+    error: Error,
+    probeToken?: string,
+  ): Promise<void> {
     runtime.consecutiveFailures += 1;
     runtime.lastFailureAt = this.now();
     runtime.lastError = error.message;
     if (runtime.consecutiveFailures >= runtime.definition.failureThreshold) {
-      runtime.circuitOpenedUntil = new Date(this.now().getTime() + runtime.definition.recoveryTimeoutMs);
+      runtime.circuitOpenedUntil = new Date(
+        this.now().getTime() + runtime.definition.recoveryTimeoutMs,
+      );
+    }
+    const coordinator = this.options.healthCoordinator;
+    if (coordinator) {
+      try {
+        const snapshot = await coordinator.recordConnectionFailure({
+          pool: runtime.definition,
+          observedAt: runtime.lastFailureAt,
+          probeToken,
+          error,
+        });
+        this.mergeHealthSnapshot(runtime, snapshot);
+      } catch (coordinationError) {
+        this.reportCoordinatorError(coordinationError, runtime.definition.id, 'record failure');
+      }
     }
     this.callbacks.onHealth?.(this.healthSnapshot(runtime));
+  }
+
+  private mergeHealthSnapshot(runtime: PoolRuntime, snapshot: PoolHealthSnapshot): void {
+    if (snapshot.poolId !== runtime.definition.id) {
+      throw new Error(`Distributed health snapshot pool mismatch: ${snapshot.poolId}`);
+    }
+    runtime.consecutiveFailures = snapshot.consecutiveFailures;
+    runtime.successfulConnections = snapshot.successfulConnections;
+    runtime.lastConnectedAt = parseOptionalDate(snapshot.lastConnectedAt);
+    runtime.lastFailureAt = parseOptionalDate(snapshot.lastFailureAt);
+    runtime.circuitOpenedUntil = parseOptionalDate(snapshot.circuitOpenedUntil);
+    runtime.lastError = snapshot.lastError;
+  }
+
+  private reportCoordinatorError(error: unknown, poolId: string, operation: string): void {
+    const parsed = error instanceof Error ? error : new Error(String(error));
+    this.callbacks.onError?.(
+      new Error(`Distributed upstream health ${operation} failed: ${parsed.message}`),
+      poolId,
+    );
   }
 
   private healthSnapshot(runtime: PoolRuntime): PoolHealthSnapshot {
@@ -367,10 +464,10 @@ export class MultiUpstreamPoolManager {
     const state = !runtime.definition.enabled
       ? 'DISABLED'
       : runtime.circuitOpenedUntil && runtime.circuitOpenedUntil > now
-        ? 'CIRCUIT_OPEN'
-        : runtime.consecutiveFailures > 0
-          ? 'DEGRADED'
-          : 'HEALTHY';
+      ? 'CIRCUIT_OPEN'
+      : runtime.consecutiveFailures > 0
+      ? 'DEGRADED'
+      : 'HEALTHY';
     return {
       poolId: runtime.definition.id,
       state,
@@ -401,8 +498,10 @@ export class MultiUpstreamPoolManager {
 function validatePoolDefinition(pool: UpstreamPoolDefinition): void {
   if (!pool.id.trim()) throw new Error('Upstream pool id is required');
   if (!pool.name.trim()) throw new Error(`Upstream pool ${pool.id} name is required`);
-  if (!Number.isInteger(pool.priority) || pool.priority < 0) throw new Error(`Pool ${pool.id} priority must be non-negative`);
-  if (!Number.isInteger(pool.weight) || pool.weight < 1) throw new Error(`Pool ${pool.id} weight must be positive`);
+  if (!Number.isInteger(pool.priority) || pool.priority < 0)
+    throw new Error(`Pool ${pool.id} priority must be non-negative`);
+  if (!Number.isInteger(pool.weight) || pool.weight < 1)
+    throw new Error(`Pool ${pool.id} weight must be positive`);
   if (!Number.isInteger(pool.failureThreshold) || pool.failureThreshold < 1) {
     throw new Error(`Pool ${pool.id} failureThreshold must be positive`);
   }
@@ -413,4 +512,12 @@ function validatePoolDefinition(pool: UpstreamPoolDefinition): void {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseOptionalDate(value?: string): Date | undefined {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime()))
+    throw new Error(`Invalid distributed health timestamp: ${value}`);
+  return parsed;
 }

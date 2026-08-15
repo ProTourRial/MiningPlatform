@@ -16,6 +16,154 @@ export type RewardAllocation = {
   netSats: bigint;
 };
 
+export type FeePolicyScope =
+  | 'PLATFORM_DEFAULT'
+  | 'ASSET'
+  | 'ALGORITHM'
+  | 'NETWORK'
+  | 'CAMPAIGN'
+  | 'REFERRAL'
+  | 'ACCOUNT_TIER'
+  | 'MINING_ACCOUNT';
+
+export type FeePolicyCandidate = {
+  id: string;
+  policyKey: string;
+  version: number;
+  status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
+  scope: FeePolicyScope;
+  feeBasisPoints: number;
+  effectiveFrom: Date;
+  effectiveUntil?: Date | null;
+  assetId?: string | null;
+  algorithm?: string | null;
+  network?: string | null;
+  campaignCode?: string | null;
+  referralCode?: string | null;
+  accountTier?: string | null;
+  miningAccountId?: string | null;
+};
+
+export type FeePolicyResolutionContext = {
+  assetId?: string;
+  algorithm?: string;
+  network?: string;
+  campaignCode?: string;
+  referralCode?: string;
+  accountTier?: string;
+  miningAccountId?: string;
+};
+
+export type FeePolicySnapshot = Readonly<{
+  id: string;
+  policyKey: string;
+  version: number;
+  scope: FeePolicyScope;
+  feeBasisPoints: number;
+  effectiveFrom: string;
+  effectiveUntil: string | null;
+  resolvedAt: string;
+}>;
+
+const FEE_SCOPE_PRIORITY: Record<FeePolicyScope, number> = {
+  PLATFORM_DEFAULT: 0,
+  ALGORITHM: 1,
+  ASSET: 2,
+  NETWORK: 3,
+  CAMPAIGN: 4,
+  REFERRAL: 5,
+  ACCOUNT_TIER: 6,
+  MINING_ACCOUNT: 7,
+};
+
+function matchesFeeScope(policy: FeePolicyCandidate, context: FeePolicyResolutionContext): boolean {
+  switch (policy.scope) {
+    case 'PLATFORM_DEFAULT':
+      return true;
+    case 'ASSET':
+      return policy.assetId === context.assetId;
+    case 'ALGORITHM':
+      return policy.algorithm === context.algorithm;
+    case 'NETWORK':
+      return policy.network === context.network;
+    case 'CAMPAIGN':
+      return policy.campaignCode === context.campaignCode;
+    case 'REFERRAL':
+      return policy.referralCode === context.referralCode;
+    case 'ACCOUNT_TIER':
+      return policy.accountTier === context.accountTier;
+    case 'MINING_ACCOUNT':
+      return policy.miningAccountId === context.miningAccountId;
+  }
+}
+
+export function resolveEffectiveFeePolicy(
+  policies: readonly FeePolicyCandidate[],
+  context: FeePolicyResolutionContext,
+  at: Date = new Date(),
+): FeePolicyCandidate {
+  if (Number.isNaN(at.getTime())) throw new Error('Fee policy resolution time is invalid');
+
+  const matches = policies.filter((policy) => {
+    if (!Number.isInteger(policy.version) || policy.version < 0) {
+      throw new Error(`Invalid fee policy version: ${policy.policyKey}`);
+    }
+    if (
+      !Number.isInteger(policy.feeBasisPoints) ||
+      policy.feeBasisPoints < 0 ||
+      policy.feeBasisPoints > 10_000
+    ) {
+      throw new Error(`Invalid fee basis points: ${policy.policyKey}`);
+    }
+    if (
+      Number.isNaN(policy.effectiveFrom.getTime()) ||
+      (policy.effectiveUntil && Number.isNaN(policy.effectiveUntil.getTime()))
+    ) {
+      throw new Error(`Invalid fee policy effective window: ${policy.policyKey}`);
+    }
+
+    return (
+      policy.status === 'ACTIVE' &&
+      policy.effectiveFrom <= at &&
+      (!policy.effectiveUntil || policy.effectiveUntil > at) &&
+      matchesFeeScope(policy, context)
+    );
+  });
+
+  if (matches.length === 0)
+    throw new Error('No effective fee policy matches the settlement context');
+
+  const highestPriority = Math.max(...matches.map((policy) => FEE_SCOPE_PRIORITY[policy.scope]));
+  const scoped = matches.filter((policy) => FEE_SCOPE_PRIORITY[policy.scope] === highestPriority);
+  const policyKeys = new Set(scoped.map((policy) => policy.policyKey));
+  if (policyKeys.size > 1) {
+    throw new Error(`Ambiguous active fee policies for scope ${scoped[0]?.scope ?? 'UNKNOWN'}`);
+  }
+
+  return [...scoped].sort((left, right) => {
+    const effectiveDifference = right.effectiveFrom.getTime() - left.effectiveFrom.getTime();
+    if (effectiveDifference !== 0) return effectiveDifference;
+    if (right.version !== left.version) return right.version - left.version;
+    return left.id.localeCompare(right.id);
+  })[0]!;
+}
+
+export function snapshotFeePolicy(
+  policy: FeePolicyCandidate,
+  resolvedAt: Date = new Date(),
+): FeePolicySnapshot {
+  return Object.freeze({
+    id: policy.id,
+    policyKey: policy.policyKey,
+    version: policy.version,
+    scope: policy.scope,
+    feeBasisPoints: policy.feeBasisPoints,
+    effectiveFrom: policy.effectiveFrom.toISOString(),
+    effectiveUntil: policy.effectiveUntil?.toISOString() ?? null,
+    resolvedAt: resolvedAt.toISOString(),
+  });
+}
+
 export function allocateFollowUpstreamReward(
   distributableSats: bigint,
   contributions: readonly Contribution[],

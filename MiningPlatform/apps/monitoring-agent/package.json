@@ -1,6 +1,6 @@
 {
   "name": "@mining/monitoring-agent",
-  "version": "0.3.0-alpha.2",
+  "version": "0.3.0-alpha.4",
   "private": true,
   "type": "module",
   "scripts": {
