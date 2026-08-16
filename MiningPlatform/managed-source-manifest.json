@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 502,
-  "managedFilesChecksum": "512930c966fc4ae22e3cd43aaa66d30cde6cbd2719cf77e867b07d5174160076",
+  "managedFilesChecksum": "852e1224c3b3eb31ed90cdc60ccde631a92c314e44ff713af13f87fd4026331c",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1076,8 +1076,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "cc913a624bf4c9672d10ca39fcbad6a1a1159b6f787dabbbcaa30d3de57b5508",
-      "size": 22146
+      "sha256": "cfa4eb4d5f3430a7b168f6d15beb3477c16949db5bb7c11996552aa1b3316e71",
+      "size": 22810
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1316,8 +1316,8 @@
     },
     {
       "path": "docs/operations/financial-truth-runbook.md",
-      "sha256": "c3283e04048869957f26effdc0817b5e170b73a41817afd837f3d52f5b93140c",
-      "size": 2733
+      "sha256": "5c2428cede461bf81579504528a70208d04ee416dc0ec5eeaaade6d519a757a8",
+      "size": 3188
     },
     {
       "path": "docs/operations/payout-runbook.md",
@@ -1486,8 +1486,8 @@
     },
     {
       "path": "docs/releases/v0.3.0-alpha.5-validation.md",
-      "sha256": "0830126e3835d94e1890109336f1c7b8b1435424747d7f284b8b1d2dddad1b1f",
-      "size": 3019
+      "sha256": "2b0306641d16460525b5560fb2528e5e730a791fe2991ba5f60acc70f0cd8bc5",
+      "size": 4006
     },
     {
       "path": "docs/releases/v0.3.0-alpha.5.md",
@@ -1771,8 +1771,8 @@
     },
     {
       "path": "packages/database/prisma/migrations/20260816020000_financial_truth_foundation/migration.sql",
-      "sha256": "ff52036a846bf40c7ddcbcd735260aa8a05d3a8bd1b7e8726969d5d1b319fb87",
-      "size": 19760
+      "sha256": "31a036c7300441afc76dc6d1172cbc27a697bd3cb76ea6826f570e38851894d9",
+      "size": 20578
     },
     {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
@@ -2401,8 +2401,8 @@
     },
     {
       "path": "scripts/financial-truth-integration.ts",
-      "sha256": "5ce25f9c1e066ebbf9a66b6e004b982af30a4a2319895a47e3addc1f464d9ab0",
-      "size": 12108
+      "sha256": "c4ea343d53ecc71bd45afe5f7818b23b9e45e3f087569970a05759571695d5a1",
+      "size": 17976
     },
     {
       "path": "scripts/generate-managed-source-manifest.mjs",
@@ -2431,8 +2431,8 @@
     },
     {
       "path": "scripts/tsconfig.json",
-      "sha256": "51088f7c9ffeb7de208dfe8b923b1e1e857736c43c2117c72fe5ea51f398ab66",
-      "size": 455
+      "sha256": "4d4a641bde7a65335a57cbd8fd54e33361a81b322470ab0e12664c805f333b93",
+      "size": 649
     },
     {
       "path": "scripts/user-role-cli.ts",
@@ -2496,8 +2496,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha5-migration.mjs",
-      "sha256": "6480e24d6adedfef621433c46fc0def9efa6a734612efa134c44230286726702",
-      "size": 8183
+      "sha256": "a49e462fcca8561ba0e7708cebe4ba453f49a6a120afec19b3ee219ffe79f406",
+      "size": 9196
     },
     {
       "path": "scripts/wait-for-http.mjs",

@@ -163,6 +163,31 @@ psql(`
     ) THEN
       RAISE EXCEPTION 'atomic journal columns are missing';
     END IF;
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_trigger trigger
+      JOIN pg_class relation ON relation.oid = trigger.tgrelid
+      JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname = 'public'
+        AND relation.relname = 'JournalLine'
+        AND trigger.tgname = 'JournalLine_balance_constraint'
+        AND trigger.tgdeferrable
+        AND trigger.tginitdeferred
+        AND NOT trigger.tgisinternal
+    ) OR NOT EXISTS (
+      SELECT 1
+      FROM pg_trigger trigger
+      JOIN pg_class relation ON relation.oid = trigger.tgrelid
+      JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
+      WHERE namespace.nspname = 'public'
+        AND relation.relname = 'JournalEntry'
+        AND trigger.tgname = 'JournalEntry_balance_constraint'
+        AND trigger.tgdeferrable
+        AND trigger.tginitdeferred
+        AND NOT trigger.tgisinternal
+    ) THEN
+      RAISE EXCEPTION 'deferred journal balance constraints are missing';
+    END IF;
   END $$;
 `);
 

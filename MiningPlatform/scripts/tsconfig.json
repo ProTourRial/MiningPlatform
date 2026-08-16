@@ -6,8 +6,11 @@
     "sourceMap": false,
     "baseUrl": "..",
     "paths": {
+      "@mining/event-bus": ["packages/event-bus/src/index.ts"],
+      "@mining/ledger": ["packages/ledger/src/index.ts"],
       "@mining/mining-core": ["packages/mining-core/src/index.ts"],
       "@mining/database": ["packages/database/src/index.ts"],
+      "@mining/reward-engine": ["packages/reward-engine/src/index.ts"],
       "@mining/security": ["packages/security/src/index.ts"],
       "@mining/shared": ["packages/shared/src/index.ts"]
     }

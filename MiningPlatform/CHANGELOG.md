@@ -24,8 +24,11 @@
 - Journal-line database validation now requires decimal and atomic amounts to represent the exact same asset value, in addition to balancing both representations.
 - The v9-to-v10 verifier now creates its own deterministic legacy fixture instead of depending on optional development seed data, and invokes pnpm without the deprecated shell path.
 - The end-to-end accounting harness now uses per-run fixture identities, so the same disposable database can be validated repeatedly without uniqueness collisions.
+- The accounting harness now provisions its own user, mining account, and worker, removing its dependency on optional development seed records during upgrade rehearsals.
 - The PostgreSQL authentication integration test now provisions isolated test-only cryptographic configuration instead of depending on ambient machine secrets.
 - Managed-source checksums now canonicalize CRLF to LF, keeping verification stable across Windows and Linux checkouts.
+- Script typechecking now resolves accounting dependencies directly from workspace source, so clean GitHub runners do not depend on pre-existing package build artifacts.
+- The alpha.5 migration now explicitly reinstalls deferred journal-balance constraints, and its fresh/upgrade verifier proves those database triggers are present.
 
 ### Safety boundary
 
@@ -37,7 +40,7 @@
 
 - Reward-engine tests pass 11/11, including exact remainders, user-favouring 50 bps rounding, and per-account cost-cap edge cases.
 - Accounting unit tests pass 2/2; mining-worker, accounting-worker, API, and operator scripts pass targeted typechecks.
-- PostgreSQL disposable validation passes all 10 migrations from empty, formal v9-to-v10 upgrade/backfill, and repeatable financial trace tests for concurrent duplicate delivery, exact 50 bps fee, decimal/atomic consistency, balanced journal, immutable facts, reversal, zero projected balance after reversal, and zero payouts.
+- PostgreSQL disposable validation passes all 10 migrations from empty, formal v9-to-v10 upgrade/backfill over representative prior-schema rows, and repeatable financial trace tests proving every journal balances, posted entries remain immutable, reversal creates a new equal-and-opposite entry, retries do not double-credit, reward allocation stays unique, rejected transactions roll back completely, and `source = user allocation + platform fee + clearing residual` with zero residual.
 - All local commit gates pass: lint 27/27, typecheck 41/41, tests 41/41, production build 27/27 with 21 generated Next.js routes, alpha.5 static checks, Compose configuration, a 502-file managed-source manifest, and a 503-file release manifest.
 
 ### Development assistance

@@ -23,12 +23,39 @@ async function main(): Promise<void> {
   const runId = randomUUID();
   const fixtureId = (name: string): string => `financial-truth-${name}-${runId}`;
   const asset = await prisma.asset.findUniqueOrThrow({ where: { symbol: 'BTC' } });
-  const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dev@local.invalid' } });
-  const miningAccount = await prisma.miningAccount.findUniqueOrThrow({
-    where: { userId_assetId: { userId: user.id, assetId: asset.id } },
+  const feePolicy = await prisma.miningFeePolicy.findUniqueOrThrow({
+    where: { policyKey_version: { policyKey: 'platform-default', version: 1 } },
   });
-  const worker = await prisma.worker.findUniqueOrThrow({
-    where: { miningAccountId_name: { miningAccountId: miningAccount.id, name: 'worker1' } },
+  const user = await prisma.user.create({
+    data: {
+      id: fixtureId('user'),
+      email: `${fixtureId('user')}@local.invalid`,
+      passwordHash: 'DISPOSABLE_FINANCIAL_TRUTH_FIXTURE',
+      displayName: 'Financial Truth Integration Fixture',
+      status: 'ACTIVE',
+      emailVerifiedAt: periodStart,
+    },
+  });
+  const miningAccount = await prisma.miningAccount.create({
+    data: {
+      id: fixtureId('mining-account'),
+      userId: user.id,
+      assetId: asset.id,
+      feePolicyId: feePolicy.id,
+      username: fixtureId('miner'),
+      rewardMethod: 'FOLLOW_UPSTREAM',
+      platformFeePercent: '0.5',
+    },
+  });
+  const worker = await prisma.worker.create({
+    data: {
+      id: fixtureId('worker'),
+      userId: user.id,
+      miningAccountId: miningAccount.id,
+      name: 'worker1',
+      passwordHash: 'DISPOSABLE_FINANCIAL_TRUTH_FIXTURE',
+      status: 'OFFLINE',
+    },
   });
   const upstreamPool = await prisma.upstreamPool.create({
     data: {
@@ -137,10 +164,14 @@ async function main(): Promise<void> {
       periodStart,
       periodEnd,
       grossReward: '0.00100000',
-      distributableReward: '0.00100000',
+      upstreamFee: '0.00001000',
+      networkFee: '0.00000500',
+      distributableReward: '0.00098500',
       grossAtomic: 100_000n,
-      distributableAtomic: 100_000n,
-      userNetAtomic: 100_000n,
+      upstreamFeeAtomic: 1_000n,
+      networkFeeAtomic: 500n,
+      distributableAtomic: 98_500n,
+      userNetAtomic: 98_500n,
     },
   });
   const reconciliation = await prisma.upstreamReconciliation.create({
@@ -150,19 +181,19 @@ async function main(): Promise<void> {
       upstreamPoolId: upstreamPool.id,
       rewardPeriodId: rewardPeriod.id,
       upstreamGrossReward: '0.00100000',
-      upstreamFee: '0',
-      receivedAmount: '0.00100000',
-      internalExpectedAmount: '0.00100000',
+      upstreamFee: '0.00001000',
+      receivedAmount: '0.00098500',
+      internalExpectedAmount: '0.00098500',
       varianceAmount: '0',
       status: 'MATCHED',
       sourceReference: fixtureId('reference-001'),
       sourceChecksum: 'a'.repeat(64),
       importIdempotencyKey: fixtureId('import-001'),
       upstreamGrossAtomic: 100_000n,
-      upstreamFeeAtomic: 0n,
-      networkFeeAtomic: 0n,
-      receivedAtomic: 100_000n,
-      internalExpectedAtomic: 100_000n,
+      upstreamFeeAtomic: 1_000n,
+      networkFeeAtomic: 500n,
+      receivedAtomic: 98_500n,
+      internalExpectedAtomic: 98_500n,
       varianceAtomic: 0n,
       toleranceAtomic: 0n,
     },
@@ -197,8 +228,19 @@ async function main(): Promise<void> {
 
   const closed = await prisma.rewardPeriod.findUniqueOrThrow({ where: { id: rewardPeriod.id } });
   assert.equal(closed.status, 'CLOSED');
+  assert.equal(closed.grossAtomic, 100_000n);
+  assert.equal(closed.upstreamFeeAtomic, 1_000n);
+  assert.equal(closed.networkFeeAtomic, 500n);
   assert.equal(closed.platformFeeAtomic, 500n);
-  assert.equal(closed.userNetAtomic, 99_500n);
+  assert.equal(closed.distributableAtomic, 98_500n);
+  assert.equal(closed.userNetAtomic, 98_000n);
+  assert.equal(
+    closed.grossAtomic,
+    closed.upstreamFeeAtomic +
+      closed.networkFeeAtomic +
+      closed.platformFeeAtomic +
+      closed.userNetAtomic,
+  );
   const allocation = await prisma.rewardAllocation.findUniqueOrThrow({
     where: {
       rewardPeriodId_miningAccountId: {
@@ -208,22 +250,77 @@ async function main(): Promise<void> {
     },
   });
   assert.equal(allocation.feeBasisPoints, 50);
+  assert.equal(allocation.grossAtomic, 100_000n);
+  assert.equal(allocation.upstreamFeeAtomic, 1_000n);
+  assert.equal(allocation.networkFeeAtomic, 500n);
   assert.equal(allocation.platformFeeAtomic, 500n);
-  assert.equal(allocation.netAtomic, 99_500n);
+  assert.equal(allocation.netAtomic, 98_000n);
+  assert.equal(
+    allocation.grossAtomic,
+    allocation.upstreamFeeAtomic +
+      allocation.networkFeeAtomic +
+      allocation.platformFeeAtomic +
+      allocation.netAtomic,
+  );
   assert.ok(allocation.journalEntryId);
   const journal = await prisma.journalEntry.findUniqueOrThrow({
     where: { id: allocation.journalEntryId! },
-    include: { lines: true },
+    include: { lines: { include: { ledgerAccount: true } } },
   });
   assert.equal(journal.status, 'POSTED');
   assert.equal(
     journal.lines.reduce((sum, line) => sum + line.debitAtomic, 0n),
-    100_000n,
+    98_500n,
   );
   assert.equal(
     journal.lines.reduce((sum, line) => sum + line.creditAtomic, 0n),
-    100_000n,
+    98_500n,
   );
+  const clearingPostedAtomic = journal.lines
+    .filter((line) => line.ledgerAccount.type === 'CLEARING')
+    .reduce((sum, line) => sum + line.debitAtomic - line.creditAtomic, 0n);
+  const clearingResidualAtomic =
+    reconciliation.receivedAtomic - allocation.netAtomic - allocation.platformFeeAtomic;
+  assert.equal(
+    reconciliation.upstreamGrossAtomic,
+    reconciliation.upstreamFeeAtomic +
+      reconciliation.networkFeeAtomic +
+      reconciliation.receivedAtomic,
+  );
+  assert.equal(
+    reconciliation.receivedAtomic,
+    allocation.netAtomic + allocation.platformFeeAtomic + clearingResidualAtomic,
+  );
+  assert.equal(clearingPostedAtomic, allocation.netAtomic + allocation.platformFeeAtomic);
+  assert.equal(clearingResidualAtomic, 0n);
+
+  const retryAllocationCountBefore = await prisma.rewardAllocation.count({
+    where: { rewardPeriodId: rewardPeriod.id },
+  });
+  const retryJournalCountBefore = await prisma.journalEntry.count({
+    where: {
+      referenceType: 'RewardAllocation',
+      referenceId: `${rewardPeriod.id}:${miningAccount.id}`,
+    },
+  });
+  const explicitSettlementRetry = await service.handle(settlementEvent);
+  assert.equal(explicitSettlementRetry.processed, false);
+  assert.equal(explicitSettlementRetry.reason, 'DUPLICATE');
+  assert.equal(
+    await prisma.rewardAllocation.count({ where: { rewardPeriodId: rewardPeriod.id } }),
+    retryAllocationCountBefore,
+  );
+  assert.equal(retryAllocationCountBefore, 1);
+  assert.equal(
+    await prisma.journalEntry.count({
+      where: {
+        referenceType: 'RewardAllocation',
+        referenceId: `${rewardPeriod.id}:${miningAccount.id}`,
+      },
+    }),
+    retryJournalCountBefore,
+  );
+  assert.equal(retryJournalCountBefore, 1);
 
   const balanceBeforeReversal = await prisma.journalLine.aggregate({
     where: {
@@ -235,13 +332,20 @@ async function main(): Promise<void> {
   assert.equal(
     (balanceBeforeReversal._sum.creditAtomic ?? 0n) -
       (balanceBeforeReversal._sum.debitAtomic ?? 0n),
-    99_500n,
+    98_000n,
   );
 
   await assert.rejects(
     prisma.rewardAllocation.update({
       where: { id: allocation.id },
       data: { netAtomic: 1n },
+    }),
+    /immutable/i,
+  );
+  await assert.rejects(
+    prisma.journalEntry.update({
+      where: { id: journal.id },
+      data: { description: 'Posted entries must never be rewritten' },
     }),
     /immutable/i,
   );
@@ -271,11 +375,12 @@ async function main(): Promise<void> {
     }),
     /decimal and atomic/i,
   );
+  const unbalancedIdempotencyKey = fixtureId('unbalanced');
   await assert.rejects(
     prisma.$transaction(async (tx) => {
       const invalid = await tx.journalEntry.create({
         data: {
-          idempotencyKey: fixtureId('unbalanced'),
+          idempotencyKey: unbalancedIdempotencyKey,
           referenceType: 'IntegrationTest',
           referenceId: 'unbalanced',
           description: 'This journal must be rejected',
@@ -303,6 +408,10 @@ async function main(): Promise<void> {
     }),
     /not balanced/i,
   );
+  assert.equal(
+    await prisma.journalEntry.count({ where: { idempotencyKey: unbalancedIdempotencyKey } }),
+    0,
+  );
 
   const reversal = await service.reverseJournal({
     journalEntryId: journal.id,
@@ -310,16 +419,62 @@ async function main(): Promise<void> {
     reason: 'Integration test validates immutable equal-and-opposite reversal.',
   });
   assert.equal(reversal.processed, true);
+  assert.ok(reversal.resultReference);
+  assert.notEqual(reversal.resultReference, journal.id);
+  const reversalJournal = await prisma.journalEntry.findUniqueOrThrow({
+    where: { id: reversal.resultReference },
+    include: { lines: true },
+  });
+  assert.equal(reversalJournal.status, 'POSTED');
+  assert.equal(reversalJournal.referenceType, 'JournalReversal');
+  assert.equal(reversalJournal.referenceId, journal.id);
+  assert.equal(reversalJournal.causationId, journal.id);
+  assert.equal(
+    reversalJournal.lines.reduce((sum, line) => sum + line.debitAtomic, 0n),
+    98_500n,
+  );
+  assert.equal(
+    reversalJournal.lines.reduce((sum, line) => sum + line.creditAtomic, 0n),
+    98_500n,
+  );
+  for (const originalLine of journal.lines) {
+    const opposite = reversalJournal.lines.find(
+      (line) => line.ledgerAccountId === originalLine.ledgerAccountId,
+    );
+    assert.ok(opposite);
+    assert.equal(opposite.debitAtomic, originalLine.creditAtomic);
+    assert.equal(opposite.creditAtomic, originalLine.debitAtomic);
+  }
   const duplicateReversal = await service.reverseJournal({
     journalEntryId: journal.id,
     actorUserId: user.id,
     reason: 'Integration test validates immutable equal-and-opposite reversal.',
   });
   assert.equal(duplicateReversal.processed, false);
+  assert.equal(duplicateReversal.reason, 'DUPLICATE');
+  assert.equal(duplicateReversal.resultReference, reversalJournal.id);
+  assert.equal(
+    await prisma.journalEntry.count({
+      where: { referenceType: 'JournalReversal', referenceId: journal.id },
+    }),
+    1,
+  );
   const originalAfterReversal = await prisma.journalEntry.findUniqueOrThrow({
     where: { id: journal.id },
   });
   assert.equal(originalAfterReversal.status, 'REVERSED');
+  assert.equal(originalAfterReversal.reversedEntryId, reversalJournal.id);
+  const economicJournals = await prisma.journalEntry.findMany({
+    where: { id: { in: [journal.id, reversalJournal.id] } },
+    include: { lines: true },
+  });
+  assert.equal(economicJournals.length, 2);
+  for (const economicJournal of economicJournals) {
+    assert.equal(
+      economicJournal.lines.reduce((sum, line) => sum + line.debitAtomic, 0n),
+      economicJournal.lines.reduce((sum, line) => sum + line.creditAtomic, 0n),
+    );
+  }
   const balanceAfterReversal = await prisma.journalLine.aggregate({
     where: {
       ledgerAccount: { userId: user.id, type: 'LIABILITY' },
@@ -348,7 +503,15 @@ async function main(): Promise<void> {
         exactFeeBasisPoints: allocation.feeBasisPoints,
         exactPlatformFeeAtomic: allocation.platformFeeAtomic.toString(),
         exactUserNetAtomic: allocation.netAtomic.toString(),
-        balancedJournal: 'PASS',
+        everyJournalBalanced: 'PASS',
+        postedEntryImmutable: 'PASS',
+        reversalCreatesNewEntry: 'PASS',
+        retryDoesNotDoubleCredit: 'PASS',
+        rewardAllocationUnique: 'PASS',
+        transactionRollback: 'PASS',
+        reconciliationEquation: 'PASS',
+        reconciliationSourceAtomic: reconciliation.receivedAtomic.toString(),
+        clearingResidualAtomic: clearingResidualAtomic.toString(),
         atomicConsistency: 'PASS',
         immutableFacts: 'PASS',
         reversalBalanceAtomic: '0',

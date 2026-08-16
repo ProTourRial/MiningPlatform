@@ -61,6 +61,14 @@ The command creates a balanced equal-and-opposite journal, marks the original as
 
 ## Verification
 
+The accounting reconciliation identity is evaluated in atomic units:
+
+`received source = sum(user net allocations) + sum(platform fees) + clearing residual`
+
+The clearing residual must be zero after a fully allocated matched period. Provider and network
+costs are reconciled separately by `upstream gross = upstream fee + network fee + received source`.
+Every posted or reversed journal must balance per asset in both decimal and atomic representations.
+
 ```powershell
 pnpm verify:migration:v030-alpha5:fresh
 pnpm verify:migration:v030-alpha5:upgrade

@@ -474,3 +474,18 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Reinstall both deferred constraints explicitly. Earlier schema versions already
+-- create these triggers, but keeping the financial-truth migration self-contained
+-- makes the atomic balance enforcement auditable on both fresh and upgrade paths.
+DROP TRIGGER IF EXISTS "JournalLine_balance_constraint" ON "JournalLine";
+CREATE CONSTRAINT TRIGGER "JournalLine_balance_constraint"
+AFTER INSERT OR UPDATE OR DELETE ON "JournalLine"
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION mining_check_journal_line_balance();
+
+DROP TRIGGER IF EXISTS "JournalEntry_balance_constraint" ON "JournalEntry";
+CREATE CONSTRAINT TRIGGER "JournalEntry_balance_constraint"
+AFTER INSERT OR UPDATE OF "status" ON "JournalEntry"
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION mining_check_journal_entry_balance();
