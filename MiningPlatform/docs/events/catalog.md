@@ -34,6 +34,11 @@ Versioning: event name suffix `.vN`
 | `reward.period.closed.v1` | reward scheduler | RewardPeriod | reward engine | Contract only |
 | `reward.allocated.v1` | reward engine | RewardPeriod | ledger | Contract only |
 | `ledger.journal.posted.v1` | ledger | JournalEntry | balance projection | Contract only |
+| `reconciliation.exception.opened.v1` | Control Plane API | ReconciliationException | audit, operations | Implemented |
+| `reconciliation.exception.submitted.v1` | Control Plane API | ReconciliationException | approval queue, audit | Implemented |
+| `reconciliation.exception.approved.v1` | Control Plane API | ReconciliationException | resolution queue, audit | Implemented |
+| `reconciliation.exception.rejected.v1` | Control Plane API | ReconciliationException | operator queue, audit | Implemented |
+| `reconciliation.exception.resolved.v1` | Control Plane API | ReconciliationException | reporting, audit | Implemented |
 | `payout.requested.v1` | payout policy | Payout | approval | Contract only |
 | `payout.approved.v1` | owner/policy | Payout | wallet worker | Contract only |
 | `wallet.transaction.broadcast.v1` | wallet worker | WalletTransaction | confirmations | Contract only |

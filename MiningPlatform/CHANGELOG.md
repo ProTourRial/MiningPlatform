@@ -4,12 +4,15 @@
 
 ### Added
 
+- Reconciliation exception maker-checker-executor workflow with TOTP step-up, immutable action history, correlation IDs, transactional outbox events, and PostgreSQL idempotency.
+- Multi-replica integration coverage for duplicate delivery, competing approval, and serializable transaction behavior.
 - Professional Control Plane frontend with responsive navigation, authenticated operational dashboards, worker management, hashrate insights, and gated financial surfaces.
 - Lightweight Bitcoin reward feed backed by cached public block data for current subsidy and fee context.
 - A production-accessible `/control-plane-preview` route with representative data for Vercel review.
 
 ### Changed
 
+- Reconciliation resolution can affect financial truth only through a posted, asset-matched journal entry that references the exception; the ledger remains the sole balance source.
 - Production web requests now default to the same-origin `/api/v1` endpoint, while development keeps its explicit local API fallback.
 - Release, migration, Prisma generation, and Docker E2E workflows now use isolated CI configuration and deterministic dependency startup.
 

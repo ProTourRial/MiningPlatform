@@ -161,6 +161,46 @@ enum RewardStatus {
   FAILED
 }
 
+enum ReconciliationExceptionStatus {
+  OPEN
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  RESOLVED
+}
+
+enum ReconciliationExceptionCategory {
+  AMOUNT_VARIANCE
+  FEE_VARIANCE
+  MISSING_SETTLEMENT
+  DUPLICATE_SETTLEMENT
+  PROVIDER_REFERENCE
+  WRONG_ASSET
+  OTHER
+}
+
+enum ReconciliationExceptionSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ReconciliationResolutionCode {
+  PROVIDER_CORRECTED
+  INTERNAL_EXPECTATION_CORRECTED
+  ACCEPTED_VARIANCE
+  LEDGER_ADJUSTMENT
+}
+
+enum ReconciliationExceptionActionType {
+  OPENED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  RESOLVED
+}
+
 enum LedgerAccountType {
   ASSET
   LIABILITY
@@ -279,6 +319,11 @@ model User {
   payouts            Payout[]
   notifications      Notification[]
   auditLogs          AuditLog[]       @relation("AuditActor")
+  reconciliationExceptionsOpened    ReconciliationException[]       @relation("ReconciliationExceptionOpenedBy")
+  reconciliationExceptionsSubmitted ReconciliationException[]       @relation("ReconciliationExceptionSubmittedBy")
+  reconciliationExceptionsApproved  ReconciliationException[]       @relation("ReconciliationExceptionApprovedBy")
+  reconciliationExceptionsResolved  ReconciliationException[]       @relation("ReconciliationExceptionResolvedBy")
+  reconciliationExceptionActions    ReconciliationExceptionAction[] @relation("ReconciliationExceptionActionActor")
 
   @@index([status])
 }
@@ -849,6 +894,7 @@ model JournalEntry {
   lines             JournalLine[]
   rewardAllocation  RewardAllocation?
   payout            Payout?
+  reconciliationException ReconciliationException?
   reversedEntry     JournalEntry?      @relation("JournalReversal", fields: [reversedEntryId], references: [id])
   reversalOf        JournalEntry?      @relation("JournalReversal")
 
@@ -1010,8 +1056,62 @@ model UpstreamReconciliation {
   asset                  Asset        @relation(fields: [assetId], references: [id], onDelete: Restrict)
   upstreamPool           UpstreamPool @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
   rewardPeriod           RewardPeriod @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+  exception              ReconciliationException?
 
   @@index([status, createdAt])
+}
+
+model ReconciliationException {
+  id                       String                          @id @default(cuid())
+  reconciliationId         String                          @unique
+  status                   ReconciliationExceptionStatus   @default(OPEN)
+  category                 ReconciliationExceptionCategory
+  severity                 ReconciliationExceptionSeverity
+  summary                  String
+  varianceAmount           Decimal                         @db.Decimal(36, 18)
+  proposedResolution       String
+  resolutionCode           ReconciliationResolutionCode?
+  resolutionNotes          String?
+  resolutionJournalEntryId String?                         @unique
+  version                  Int                             @default(1)
+  openedByUserId           String
+  submittedByUserId        String?
+  submittedAt              DateTime?
+  approvedByUserId         String?
+  approvedAt               DateTime?
+  resolvedByUserId         String?
+  resolvedAt               DateTime?
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+  reconciliation           UpstreamReconciliation          @relation(fields: [reconciliationId], references: [id], onDelete: Restrict)
+  resolutionJournalEntry   JournalEntry?                   @relation(fields: [resolutionJournalEntryId], references: [id], onDelete: Restrict)
+  openedBy                 User                            @relation("ReconciliationExceptionOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  submittedBy              User?                           @relation("ReconciliationExceptionSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  approvedBy               User?                           @relation("ReconciliationExceptionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  resolvedBy               User?                           @relation("ReconciliationExceptionResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: Restrict)
+  actions                  ReconciliationExceptionAction[]
+
+  @@index([status, severity, createdAt])
+  @@index([reconciliationId, version])
+}
+
+model ReconciliationExceptionAction {
+  id             String                            @id @default(cuid())
+  exceptionId    String
+  action         ReconciliationExceptionActionType
+  actorUserId    String
+  fromStatus     ReconciliationExceptionStatus?
+  toStatus       ReconciliationExceptionStatus
+  comment        String?
+  correlationId  String
+  idempotencyKey String                            @unique
+  metadata       Json?
+  createdAt      DateTime                          @default(now())
+  exception      ReconciliationException           @relation(fields: [exceptionId], references: [id], onDelete: Restrict)
+  actor          User                              @relation("ReconciliationExceptionActionActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([exceptionId, createdAt])
+  @@index([correlationId])
 }
 
 model Notification {

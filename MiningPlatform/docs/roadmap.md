@@ -29,6 +29,7 @@ Implemented:
 - Production dashboard REST snapshot and authenticated WebSocket rooms.
 - Notification inbox and encrypted channel registry.
 - Root CI workflows, fresh/upgrade migration jobs, Docker E2E workflow, and Docker wiring for Control Plane secrets and upstream resilience settings.
+- Auditable reconciliation exception approval/resolution workflow with maker-checker-executor separation and multi-replica idempotency coverage.
 
 Release blockers:
 
@@ -36,9 +37,8 @@ Release blockers:
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.
-- Reward settlement, automatic ledger posting, balance projection, reconciliation, wallet orchestration, and payouts.
+- Reward settlement, automatic ledger posting, balance projection, provider settlement adapters/reports, wallet orchestration, and payouts. Reconciliation exception workflow is implemented, but end-to-end settlement reconciliation remains gated.
 - Load, stress, and chaos validation.
-
 
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
 

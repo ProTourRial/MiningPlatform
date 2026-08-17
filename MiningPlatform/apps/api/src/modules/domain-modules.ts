@@ -12,6 +12,7 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OwnerModule } from './owner/owner.module';
 import { PayoutsModule } from './payouts/payouts.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module.js';
 import { RewardsModule } from './rewards/rewards.module';
 import { SharesModule } from './shares/shares.module';
 import { TransparencyModule } from './transparency/transparency.module';
@@ -27,6 +28,7 @@ export const DomainModules = [
   WorkersModule,
   SharesModule,
   RewardsModule,
+  ReconciliationModule,
   LedgerModule,
   PayoutsModule,
   WalletsModule,
