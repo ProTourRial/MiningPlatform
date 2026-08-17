@@ -14,8 +14,17 @@ const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 const failures = [];
 const aggregate = createHash('sha256');
 
+function canonicalizeForChecksum(content) {
+  return Buffer.from(content.toString('latin1').replaceAll('\r\n', '\n'), 'latin1');
+}
+
 for (const entry of manifest.files ?? []) {
-  if (typeof entry.path !== 'string' || entry.path.includes('..') || entry.path.startsWith('/') || entry.path.startsWith('\\')) {
+  if (
+    typeof entry.path !== 'string' ||
+    entry.path.includes('..') ||
+    entry.path.startsWith('/') ||
+    entry.path.startsWith('\\')
+  ) {
     failures.push(`Unsafe managed path: ${entry.path}`);
     continue;
   }
@@ -27,7 +36,7 @@ for (const entry of manifest.files ?? []) {
   try {
     const metadata = await stat(absolute);
     if (!metadata.isFile()) throw new Error('not a file');
-    const contents = await readFile(absolute);
+    const contents = canonicalizeForChecksum(await readFile(absolute));
     const sha256 = createHash('sha256').update(contents).digest('hex');
     if (sha256 !== entry.sha256) failures.push(`Checksum mismatch: ${entry.path}`);
     if (contents.length !== entry.size) failures.push(`Size mismatch: ${entry.path}`);
@@ -41,12 +50,16 @@ for (const entry of manifest.files ?? []) {
 }
 
 const actualAggregate = aggregate.digest('hex');
-if (manifest.managedFileCount !== manifest.files?.length) failures.push('Managed file count metadata mismatch.');
-if (actualAggregate !== manifest.managedFilesChecksum) failures.push('Managed source aggregate checksum mismatch.');
+if (manifest.managedFileCount !== manifest.files?.length)
+  failures.push('Managed file count metadata mismatch.');
+if (actualAggregate !== manifest.managedFilesChecksum)
+  failures.push('Managed source aggregate checksum mismatch.');
 
 if (failures.length > 0) {
   process.stderr.write(`${failures.map((failure) => `- ${failure}`).join('\n')}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`Managed source verified: ${manifest.version} (${manifest.managedFileCount} files). Extra local files were ignored.\n`);
+  process.stdout.write(
+    `Managed source verified: ${manifest.version} (${manifest.managedFileCount} files). Extra local files were ignored.\n`,
+  );
 }

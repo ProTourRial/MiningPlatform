@@ -39,6 +39,43 @@ importers:
         specifier: 8.65.0
         version: 8.65.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.6.3)
 
+  apps/accounting-worker:
+    dependencies:
+      '@mining/build-info':
+        specifier: workspace:*
+        version: link:../../packages/build-info
+      '@mining/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@mining/event-bus':
+        specifier: workspace:*
+        version: link:../../packages/event-bus
+      '@mining/ledger':
+        specifier: workspace:*
+        version: link:../../packages/ledger
+      '@mining/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@mining/reward-engine':
+        specifier: workspace:*
+        version: link:../../packages/reward-engine
+      '@mining/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
   apps/api:
     dependencies:
       '@mining/build-info':

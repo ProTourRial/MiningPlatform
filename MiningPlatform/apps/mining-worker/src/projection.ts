@@ -4,12 +4,17 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { prisma, type Prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
-import { addDecimalStrings, calculateHashrateFromAccumulatedDifficulty, transitionShareState } from '@mining/mining-core';
+import {
+  addDecimalStrings,
+  calculateHashrateFromAccumulatedDifficulty,
+  transitionShareState,
+} from '@mining/mining-core';
 import {
   MiningEvents,
+  type ContributionAcceptedPayload,
   type MinerSessionAuthorizedPayload,
   type MinerSessionConnectedPayload,
   type MinerSessionDisconnectedPayload,
@@ -31,20 +36,26 @@ import { assertSupportedMiningEvent } from './supported-events.js';
 const HASHRATE_BUCKET_SECONDS = 60;
 const HASHRATE_WINDOWS = [60, 300, 900, 3_600, 86_400] as const;
 
-export type ProjectionResult =
-  | { processed: true }
-  | { processed: false; reason: 'DUPLICATE' };
+export type ProjectionResult = { processed: true } | { processed: false; reason: 'DUPLICATE' };
 
 function eventHash(event: DomainEvent): string {
   return createHash('sha256').update(JSON.stringify(event)).digest('hex');
 }
 
 function bucketStart(at: Date): Date {
-  return new Date(Math.floor(at.getTime() / (HASHRATE_BUCKET_SECONDS * 1_000)) * HASHRATE_BUCKET_SECONDS * 1_000);
+  return new Date(
+    Math.floor(at.getTime() / (HASHRATE_BUCKET_SECONDS * 1_000)) * HASHRATE_BUCKET_SECONDS * 1_000,
+  );
 }
 
 function isInvalidRejection(code: ShareRejectedPayload['code']): boolean {
-  return ['MALFORMED', 'UNAUTHORIZED', 'LOW_DIFFICULTY', 'INVALID_TIME', 'INVALID_VERSION'].includes(code);
+  return [
+    'MALFORMED',
+    'UNAUTHORIZED',
+    'LOW_DIFFICULTY',
+    'INVALID_TIME',
+    'INVALID_VERSION',
+  ].includes(code);
 }
 
 export class MiningProjection {
@@ -66,7 +77,8 @@ export class MiningProjection {
 
       if (!acquired.acquired) {
         if (acquired.reason === 'COMPLETED') return { processed: false, reason: 'DUPLICATE' };
-        if (acquired.reason === 'CONFLICT') throw new Error(`Idempotency payload conflict: ${idempotencyKey}`);
+        if (acquired.reason === 'CONFLICT')
+          throw new Error(`Idempotency payload conflict: ${idempotencyKey}`);
         throw new Error(`Idempotency record is still in progress: ${idempotencyKey}`);
       }
 
@@ -98,7 +110,10 @@ export class MiningProjection {
           await this.upstreamHealthChanged(tx, event as DomainEvent<UpstreamHealthChangedPayload>);
           break;
         case MiningEvents.workerDifficultyChanged:
-          await this.workerDifficultyChanged(tx, event as DomainEvent<WorkerDifficultyChangedPayload>);
+          await this.workerDifficultyChanged(
+            tx,
+            event as DomainEvent<WorkerDifficultyChangedPayload>,
+          );
           break;
         case MiningEvents.jobReceived:
           await this.jobReceived(tx, event as DomainEvent<MiningJobReceivedPayload>);
@@ -219,15 +234,16 @@ export class MiningProjection {
     }
   }
 
-
   private async upstreamPoolSelected(
     tx: Prisma.TransactionClient,
     event: DomainEvent<UpstreamPoolSelectedPayload>,
   ): Promise<void> {
     const payload = event.payload;
-    const minerSession = (tx as unknown as {
-      minerSession: { update(args: unknown): Promise<unknown> };
-    }).minerSession;
+    const minerSession = (
+      tx as unknown as {
+        minerSession: { update(args: unknown): Promise<unknown> };
+      }
+    ).minerSession;
     await minerSession.update({
       where: { id: payload.sessionId },
       data: {
@@ -243,9 +259,11 @@ export class MiningProjection {
     event: DomainEvent<UpstreamFailoverPayload>,
   ): Promise<void> {
     const payload = event.payload;
-    const minerSession = (tx as unknown as {
-      minerSession: { update(args: unknown): Promise<unknown> };
-    }).minerSession;
+    const minerSession = (
+      tx as unknown as {
+        minerSession: { update(args: unknown): Promise<unknown> };
+      }
+    ).minerSession;
     const started = event.eventName === MiningEvents.upstreamFailoverStarted;
     await minerSession.update({
       where: { id: payload.sessionId },
@@ -268,22 +286,27 @@ export class MiningProjection {
     event: DomainEvent<UpstreamHealthChangedPayload>,
   ): Promise<void> {
     const payload = event.payload;
-    const upstreamPool = (tx as unknown as {
-      upstreamPool: { updateMany(args: unknown): Promise<unknown> };
-    }).upstreamPool;
+    const upstreamPool = (
+      tx as unknown as {
+        upstreamPool: { updateMany(args: unknown): Promise<unknown> };
+      }
+    ).upstreamPool;
     await upstreamPool.updateMany({
       where: { poolKey: payload.poolId },
       data: {
-        status: payload.state === 'HEALTHY'
-          ? 'OPERATIONAL'
-          : payload.state === 'CIRCUIT_OPEN'
+        status:
+          payload.state === 'HEALTHY'
+            ? 'OPERATIONAL'
+            : payload.state === 'CIRCUIT_OPEN'
             ? 'CIRCUIT_OPEN'
             : payload.state,
         consecutiveFailures: payload.consecutiveFailures,
         successfulConnections: payload.successfulConnections,
         lastConnectedAt: payload.lastConnectedAt ? new Date(payload.lastConnectedAt) : undefined,
         lastFailureAt: payload.lastFailureAt ? new Date(payload.lastFailureAt) : undefined,
-        circuitOpenedUntil: payload.circuitOpenedUntil ? new Date(payload.circuitOpenedUntil) : undefined,
+        circuitOpenedUntil: payload.circuitOpenedUntil
+          ? new Date(payload.circuitOpenedUntil)
+          : undefined,
         lastError: payload.lastError,
       },
     });
@@ -309,7 +332,10 @@ export class MiningProjection {
     });
     await tx.minerSession.update({
       where: { id: payload.sessionId },
-      data: { activeDifficulty: payload.nextDifficulty, lastActivityAt: new Date(payload.assignedAt) },
+      data: {
+        activeDifficulty: payload.nextDifficulty,
+        lastActivityAt: new Date(payload.assignedAt),
+      },
     });
   }
 
@@ -318,9 +344,11 @@ export class MiningProjection {
     event: DomainEvent<WorkerDeviceDetectedPayload>,
   ): Promise<void> {
     const payload = event.payload;
-    const workerDeviceProfile = (tx as unknown as {
-      workerDeviceProfile: { upsert(args: unknown): Promise<unknown> };
-    }).workerDeviceProfile;
+    const workerDeviceProfile = (
+      tx as unknown as {
+        workerDeviceProfile: { upsert(args: unknown): Promise<unknown> };
+      }
+    ).workerDeviceProfile;
     await workerDeviceProfile.upsert({
       where: { workerId: payload.workerId },
       update: {
@@ -366,11 +394,15 @@ export class MiningProjection {
   ): Promise<void> {
     const payload = event.payload;
     const asset = await tx.asset.findUniqueOrThrow({ where: { symbol: payload.asset } });
-    const upstreamPoolRepository = (tx as unknown as {
-      upstreamPool: { findFirst(args: unknown): Promise<{ id: string } | null> };
-    }).upstreamPool;
+    const upstreamPoolRepository = (
+      tx as unknown as {
+        upstreamPool: { findFirst(args: unknown): Promise<{ id: string } | null> };
+      }
+    ).upstreamPool;
     const upstreamPool = payload.upstreamPoolKey
-      ? await upstreamPoolRepository.findFirst({ where: { assetId: asset.id, poolKey: payload.upstreamPoolKey } })
+      ? await upstreamPoolRepository.findFirst({
+          where: { assetId: asset.id, poolKey: payload.upstreamPoolKey },
+        })
       : null;
     await tx.stratumJob.upsert({
       where: { id: payload.jobId },
@@ -443,7 +475,10 @@ export class MiningProjection {
         processedAt: new Date(event.occurredAt),
       },
     });
-    await tx.shareFingerprint.update({ where: { id: reservation.id }, data: { shareId: share.id } });
+    await tx.shareFingerprint.update({
+      where: { id: reservation.id },
+      data: { shareId: share.id },
+    });
     await tx.worker.update({
       where: { id: payload.workerId, deletedAt: null },
       data: { status: 'ONLINE', lastShareAt: new Date(payload.submittedAt) },
@@ -469,7 +504,10 @@ export class MiningProjection {
     const asset = await tx.asset.findUniqueOrThrow({ where: { symbol: payload.asset } });
     const session = await tx.minerSession.findUniqueOrThrow({ where: { id: payload.sessionId } });
     const job = payload.jobId
-      ? await tx.stratumJob.findUnique({ where: { id: payload.jobId }, select: { id: true, expiresAt: true } })
+      ? await tx.stratumJob.findUnique({
+          where: { id: payload.jobId },
+          select: { id: true, expiresAt: true },
+        })
       : null;
     if (payload.code === 'DUPLICATE') {
       await this.updateHashrateBuckets(tx, {
@@ -514,7 +552,10 @@ export class MiningProjection {
         processedAt: new Date(event.occurredAt),
       },
     });
-    await tx.shareFingerprint.update({ where: { id: reservation.id }, data: { shareId: share.id } });
+    await tx.shareFingerprint.update({
+      where: { id: reservation.id },
+      data: { shareId: share.id },
+    });
 
     await this.updateHashrateBuckets(tx, {
       workerId: payload.workerId,
@@ -546,7 +587,13 @@ export class MiningProjection {
     event: DomainEvent<ShareUpstreamDecisionPayload>,
   ): Promise<void> {
     const payload = event.payload;
-    const share = await tx.share.findUniqueOrThrow({ where: { fingerprint: payload.fingerprint } });
+    const share = await tx.share.findUniqueOrThrow({
+      where: { fingerprint: payload.fingerprint },
+      include: {
+        worker: { select: { miningAccountId: true } },
+        stratumJob: { select: { upstreamPoolId: true } },
+      },
+    });
     const next = payload.upstreamAccepted ? 'UPSTREAM_ACCEPTED' : 'UPSTREAM_REJECTED';
     const state = transitionShareState(share.status, next);
     await tx.share.update({
@@ -565,6 +612,38 @@ export class MiningProjection {
       rejected: !payload.upstreamAccepted,
       invalid: false,
     });
+
+    if (payload.upstreamAccepted) {
+      const upstreamPoolId = share.stratumJob?.upstreamPoolId;
+      if (!upstreamPoolId) {
+        throw new Error(`Accepted upstream share ${share.id} has no upstream pool attribution`);
+      }
+      const contribution: ContributionAcceptedPayload = {
+        sourceEventId: event.eventId,
+        shareId: share.id,
+        miningAccountId: share.worker.miningAccountId,
+        assetId: share.assetId,
+        upstreamPoolId,
+        acceptedDifficulty: share.assignedDifficulty.toString(),
+        acceptedAt: payload.decidedAt,
+      };
+      const contributionEventId = randomUUID();
+      await tx.outboxEvent.create({
+        data: {
+          eventId: contributionEventId,
+          eventName: MiningEvents.contributionAccepted,
+          eventVersion: 1,
+          producer: 'mining-worker',
+          aggregateType: 'ContributionFact',
+          aggregateId: share.id,
+          correlationId: event.correlationId,
+          causationId: event.eventId,
+          idempotencyKey: `contribution:${share.id}:accepted:v1`,
+          payload: { ...contribution },
+          occurredAt: new Date(payload.decidedAt),
+        },
+      });
+    }
   }
 
   private async updateHashrateBuckets(
@@ -603,7 +682,9 @@ export class MiningProjection {
       },
     });
 
-    const oldestStart = new Date(input.submittedAt.getTime() - Math.max(...HASHRATE_WINDOWS) * 1_000);
+    const oldestStart = new Date(
+      input.submittedAt.getTime() - Math.max(...HASHRATE_WINDOWS) * 1_000,
+    );
     const buckets = await tx.hashrateBucket.findMany({
       where: {
         workerId: input.workerId,
@@ -616,9 +697,13 @@ export class MiningProjection {
     for (const windowSeconds of HASHRATE_WINDOWS) {
       const windowStart = input.submittedAt.getTime() - windowSeconds * 1_000;
       const included = buckets.filter((bucket) => bucket.bucketStart.getTime() > windowStart);
-      const accumulatedDifficulty = included.length === 0
-        ? '0'
-        : addDecimalStrings(included.map((bucket) => bucket.acceptedDifficultySum.toString()), 12);
+      const accumulatedDifficulty =
+        included.length === 0
+          ? '0'
+          : addDecimalStrings(
+              included.map((bucket) => bucket.acceptedDifficultySum.toString()),
+              12,
+            );
       const acceptedShares = included.reduce((sum, bucket) => sum + bucket.acceptedCount, 0);
       const rejectedShares = included.reduce((sum, bucket) => sum + bucket.rejectedCount, 0);
       const invalidShares = included.reduce((sum, bucket) => sum + bucket.invalidCount, 0);

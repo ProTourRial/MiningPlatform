@@ -19,6 +19,7 @@ defaults:
 env:
   DATABASE_URL: postgresql://mining:mining-test-password@127.0.0.1:5432/mining_platform_test?schema=public
   REDIS_URL: redis://127.0.0.1:6379
+  REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
   APP_URL: https://mining.example.test
   NODE_ENV: test
   AUTH_JWT_SECRET: ci-only-jwt-secret-with-at-least-thirty-two-bytes
@@ -31,6 +32,7 @@ env:
   STRATUM_AUTH_DRIVER: development
   UPSTREAM_DRIVER: development
   EMAIL_PROVIDER: disabled
+  NEXT_OUTPUT_MODE: standalone
 
 jobs:
   quality:
@@ -69,11 +71,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm db:migrate:deploy
-      - run: pnpm verify:v030-alpha2:static
+      - run: pnpm verify:v030-alpha5:static
       - run: pnpm verify:payment-addresses
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm db:seed
+        env:
+          SEED_DEVELOPMENT_DATA: "true"
+      - run: pnpm test:integration:accounting
       - run: pnpm build
       - run: pnpm release:manifest:verify
 
@@ -105,9 +111,9 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha2:fresh
+      - run: pnpm verify:migration:v030-alpha5:fresh
         env:
-          MIGRATION_TEST_ACK: v030-alpha2-fresh-empty-database
+          MIGRATION_TEST_ACK: v030-alpha5-fresh-empty-database
 
   migration-upgrade:
     runs-on: ubuntu-latest
@@ -137,6 +143,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha2:upgrade
+      - run: pnpm verify:migration:v030-alpha5:upgrade
         env:
-          MIGRATION_TEST_ACK: v030-alpha1-upgrade-copy
+          MIGRATION_TEST_ACK: v030-alpha4-upgrade-copy
+          SEED_DEVELOPMENT_DATA: "true"

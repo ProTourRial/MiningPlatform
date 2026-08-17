@@ -5,12 +5,11 @@
 name: mining-platform
 
 x-build-metadata: &build-metadata
-  MINING_BUILD_VERSION: ${MINING_BUILD_VERSION:-0.3.0-alpha.2}
+  MINING_BUILD_VERSION: ${MINING_BUILD_VERSION:-0.3.0-alpha.5}
   GIT_COMMIT: ${GIT_COMMIT:-UNCOMMITTED}
   BUILD_DATE: ${BUILD_DATE:-2026-08-03T04:33:00+07:00}
-  SCHEMA_VERSION: ${SCHEMA_VERSION:-8}
-  SCHEMA_MIGRATION: ${SCHEMA_MIGRATION:-20260803040000_auth_session_rotation_hardening}
-
+  SCHEMA_VERSION: ${SCHEMA_VERSION:-10}
+  SCHEMA_MIGRATION: ${SCHEMA_MIGRATION:-20260816020000_financial_truth_foundation}
 
 services:
   postgres:
@@ -24,9 +23,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     ports:
-      - "127.0.0.1:${POSTGRES_PUBLIC_PORT:-5432}:5432"
+      - '127.0.0.1:${POSTGRES_PUBLIC_PORT:-5432}:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -35,13 +34,13 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    command: ['sh', '-c', 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping | grep PONG']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -73,7 +72,7 @@ services:
       REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
       EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
       REALTIME_EVENT_GROUP: ${REALTIME_EVENT_GROUP:-api-realtime-v1}
-      ENABLE_DEVELOPMENT_DASHBOARD: "false"
+      ENABLE_DEVELOPMENT_DASHBOARD: 'false'
       ENABLE_REALTIME_GATEWAY: ${ENABLE_REALTIME_GATEWAY:-true}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?Set AUTH_JWT_SECRET in .env}
       AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?Set AUTH_ENCRYPTION_KEY in .env}
@@ -83,15 +82,21 @@ services:
       AUTH_ACCESS_TOKEN_SECONDS: ${AUTH_ACCESS_TOKEN_SECONDS:-900}
       AUTH_REFRESH_TOKEN_DAYS: ${AUTH_REFRESH_TOKEN_DAYS:-30}
       AUTH_SECURE_COOKIES: ${AUTH_SECURE_COOKIES:-true}
-      AUTH_EXPOSE_TEST_TOKENS: "false"
+      AUTH_EXPOSE_TEST_TOKENS: 'false'
       SUPPORT_PAYMENTS_ENABLED: ${SUPPORT_PAYMENTS_ENABLED:-false}
-      ENABLE_SWAGGER: "false"
+      ENABLE_SWAGGER: 'false'
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -103,13 +108,13 @@ services:
       dockerfile: infrastructure/docker/web.Dockerfile
       args:
         NEXT_PUBLIC_API_URL: /api/v1
-        NEXT_PUBLIC_SOCKET_URL: ""
+        NEXT_PUBLIC_SOCKET_URL: ''
     restart: unless-stopped
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      ENABLE_DEVELOPMENT_DASHBOARD: "false"
+      ENABLE_DEVELOPMENT_DASHBOARD: 'false'
     depends_on:
       api: { condition: service_healthy }
     networks: [mining-network]
@@ -129,7 +134,7 @@ services:
       EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
       STRATUM_HOST: 0.0.0.0
       STRATUM_PORT: 3333
-      STRATUM_DEV_MODE: "false"
+      STRATUM_DEV_MODE: 'false'
       STRATUM_AUTH_DRIVER: postgres
       STRATUM_AUTH_MAX_FAILURES: ${STRATUM_AUTH_MAX_FAILURES:-5}
       STRATUM_AUTH_WINDOW_MS: ${STRATUM_AUTH_WINDOW_MS:-60000}
@@ -142,7 +147,7 @@ services:
       UPSTREAM_SERVER_NAME: ${UPSTREAM_SERVER_NAME:-}
       UPSTREAM_USERNAME: ${UPSTREAM_USERNAME:-}
       UPSTREAM_PASSWORD: ${UPSTREAM_PASSWORD:-}
-      UPSTREAM_USER_AGENT: ${UPSTREAM_USER_AGENT:-MiningPlatform/0.3.0-alpha.2}
+      UPSTREAM_USER_AGENT: ${UPSTREAM_USER_AGENT:-MiningPlatform/0.3.0-alpha.5}
       UPSTREAM_CONNECT_TIMEOUT_MS: ${UPSTREAM_CONNECT_TIMEOUT_MS:-5000}
       UPSTREAM_RESPONSE_TIMEOUT_MS: ${UPSTREAM_RESPONSE_TIMEOUT_MS:-10000}
       UPSTREAM_MAXIMUM_ATTEMPTS: ${UPSTREAM_MAXIMUM_ATTEMPTS:-5}
@@ -154,6 +159,10 @@ services:
       UPSTREAM_SHARE_QUEUE_CAPACITY: ${UPSTREAM_SHARE_QUEUE_CAPACITY:-256}
       UPSTREAM_SHARE_QUEUE_TIMEOUT_MS: ${UPSTREAM_SHARE_QUEUE_TIMEOUT_MS:-10000}
       UPSTREAM_JOB_CACHE_MAXIMUM_ENTRIES: ${UPSTREAM_JOB_CACHE_MAXIMUM_ENTRIES:-512}
+      UPSTREAM_HEALTH_DRIVER: ${UPSTREAM_HEALTH_DRIVER:-redis}
+      UPSTREAM_HEALTH_KEY_PREFIX: ${UPSTREAM_HEALTH_KEY_PREFIX:-mining:upstream-health:v1:}
+      UPSTREAM_HEALTH_TTL_MS: ${UPSTREAM_HEALTH_TTL_MS:-86400000}
+      UPSTREAM_HEALTH_PROBE_LEASE_MS: ${UPSTREAM_HEALTH_PROBE_LEASE_MS:-5000}
       VARDIFF_ENABLED: ${VARDIFF_ENABLED:-false}
       VARDIFF_TARGET_SHARE_INTERVAL_SECONDS: ${VARDIFF_TARGET_SHARE_INTERVAL_SECONDS:-15}
       VARDIFF_RETARGET_INTERVAL_SECONDS: ${VARDIFF_RETARGET_INTERVAL_SECONDS:-90}
@@ -166,7 +175,7 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     ports:
-      - "${STRATUM_PUBLISH_ADDRESS:-127.0.0.1}:${STRATUM_PUBLIC_PORT:-3333}:3333"
+      - '${STRATUM_PUBLISH_ADDRESS:-127.0.0.1}:${STRATUM_PUBLIC_PORT:-3333}:3333'
     volumes:
       - stratum_data:/app/data/stratum
     networks: [mining-network]
@@ -216,6 +225,25 @@ services:
       outbox-worker: { condition: service_started }
     networks: [mining-network]
 
+  accounting-worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/accounting-worker.Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *build-metadata
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
+      EVENT_STREAM: ${EVENT_STREAM:-mining:domain-events}
+      ACCOUNTING_EVENT_GROUP: ${ACCOUNTING_EVENT_GROUP:-accounting-worker-v1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      outbox-worker: { condition: service_started }
+    networks: [mining-network]
+
   scheduler:
     build:
       context: .
@@ -236,7 +264,7 @@ services:
     networks: [mining-network]
 
   wallet-worker:
-    profiles: ["wallet"]
+    profiles: ['wallet']
     build:
       context: .
       dockerfile: infrastructure/docker/wallet-worker.Dockerfile
@@ -250,7 +278,7 @@ services:
       BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:?Set BITCOIN_RPC_USER in .env}
       BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set BITCOIN_RPC_PASSWORD in .env}
       BITCOIN_WALLET_NAME: ${BITCOIN_WALLET_NAME:?Set BITCOIN_WALLET_NAME in .env}
-      PAYOUTS_ENABLED: "false"
+      PAYOUTS_ENABLED: 'false'
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
@@ -260,7 +288,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.5.0
     restart: unless-stopped
-    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    command: ['--config.file=/etc/prometheus/prometheus.yml']
     volumes:
       - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
@@ -282,7 +310,7 @@ services:
       web: { condition: service_started }
       api: { condition: service_healthy }
     ports:
-      - "80:80"
+      - '80:80'
     volumes:
       - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks: [mining-network]

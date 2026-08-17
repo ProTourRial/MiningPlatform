@@ -16,6 +16,7 @@ import {
   type ShareUpstreamDecisionPayload,
 } from '@mining/shared';
 import { MiningProjection } from './projection.js';
+import { supportedMiningEvents } from './supported-events.js';
 
 const buildInfo = getBuildInfo('mining-worker');
 
@@ -72,6 +73,13 @@ async function publishHashrate(
 logger.info({ stream: eventStream }, 'mining projection started');
 try {
   await consumer.run(async (event) => {
+    if (!supportedMiningEvents.has(event.eventName)) {
+      logger.debug(
+        { eventId: event.eventId, eventName: event.eventName },
+        'event is not owned by mining projection; acknowledged without projection',
+      );
+      return;
+    }
     const result = await projection.handle(event);
     if (result.processed && event.eventName === MiningEvents.shareLocalAccepted) {
       const accepted = event as DomainEvent<ShareAcceptedPayload>;

@@ -5,7 +5,12 @@
  */
 
 import net from 'node:net';
-import { calculateHeaderHash, targetFromDifficulty, type BitcoinMiningJob, type BitcoinShareSubmission } from '@mining/mining-core';
+import {
+  calculateHeaderHash,
+  targetFromDifficulty,
+  type BitcoinMiningJob,
+  type BitcoinShareSubmission,
+} from '@mining/mining-core';
 
 interface Message {
   id: number | null;
@@ -24,7 +29,10 @@ const socket = net.createConnection({ host, port });
 socket.setEncoding('utf8');
 
 const inbox: Message[] = [];
-const waiters: Array<{ predicate: (message: Message) => boolean; resolve: (message: Message) => void }> = [];
+const waiters: Array<{
+  predicate: (message: Message) => boolean;
+  resolve: (message: Message) => void;
+}> = [];
 let buffer = '';
 
 socket.on('data', (chunk: string) => {
@@ -75,7 +83,7 @@ async function main(): Promise<void> {
   const configure = await responseFor(1);
   if (configure.error) throw new Error(`Configure failed: ${JSON.stringify(configure.error)}`);
 
-  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.3.0-alpha.2']);
+  send(2, 'mining.subscribe', ['MiningPlatformSmoke/0.3.0-alpha.5']);
   const subscribe = await responseFor(2);
   if (subscribe.error) throw new Error(`Subscribe failed: ${JSON.stringify(subscribe.error)}`);
   const subscribeResult = subscribe.result as [unknown, string, number];
@@ -84,12 +92,14 @@ async function main(): Promise<void> {
 
   send(3, 'mining.authorize', [workerName, password]);
   const authorize = await responseFor(3);
-  if (authorize.result !== true) throw new Error(`Authorize failed: ${JSON.stringify(authorize.error)}`);
+  if (authorize.result !== true)
+    throw new Error(`Authorize failed: ${JSON.stringify(authorize.error)}`);
 
   const extranonceMessage = await notification('mining.set_extranonce');
   extranonce1 = String(extranonceMessage.params?.[0]);
   extranonce2Size = Number(extranonceMessage.params?.[1]);
-  if (!Number.isInteger(extranonce2Size) || extranonce2Size <= 0) throw new Error('Invalid extranonce assignment');
+  if (!Number.isInteger(extranonce2Size) || extranonce2Size <= 0)
+    throw new Error('Invalid extranonce assignment');
 
   const difficultyMessage = await notification('mining.set_difficulty');
   const difficulty = String(difficultyMessage.params?.[0]);
@@ -140,13 +150,19 @@ async function main(): Promise<void> {
   const submit = await responseFor(4);
   if (submit.result !== true) throw new Error(`Share rejected: ${JSON.stringify(submit.error)}`);
 
-  console.log(JSON.stringify({
-    status: 'ok',
-    workerName,
-    jobId: job.id,
-    difficulty,
-    nonce: acceptedSubmission.nonce,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        status: 'ok',
+        workerName,
+        jobId: job.id,
+        difficulty,
+        nonce: acceptedSubmission.nonce,
+      },
+      null,
+      2,
+    ),
+  );
   socket.end();
 }
 

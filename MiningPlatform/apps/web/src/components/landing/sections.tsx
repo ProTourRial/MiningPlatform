@@ -73,7 +73,7 @@ const transparencyMetrics = [
   ['Worker aktif', '0'],
   ['Accepted share', '0'],
   ['Reject rate', '0.00%'],
-  ['Pool fee target', '2%'],
+  ['Platform fee awal', '0,5%'],
   ['Status gateway', 'Development'],
 ] as const;
 
@@ -281,7 +281,7 @@ export function LandingSections() {
                   ['Hashrate', '110 TH/s'],
                   ['Power draw', '3,250 W'],
                   ['Electricity', 'Rp 1.700 / kWh'],
-                  ['Pool fee', '2.00%'],
+                  ['Platform fee', '0.50%'],
                 ].map(([label, value]) => (
                   <div key={label} className="rounded-xl border border-white/8 bg-[#071522] px-4 py-3.5">
                     <p className="mono-font text-[8px] uppercase tracking-[0.12em] text-[#71899b]">{label}</p>

@@ -1,5 +1,7 @@
 # ADR-0009: Identity, Session, and Permission-Based RBAC
 
+> Historical proposal. Its accepted decisions were consolidated into the canonical [ADR-0009, Control Plane Identity, Session, and Miner Credential Boundary](0009-control-plane-identity-and-session.md). This file remains only for compatibility with earlier release references.
+
 Author: Abia Nugrahanto  
 Status: Accepted  
 Date: 2026-07-31

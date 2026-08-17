@@ -21,11 +21,13 @@ import { detectMinerIdentity } from '@mining/miner-detection';
 import { createLogger } from '@mining/logger';
 import {
   MultiUpstreamPoolManager,
+  InMemoryDistributedPoolHealthCoordinator,
   ShareQueueFullError,
   StaleUpstreamJobError,
   UpstreamUnavailableError,
   VariableDifficultyController,
   type UpstreamShareResult,
+  type DistributedPoolHealthCoordinator,
 } from '@mining/upstream-stratum';
 import { hmacSensitiveValue } from '@mining/security';
 import {
@@ -71,6 +73,7 @@ export interface StratumServerDependencies {
   eventBus?: EventBus;
   eventStore: MiningEventStore;
   duplicateStore: DuplicateShareStore;
+  upstreamHealthCoordinator?: DistributedPoolHealthCoordinator;
   close?: () => Promise<void>;
 }
 
@@ -89,59 +92,103 @@ export class StratumServer {
 
   static async create(config: StratumServerConfig): Promise<StratumServer> {
     if (process.env.NODE_ENV === 'production' && config.eventBusDriver !== 'redis') {
-      throw new Error('Production Stratum requires EVENT_BUS_DRIVER=redis for durable duplicate reservation');
+      throw new Error(
+        'Production Stratum requires EVENT_BUS_DRIVER=redis for durable duplicate reservation',
+      );
+    }
+    if (
+      process.env.NODE_ENV === 'production' &&
+      config.upstreamDriver !== 'development' &&
+      config.upstreamHealthDriver !== 'redis'
+    ) {
+      throw new Error('Production Stratum requires distributed Redis upstream health coordination');
     }
 
     const closers: Array<() => Promise<void>> = [];
-    let duplicateStore: DuplicateShareStore;
-    if (config.eventBusDriver === 'redis') {
-      const { RedisDuplicateShareStore } = await import('./redis-duplicate-share-store.js');
-      const redisDuplicateStore = await RedisDuplicateShareStore.connect(config.redisUrl);
-      duplicateStore = redisDuplicateStore;
-      closers.push(() => redisDuplicateStore.close());
-    } else {
-      duplicateStore = new InMemoryDuplicateShareStore();
-    }
-
-    let eventBus: EventBus | undefined;
-    let eventStore: MiningEventStore;
-    if (config.eventStoreDriver === 'postgres') {
-      const { PostgresOutboxEventStore } = await import('./development-event-store.js');
-      eventStore = new PostgresOutboxEventStore();
-    } else {
-      const { DevelopmentJsonlEventStore } = await import('./development-event-store.js');
-      eventStore = new DevelopmentJsonlEventStore(config.developmentDataDirectory);
+    try {
+      let duplicateStore: DuplicateShareStore;
       if (config.eventBusDriver === 'redis') {
-        const { RedisStreamEventBus } = await import('@mining/event-bus/redis-stream');
-        const redisEventBus = await RedisStreamEventBus.connect({ url: config.redisUrl, stream: config.eventStream });
-        eventBus = redisEventBus;
-        closers.push(() => redisEventBus.close());
+        const { RedisDuplicateShareStore } = await import('./redis-duplicate-share-store.js');
+        const redisDuplicateStore = await RedisDuplicateShareStore.connect(config.redisUrl);
+        duplicateStore = redisDuplicateStore;
+        closers.push(() => redisDuplicateStore.close());
       } else {
-        eventBus = new InMemoryEventBus();
+        duplicateStore = new InMemoryDuplicateShareStore();
       }
+
+      let eventBus: EventBus | undefined;
+      let eventStore: MiningEventStore;
+      if (config.eventStoreDriver === 'postgres') {
+        const { PostgresOutboxEventStore } = await import('./development-event-store.js');
+        eventStore = new PostgresOutboxEventStore();
+      } else {
+        const { DevelopmentJsonlEventStore } = await import('./development-event-store.js');
+        eventStore = new DevelopmentJsonlEventStore(config.developmentDataDirectory);
+        if (config.eventBusDriver === 'redis') {
+          const { RedisStreamEventBus } = await import('@mining/event-bus/redis-stream');
+          const redisEventBus = await RedisStreamEventBus.connect({
+            url: config.redisUrl,
+            stream: config.eventStream,
+          });
+          eventBus = redisEventBus;
+          closers.push(() => redisEventBus.close());
+        } else {
+          eventBus = new InMemoryEventBus();
+        }
+      }
+
+      eventBus?.subscribe(MiningEvents.shareLocalAccepted, async (event) => {
+        logger.info(
+          { eventId: event.eventId, aggregateId: event.aggregateId },
+          'local share accepted',
+        );
+      });
+      eventBus?.subscribe(MiningEvents.shareLocalRejected, async (event) => {
+        logger.warn(
+          { eventId: event.eventId, aggregateId: event.aggregateId },
+          'local share rejected',
+        );
+      });
+
+      const authenticator =
+        config.workerAuthDriver === 'postgres'
+          ? await (
+              await import('./production-worker-authenticator.js')
+            ).ProductionWorkerAuthenticator.create(config)
+          : new DevelopmentWorkerAuthenticator(config);
+      if (authenticator.close) closers.push(() => authenticator.close?.() ?? Promise.resolve());
+
+      let upstreamHealthCoordinator: DistributedPoolHealthCoordinator;
+      if (config.upstreamHealthDriver === 'redis') {
+        const { RedisDistributedPoolHealthCoordinator } = await import(
+          './redis-upstream-health-coordinator.js'
+        );
+        const redisCoordinator = await RedisDistributedPoolHealthCoordinator.connect({
+          redisUrl: config.redisUrl,
+          keyPrefix: config.upstreamHealthKeyPrefix,
+          healthTtlMs: config.upstreamHealthTtlMs,
+          probeLeaseMs: config.upstreamHealthProbeLeaseMs,
+        });
+        upstreamHealthCoordinator = redisCoordinator;
+        closers.push(() => redisCoordinator.close());
+      } else {
+        upstreamHealthCoordinator = new InMemoryDistributedPoolHealthCoordinator(
+          config.upstreamHealthProbeLeaseMs ?? 5_000,
+        );
+      }
+
+      return new StratumServer(config, {
+        authenticator,
+        eventBus,
+        eventStore,
+        duplicateStore,
+        upstreamHealthCoordinator,
+        close: () => closeResources(closers, true),
+      });
+    } catch (error) {
+      await closeResources(closers, false);
+      throw error;
     }
-
-    eventBus?.subscribe(MiningEvents.shareLocalAccepted, async (event) => {
-      logger.info({ eventId: event.eventId, aggregateId: event.aggregateId }, 'local share accepted');
-    });
-    eventBus?.subscribe(MiningEvents.shareLocalRejected, async (event) => {
-      logger.warn({ eventId: event.eventId, aggregateId: event.aggregateId }, 'local share rejected');
-    });
-
-    const authenticator = config.workerAuthDriver === 'postgres'
-      ? await (await import('./production-worker-authenticator.js')).ProductionWorkerAuthenticator.create(config)
-      : new DevelopmentWorkerAuthenticator(config);
-    if (authenticator.close) closers.push(() => authenticator.close?.() ?? Promise.resolve());
-
-    return new StratumServer(config, {
-      authenticator,
-      eventBus,
-      eventStore,
-      duplicateStore,
-      close: async () => {
-        for (const close of closers.reverse()) await close();
-      },
-    });
   }
 
   async listen(): Promise<void> {
@@ -161,8 +208,8 @@ export class StratumServer {
       this.config.developmentMode
         ? 'stratum development gateway listening'
         : this.config.upstreamDriver === 'tcp' || this.config.upstreamDriver === 'multi'
-          ? 'stratum resilient upstream gateway listening'
-          : 'stratum listening without a production upstream driver',
+        ? 'stratum resilient upstream gateway listening'
+        : 'stratum listening without a production upstream driver',
     );
   }
 
@@ -177,7 +224,9 @@ export class StratumServer {
       session.upstream?.close();
       session.socket.destroy();
     }
-    await new Promise<void>((resolve, reject) => this.server.close((error) => (error ? reject(error) : resolve())));
+    await new Promise<void>((resolve, reject) =>
+      this.server.close((error) => (error ? reject(error) : resolve())),
+    );
     await this.dependencies.close?.();
   }
 
@@ -200,11 +249,15 @@ export class StratumServer {
     };
     this.sessions.set(session.id, session);
     logger.info({ sessionId: session.id, remoteHash: session.remoteHash }, 'miner connected');
-    session.processing = this.publishSessionEvent<MinerSessionConnectedPayload>(MiningEvents.sessionConnected, session, {
-      sessionId: session.id,
-      remoteIpHash: session.remoteHash,
-      connectedAt: session.connectedAt.toISOString(),
-    });
+    session.processing = this.publishSessionEvent<MinerSessionConnectedPayload>(
+      MiningEvents.sessionConnected,
+      session,
+      {
+        sessionId: session.id,
+        remoteIpHash: session.remoteHash,
+        connectedAt: session.connectedAt.toISOString(),
+      },
+    );
 
     socket.setEncoding('utf8');
     socket.setTimeout(this.config.socketTimeoutMs);
@@ -241,7 +294,9 @@ export class StratumServer {
     });
 
     socket.on('timeout', () => socket.destroy());
-    socket.on('error', (error) => logger.warn({ sessionId: session.id, error }, 'stratum socket error'));
+    socket.on('error', (error) =>
+      logger.warn({ sessionId: session.id, error }, 'stratum socket error'),
+    );
     socket.on('close', () => {
       session.state = 'DISCONNECTED';
       session.upstream?.close();
@@ -249,13 +304,21 @@ export class StratumServer {
       this.sessions.delete(session.id);
       logger.info({ sessionId: session.id, remoteHash: session.remoteHash }, 'miner disconnected');
       session.processing = session.processing
-        .then(() => this.publishSessionEvent<MinerSessionDisconnectedPayload>(MiningEvents.sessionDisconnected, session, {
-          sessionId: session.id,
-          workerId: session.workerId,
-          disconnectedAt: session.lastActivityAt.toISOString(),
-          reason: 'SOCKET_CLOSED',
-        }))
-        .catch((error) => logger.error({ sessionId: session.id, error }, 'disconnect event failed'));
+        .then(() =>
+          this.publishSessionEvent<MinerSessionDisconnectedPayload>(
+            MiningEvents.sessionDisconnected,
+            session,
+            {
+              sessionId: session.id,
+              workerId: session.workerId,
+              disconnectedAt: session.lastActivityAt.toISOString(),
+              reason: 'SOCKET_CLOSED',
+            },
+          ),
+        )
+        .catch((error) =>
+          logger.error({ sessionId: session.id, error }, 'disconnect event failed'),
+        );
     });
   }
 
@@ -277,7 +340,10 @@ export class StratumServer {
           await this.handleSubmit(session, request);
           return;
         default:
-          this.write(session, errorResponse(request.id, StratumErrorCode.other, 'Unsupported Stratum method'));
+          this.write(
+            session,
+            errorResponse(request.id, StratumErrorCode.other, 'Unsupported Stratum method'),
+          );
       }
     } catch (error) {
       logger.warn({ sessionId: session.id, error }, 'invalid stratum message');
@@ -303,13 +369,17 @@ export class StratumServer {
     const subscription = parseMiningSubscribe(request.params);
     session.userAgent = subscription.userAgent;
     session.state = 'SUBSCRIBED';
-    await this.publishSessionEvent<MinerSessionSubscribedPayload>(MiningEvents.sessionSubscribed, session, {
-      sessionId: session.id,
-      userAgent: session.userAgent,
-      extranonce1: session.extranonce1,
-      extranonce2Size: session.extranonce2Size,
-      subscribedAt: new Date().toISOString(),
-    });
+    await this.publishSessionEvent<MinerSessionSubscribedPayload>(
+      MiningEvents.sessionSubscribed,
+      session,
+      {
+        sessionId: session.id,
+        userAgent: session.userAgent,
+        extranonce1: session.extranonce1,
+        extranonce2Size: session.extranonce2Size,
+        subscribedAt: new Date().toISOString(),
+      },
+    );
     this.write(
       session,
       successResponse(request.id, [
@@ -325,7 +395,10 @@ export class StratumServer {
 
   private async handleAuthorize(session: MinerSession, request: StratumRequest): Promise<void> {
     if (session.state === 'CONNECTED') {
-      this.write(session, errorResponse(request.id, StratumErrorCode.notSubscribed, 'Worker must subscribe first'));
+      this.write(
+        session,
+        errorResponse(request.id, StratumErrorCode.notSubscribed, 'Worker must subscribe first'),
+      );
       return;
     }
     const credentials = parseMiningAuthorize(request.params);
@@ -346,7 +419,14 @@ export class StratumServer {
         { sessionId: session.id, remoteHash: session.remoteHash, reason: authentication.code },
         'worker authorization failed',
       );
-      this.write(session, errorResponse(request.id, StratumErrorCode.unauthorizedWorker, 'Worker authorization failed'));
+      this.write(
+        session,
+        errorResponse(
+          request.id,
+          StratumErrorCode.unauthorizedWorker,
+          'Worker authorization failed',
+        ),
+      );
       return;
     }
     const worker = authentication.worker;
@@ -366,7 +446,10 @@ export class StratumServer {
         session.upstream?.close();
         session.upstream = undefined;
         logger.error({ sessionId: session.id, error }, 'upstream authorization failed');
-        this.write(session, errorResponse(request.id, StratumErrorCode.other, 'Upstream pool is unavailable'));
+        this.write(
+          session,
+          errorResponse(request.id, StratumErrorCode.other, 'Upstream pool is unavailable'),
+        );
         return;
       }
     }
@@ -383,26 +466,37 @@ export class StratumServer {
       session.assignedDifficulty = session.vardiff.setUpstreamFloor(session.assignedDifficulty);
     }
 
-    await this.publishSessionEvent<MinerSessionAuthorizedPayload>(MiningEvents.sessionAuthorized, session, {
-      sessionId: session.id,
-      workerId: worker.workerId,
-      workerName: worker.workerName,
-      assignedDifficulty: session.assignedDifficulty,
-      authorizedAt: new Date().toISOString(),
-    });
+    await this.publishSessionEvent<MinerSessionAuthorizedPayload>(
+      MiningEvents.sessionAuthorized,
+      session,
+      {
+        sessionId: session.id,
+        workerId: worker.workerId,
+        workerName: worker.workerName,
+        assignedDifficulty: session.assignedDifficulty,
+        authorizedAt: new Date().toISOString(),
+      },
+    );
     const deviceDetection = detectMinerIdentity({
       userAgent: session.userAgent,
       algorithm: 'SHA256',
     });
-    await this.publishSessionEvent<WorkerDeviceDetectedPayload>(MiningEvents.workerDeviceDetected, session, {
-      sessionId: session.id,
-      workerId: worker.workerId,
-      workerName: worker.workerName,
-      ...deviceDetection,
-      detectedAt: new Date().toISOString(),
-    });
+    await this.publishSessionEvent<WorkerDeviceDetectedPayload>(
+      MiningEvents.workerDeviceDetected,
+      session,
+      {
+        sessionId: session.id,
+        workerId: worker.workerId,
+        workerName: worker.workerName,
+        ...deviceDetection,
+        detectedAt: new Date().toISOString(),
+      },
+    );
     this.write(session, successResponse(request.id, true));
-    this.writeNotification(session, 'mining.set_extranonce', [session.extranonce1, session.extranonce2Size]);
+    this.writeNotification(session, 'mining.set_extranonce', [
+      session.extranonce1,
+      session.extranonce2Size,
+    ]);
     this.writeNotification(session, 'mining.set_difficulty', [session.assignedDifficulty]);
 
     if (this.config.upstreamDriver === 'development') {
@@ -420,20 +514,27 @@ export class StratumServer {
 
   private async handleSubmit(session: MinerSession, request: StratumRequest): Promise<void> {
     if (session.state !== 'ACTIVE' || !session.workerId || !session.workerName) {
-      this.write(session, errorResponse(request.id, StratumErrorCode.unauthorizedWorker, 'Worker is not authorized'));
+      this.write(
+        session,
+        errorResponse(request.id, StratumErrorCode.unauthorizedWorker, 'Worker is not authorized'),
+      );
       return;
     }
     if (!this.allowSubmission(session)) {
-      this.write(session, errorResponse(request.id, StratumErrorCode.other, 'Submission rate limit exceeded'));
+      this.write(
+        session,
+        errorResponse(request.id, StratumErrorCode.other, 'Submission rate limit exceeded'),
+      );
       return;
     }
 
     const parsed = parseMiningSubmit(request.params);
     const submission: BitcoinShareSubmission = { ...parsed, submittedAt: new Date() };
     const registeredJob = session.upstream?.getJob(parsed.jobId);
-    const job = session.currentJob?.id === parsed.jobId
-      ? session.currentJob
-      : registeredJob
+    const job =
+      session.currentJob?.id === parsed.jobId
+        ? session.currentJob
+        : registeredJob
         ? { ...registeredJob, versionRollingMask: session.versionRollingMask }
         : undefined;
     const result = await this.validator.validate({
@@ -446,13 +547,18 @@ export class StratumServer {
     try {
       await this.recordValidationResult(session, submission, result);
     } catch (error) {
-      const ownsReservation = result.accepted || (result.fingerprint && result.code !== 'DUPLICATE');
-      if (ownsReservation && result.fingerprint) await this.validator.releaseReservation(result.fingerprint);
+      const ownsReservation =
+        result.accepted || (result.fingerprint && result.code !== 'DUPLICATE');
+      if (ownsReservation && result.fingerprint)
+        await this.validator.releaseReservation(result.fingerprint);
       throw error;
     }
 
     if (!result.accepted) {
-      this.write(session, errorResponse(request.id, this.mapRejectionCode(result.code), result.safeReason));
+      this.write(
+        session,
+        errorResponse(request.id, this.mapRejectionCode(result.code), result.safeReason),
+      );
       return;
     }
 
@@ -478,10 +584,10 @@ export class StratumServer {
           errorMessage: stale
             ? 'Share belongs to an invalidated upstream job'
             : overloaded
-              ? 'Upstream share queue is full'
-              : unavailable
-                ? 'Upstream pool is recovering'
-                : parsedError.message,
+            ? 'Upstream share queue is full'
+            : unavailable
+            ? 'Upstream pool is recovering'
+            : parsedError.message,
         };
       }
       await this.publishUpstreamDecision(session, submission, result.fingerprint, upstreamResult);
@@ -505,17 +611,24 @@ export class StratumServer {
       this.writeNotification(session, 'mining.set_difficulty', [retarget.nextDifficulty]);
       const retargetedJob = session.upstream?.retargetCurrentJob(retarget.nextDifficulty);
       if (retargetedJob) await this.publishAndNotifyJob(session, retargetedJob);
-      await this.publishSessionEvent<WorkerDifficultyChangedPayload>(MiningEvents.workerDifficultyChanged, session, {
-        sessionId: session.id,
-        workerId: session.workerId,
-        previousDifficulty: retarget.previousDifficulty,
-        nextDifficulty: retarget.nextDifficulty,
-        source: 'VARDIFF',
-        assignedAt: submission.submittedAt.toISOString(),
-        observedShareIntervalSeconds: retarget.observedShareIntervalSeconds,
-        sampleCount: retarget.sampleCount,
-      });
-      logger.info({ sessionId: session.id, workerId: session.workerId, ...retarget }, 'worker difficulty retargeted');
+      await this.publishSessionEvent<WorkerDifficultyChangedPayload>(
+        MiningEvents.workerDifficultyChanged,
+        session,
+        {
+          sessionId: session.id,
+          workerId: session.workerId,
+          previousDifficulty: retarget.previousDifficulty,
+          nextDifficulty: retarget.nextDifficulty,
+          source: 'VARDIFF',
+          assignedAt: submission.submittedAt.toISOString(),
+          observedShareIntervalSeconds: retarget.observedShareIntervalSeconds,
+          sampleCount: retarget.sampleCount,
+        },
+      );
+      logger.info(
+        { sessionId: session.id, workerId: session.workerId, ...retarget },
+        'worker difficulty retargeted',
+      );
     }
     const fiveMinuteCutoff = submission.submittedAt.getTime() - 5 * 60 * 1_000;
     const included = [...session.acceptedDifficultyBuckets.entries()]
@@ -524,7 +637,10 @@ export class StratumServer {
     const hashrate = calculateHashrateFromAccumulatedDifficulty(
       included.length === 0
         ? '0'
-        : addDecimalStrings(included.map((value) => value.accumulatedDifficulty), 12),
+        : addDecimalStrings(
+            included.map((value) => value.accumulatedDifficulty),
+            12,
+          ),
       included.reduce((sum, value) => sum + value.shareCount, 0),
       300,
     );
@@ -542,27 +658,29 @@ export class StratumServer {
   }
 
   private createUpstreamManager(session: MinerSession): MultiUpstreamPoolManager {
-    const pools = this.config.upstreamPools ?? [{
-      id: 'primary',
-      name: 'Primary upstream',
-      priority: 100,
-      weight: 100,
-      enabled: true,
-      failureThreshold: 3,
-      recoveryTimeoutMs: 30_000,
-      endpoint: {
-        host: this.config.upstreamHost,
-        port: this.config.upstreamPort,
-        tls: this.config.upstreamTls,
-        serverName: this.config.upstreamServerName,
-        userAgent: this.config.upstreamUserAgent,
-        username: this.config.upstreamUsername,
-        password: this.config.upstreamPassword,
-        connectTimeoutMs: this.config.upstreamConnectTimeoutMs,
-        responseTimeoutMs: this.config.upstreamResponseTimeoutMs,
-        maximumLineBytes: this.config.maximumLineBytes,
+    const pools = this.config.upstreamPools ?? [
+      {
+        id: 'primary',
+        name: 'Primary upstream',
+        priority: 100,
+        weight: 100,
+        enabled: true,
+        failureThreshold: 3,
+        recoveryTimeoutMs: 30_000,
+        endpoint: {
+          host: this.config.upstreamHost,
+          port: this.config.upstreamPort,
+          tls: this.config.upstreamTls,
+          serverName: this.config.upstreamServerName,
+          userAgent: this.config.upstreamUserAgent,
+          username: this.config.upstreamUsername,
+          password: this.config.upstreamPassword,
+          connectTimeoutMs: this.config.upstreamConnectTimeoutMs,
+          responseTimeoutMs: this.config.upstreamResponseTimeoutMs,
+          maximumLineBytes: this.config.maximumLineBytes,
+        },
       },
-    }];
+    ];
     return new MultiUpstreamPoolManager(
       {
         pools,
@@ -574,10 +692,14 @@ export class StratumServer {
         shareQueueCapacity: this.config.upstreamShareQueueCapacity ?? 256,
         shareQueueTimeoutMs: this.config.upstreamShareQueueTimeoutMs ?? 10_000,
         jobCacheMaximumEntries: this.config.upstreamJobCacheMaximumEntries ?? 512,
+        healthCoordinator: this.dependencies.upstreamHealthCoordinator,
       },
       {
         onState: (state) => {
-          logger.info({ sessionId: session.id, upstreamManagerState: state }, 'upstream manager state changed');
+          logger.info(
+            { sessionId: session.id, upstreamManagerState: state },
+            'upstream manager state changed',
+          );
           if (state === 'RECOVERING') {
             session.recoveryStartedAt = new Date();
             session.currentJob = undefined;
@@ -589,13 +711,19 @@ export class StratumServer {
           session.recoveryStartedAt = undefined;
           logger.info({ sessionId: session.id, poolId, previousPoolId }, 'upstream pool selected');
           if (session.workerId) {
-            void this.publishSessionEvent<UpstreamPoolSelectedPayload>(MiningEvents.upstreamPoolSelected, session, {
-              sessionId: session.id,
-              workerId: session.workerId,
-              poolId,
-              previousPoolId,
-              selectedAt: new Date().toISOString(),
-            }).catch((error) => logger.error({ sessionId: session.id, error }, 'pool selection event failed'));
+            void this.publishSessionEvent<UpstreamPoolSelectedPayload>(
+              MiningEvents.upstreamPoolSelected,
+              session,
+              {
+                sessionId: session.id,
+                workerId: session.workerId,
+                poolId,
+                previousPoolId,
+                selectedAt: new Date().toISOString(),
+              },
+            ).catch((error) =>
+              logger.error({ sessionId: session.id, error }, 'pool selection event failed'),
+            );
           }
         },
         onDifficulty: (difficulty, poolId) => {
@@ -606,25 +734,38 @@ export class StratumServer {
             this.writeNotification(session, 'mining.set_difficulty', [downstreamDifficulty]);
           }
           if (session.workerId && previousDifficulty !== downstreamDifficulty) {
-            void this.publishSessionEvent<WorkerDifficultyChangedPayload>(MiningEvents.workerDifficultyChanged, session, {
-              sessionId: session.id,
-              workerId: session.workerId,
-              previousDifficulty,
-              nextDifficulty: downstreamDifficulty,
-              source: 'UPSTREAM_FLOOR',
-              assignedAt: new Date().toISOString(),
-            }).catch((error) => logger.error({ sessionId: session.id, error }, 'difficulty event failed'));
+            void this.publishSessionEvent<WorkerDifficultyChangedPayload>(
+              MiningEvents.workerDifficultyChanged,
+              session,
+              {
+                sessionId: session.id,
+                workerId: session.workerId,
+                previousDifficulty,
+                nextDifficulty: downstreamDifficulty,
+                source: 'UPSTREAM_FLOOR',
+                assignedAt: new Date().toISOString(),
+              },
+            ).catch((error) =>
+              logger.error({ sessionId: session.id, error }, 'difficulty event failed'),
+            );
           }
-          logger.info({ sessionId: session.id, poolId, downstreamDifficulty }, 'upstream difficulty updated');
+          logger.info(
+            { sessionId: session.id, poolId, downstreamDifficulty },
+            'upstream difficulty updated',
+          );
         },
         onExtranonce: (subscription, poolId) => {
-          const changed = session.extranonce1 !== subscription.extranonce1 ||
+          const changed =
+            session.extranonce1 !== subscription.extranonce1 ||
             session.extranonce2Size !== subscription.extranonce2Size;
           session.extranonce1 = subscription.extranonce1;
           session.extranonce2Size = subscription.extranonce2Size;
           if (changed) session.currentJob = undefined;
           if (session.state === 'ACTIVE' && changed) {
-            this.writeNotification(session, 'mining.set_extranonce', [subscription.extranonce1, subscription.extranonce2Size]);
+            this.writeNotification(session, 'mining.set_extranonce', [
+              subscription.extranonce1,
+              subscription.extranonce2Size,
+            ]);
           }
           logger.info({ sessionId: session.id, poolId }, 'upstream extranonce updated');
         },
@@ -637,29 +778,43 @@ export class StratumServer {
           session.currentJob = activeJob;
           if (session.state === 'ACTIVE') {
             void this.publishAndNotifyJob(session, activeJob).catch((error) => {
-              logger.error({ sessionId: session.id, poolId, jobId: job.id, error }, 'failed to relay upstream job');
+              logger.error(
+                { sessionId: session.id, poolId, jobId: job.id, error },
+                'failed to relay upstream job',
+              );
               session.socket.destroy();
             });
           }
         },
         onRecoveryStarted: (previousPoolId, reason) => {
           if (!session.workerId) return;
-          void this.publishSessionEvent<UpstreamFailoverPayload>(MiningEvents.upstreamFailoverStarted, session, {
-            sessionId: session.id,
-            workerId: session.workerId,
-            previousPoolId,
-            reason: reason.message,
-            attemptedPoolIds: [],
-            occurredAt: new Date().toISOString(),
-            recovered: false,
-          }).catch((error) => logger.error({ sessionId: session.id, error }, 'failover-start event failed'));
+          void this.publishSessionEvent<UpstreamFailoverPayload>(
+            MiningEvents.upstreamFailoverStarted,
+            session,
+            {
+              sessionId: session.id,
+              workerId: session.workerId,
+              previousPoolId,
+              reason: reason.message,
+              attemptedPoolIds: [],
+              occurredAt: new Date().toISOString(),
+              recovered: false,
+            },
+          ).catch((error) =>
+            logger.error({ sessionId: session.id, error }, 'failover-start event failed'),
+          );
         },
         onFailover: (notice) => {
           const recovered = Boolean(notice.nextPoolId);
-          logger.warn({ sessionId: session.id, ...notice, recovered }, recovered ? 'upstream failover completed' : 'upstream failover failed');
+          logger.warn(
+            { sessionId: session.id, ...notice, recovered },
+            recovered ? 'upstream failover completed' : 'upstream failover failed',
+          );
           if (session.workerId) {
             void this.publishSessionEvent<UpstreamFailoverPayload>(
-              recovered ? MiningEvents.upstreamFailoverCompleted : MiningEvents.upstreamFailoverFailed,
+              recovered
+                ? MiningEvents.upstreamFailoverCompleted
+                : MiningEvents.upstreamFailoverFailed,
               session,
               {
                 sessionId: session.id,
@@ -671,26 +826,38 @@ export class StratumServer {
                 occurredAt: notice.occurredAt,
                 recovered,
               },
-            ).catch((error) => logger.error({ sessionId: session.id, error }, 'failover event failed'));
+            ).catch((error) =>
+              logger.error({ sessionId: session.id, error }, 'failover event failed'),
+            );
           }
         },
         onHealth: (snapshot) => {
           logger.info({ sessionId: session.id, ...snapshot }, 'upstream health updated');
           if (session.workerId) {
-            void this.publishSessionEvent<UpstreamHealthChangedPayload>(MiningEvents.upstreamHealthChanged, session, {
-              sessionId: session.id,
-              workerId: session.workerId,
-              ...snapshot,
-              observedAt: new Date().toISOString(),
-            }).catch((error) => logger.error({ sessionId: session.id, error }, 'upstream health event failed'));
+            void this.publishSessionEvent<UpstreamHealthChangedPayload>(
+              MiningEvents.upstreamHealthChanged,
+              session,
+              {
+                sessionId: session.id,
+                workerId: session.workerId,
+                ...snapshot,
+                observedAt: new Date().toISOString(),
+              },
+            ).catch((error) =>
+              logger.error({ sessionId: session.id, error }, 'upstream health event failed'),
+            );
           }
         },
-        onError: (error, poolId) => logger.warn({ sessionId: session.id, poolId, error }, 'upstream pool error'),
+        onError: (error, poolId) =>
+          logger.warn({ sessionId: session.id, poolId, error }, 'upstream pool error'),
       },
     );
   }
 
-  private async publishAndNotifyJob(session: MinerSession, job: NonNullable<MinerSession['currentJob']>): Promise<void> {
+  private async publishAndNotifyJob(
+    session: MinerSession,
+    job: NonNullable<MinerSession['currentJob']>,
+  ): Promise<void> {
     session.currentJob = job;
     const route = session.upstream?.getJobRoute(job.id);
     await this.publishSessionEvent<MiningJobReceivedPayload>(MiningEvents.jobReceived, session, {
@@ -713,7 +880,8 @@ export class StratumServer {
       receivedAt: job.receivedAt.toISOString(),
       expiresAt: job.expiresAt.toISOString(),
     });
-    if (session.state === 'ACTIVE') this.writeNotification(session, 'mining.notify', this.toNotifyParams(job));
+    if (session.state === 'ACTIVE')
+      this.writeNotification(session, 'mining.notify', this.toNotifyParams(job));
   }
 
   private async publishUpstreamPending(
@@ -752,7 +920,9 @@ export class StratumServer {
     result: UpstreamShareResult,
   ): Promise<void> {
     const eventId = randomUUID();
-    const eventName = result.accepted ? MiningEvents.shareUpstreamAccepted : MiningEvents.shareUpstreamRejected;
+    const eventName = result.accepted
+      ? MiningEvents.shareUpstreamAccepted
+      : MiningEvents.shareUpstreamRejected;
     const event: DomainEvent<ShareUpstreamDecisionPayload> = {
       eventId,
       eventName,
@@ -763,7 +933,9 @@ export class StratumServer {
       aggregateId: fingerprint,
       correlationId: session.id,
       causationId: submission.jobId,
-      idempotencyKey: `${fingerprint}:${result.accepted ? 'upstream-accepted' : 'upstream-rejected'}`,
+      idempotencyKey: `${fingerprint}:${
+        result.accepted ? 'upstream-accepted' : 'upstream-rejected'
+      }`,
       payload: {
         sessionId: session.id,
         workerId: session.workerId!,
@@ -790,7 +962,10 @@ export class StratumServer {
       accumulatedDifficulty: '0',
       shareCount: 0,
     };
-    bucket.accumulatedDifficulty = addDecimalStrings([bucket.accumulatedDifficulty, assignedDifficulty], 12);
+    bucket.accumulatedDifficulty = addDecimalStrings(
+      [bucket.accumulatedDifficulty, assignedDifficulty],
+      12,
+    );
     bucket.shareCount += 1;
     session.acceptedDifficultyBuckets.set(bucketStart, bucket);
     const cutoff = Date.now() - 24 * 60 * 60 * 1_000;
@@ -812,7 +987,10 @@ export class StratumServer {
       occurredAt: new Date().toISOString(),
       producer: 'stratum-server',
       aggregateType: eventName === MiningEvents.jobReceived ? 'StratumJob' : 'MinerSession',
-      aggregateId: eventName === MiningEvents.jobReceived && session.currentJob ? session.currentJob.id : session.id,
+      aggregateId:
+        eventName === MiningEvents.jobReceived && session.currentJob
+          ? session.currentJob.id
+          : session.id,
       correlationId: session.id,
       idempotencyKey: eventId,
       payload,
@@ -926,11 +1104,31 @@ export class StratumServer {
     }
   }
 
-  private write(session: MinerSession, response: ReturnType<typeof successResponse> | ReturnType<typeof errorResponse>): void {
+  private write(
+    session: MinerSession,
+    response: ReturnType<typeof successResponse> | ReturnType<typeof errorResponse>,
+  ): void {
     session.socket.write(serializeStratumResponse(response));
   }
 
   private writeNotification(session: MinerSession, method: string, params: unknown[]): void {
     session.socket.write(serializeStratumNotification(method, params));
   }
+}
+
+async function closeResources(
+  closers: ReadonlyArray<() => Promise<void>>,
+  throwOnError: boolean,
+): Promise<void> {
+  const errors: unknown[] = [];
+  for (const close of [...closers].reverse()) {
+    try {
+      await close();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length === 0) return;
+  if (throwOnError) throw new AggregateError(errors, 'Failed to close Stratum dependencies');
+  logger.error({ errors }, 'failed to clean up Stratum dependencies after startup failure');
 }

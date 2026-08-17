@@ -11,6 +11,10 @@ import { prisma } from '@mining/database';
 import { hashOpaqueToken } from '@mining/security';
 import { AuthService } from './modules/auth/auth.service.js';
 
+process.env.AUTH_JWT_SECRET = 'integration-test-only-jwt-secret-at-least-32-bytes';
+process.env.AUTH_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64url');
+process.env.AUTH_EXPOSE_TEST_TOKENS = 'true';
+
 async function ensureBitcoinAsset(): Promise<void> {
   await prisma.asset.upsert({
     where: { symbol: 'BTC' },
@@ -36,13 +40,33 @@ test('registration, verification, login, refresh rotation, and replay family rev
   const service = new AuthService();
   const fingerprint = { ipHash: `ip-${suffix}`, userAgentHash: `ua-${suffix}` };
 
-  const registration = await service.register({
-    email,
-    displayName: 'Integration Test',
-    password,
-    miningUsername,
-  }, fingerprint) as { verificationToken?: string; user: { id: string } };
-  assert.ok(registration.verificationToken, 'CI must expose the verification token only in the test environment');
+  const registration = (await service.register(
+    {
+      email,
+      displayName: 'Integration Test',
+      password,
+      miningUsername,
+    },
+    fingerprint,
+  )) as { verificationToken?: string; user: { id: string } };
+  assert.ok(
+    registration.verificationToken,
+    'CI must expose the verification token only in the test environment',
+  );
+
+  const miningAccount = await prisma.miningAccount.findUniqueOrThrow({
+    where: { username: miningUsername },
+    select: {
+      platformFeePercent: true,
+      feePolicy: { select: { policyKey: true, version: true, feeBasisPoints: true } },
+    },
+  });
+  assert.equal(miningAccount.platformFeePercent.toString(), '0.5');
+  assert.deepEqual(miningAccount.feePolicy, {
+    policyKey: 'platform-default',
+    version: 1,
+    feeBasisPoints: 50,
+  });
 
   await service.verifyEmail(registration.verificationToken);
   const firstSession = await service.login({ email, password }, fingerprint);
@@ -77,8 +101,11 @@ test('registration, verification, login, refresh rotation, and replay family rev
   assert.ok(familyTokens.every((token) => token.status !== 'ACTIVE'));
 
   const successfulParallelRefresh = parallel.find(
-    (result): result is PromiseFulfilledResult<Awaited<ReturnType<AuthService['refresh']>>> => result.status === 'fulfilled',
+    (result): result is PromiseFulfilledResult<Awaited<ReturnType<AuthService['refresh']>>> =>
+      result.status === 'fulfilled',
   );
   assert.ok(successfulParallelRefresh);
-  await assert.rejects(() => service.refresh(successfulParallelRefresh.value.refreshToken, fingerprint));
+  await assert.rejects(() =>
+    service.refresh(successfulParallelRefresh.value.refreshToken, fingerprint),
+  );
 });

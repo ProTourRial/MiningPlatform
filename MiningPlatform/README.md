@@ -2,21 +2,23 @@
 
 MiningPlatform adalah monorepo TypeScript untuk pengelolaan mining pool berbasis upstream gateway, validasi share, monitoring worker, akuntansi reward, double-entry ledger, wallet orchestration, payout, dan transparansi operasional.
 
+> Hierarki produk: [`PROJECT_VISION.md`](PROJECT_VISION.md) adalah lapisan dokumentasi tertinggi. [`docs/product/PRODUCT_CONSTITUTION.md`](docs/product/PRODUCT_CONSTITUTION.md) menerjemahkannya menjadi invariants dan release gates; [`docs/product/PRODUCTION_GAP_REGISTER.md`](docs/product/PRODUCTION_GAP_REGISTER.md) mencatat gap serta critical path aktif.
+
 Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivitas mining berasal dari ASIC, GPU, CPU, FPGA, rig hybrid, atau perangkat fisik lain yang terhubung melalui Stratum.
 
 ## Status rilis
 
-Versi saat ini: `0.3.0-alpha.2`
+Versi saat ini: `0.3.0-alpha.5`
 
-Rilis ini merupakan **Control Plane dan upstream gateway alpha**, bukan mining pool finansial produksi. Registrasi, verifikasi email, login/logout, sesi JWT dan refresh token, reset password, TOTP 2FA, RBAC, Worker CRUD, kredensial Stratum produksi, API key, profil, dashboard produksi, multi-upstream, share queue, dan VarDiff foundation sudah tersedia.
+Rilis ini merupakan **financial-truth, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Default fee awal 0,5% disimpan sebagai policy terversi 50 basis points dan dibekukan per allocation. Share yang diterima upstream kini dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection melalui accounting-worker. Multi-upstream memiliki koordinasi circuit breaker Redis lintas-replika, sedangkan shared multiplexing tetap ditahan oleh ADR-0010 sampai invariant provider terbukti.
 
 Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
 - pengiriman Telegram/Discord/webhook dan verifikasi kanal; email verifikasi/reset mendukung adapter Resend;
 - distributed API rate limiting, IP reputation, managed DDoS protection, dan otomatisasi sertifikat publik;
 - fixture serta soak/failover test terhadap upstream pool produksi yang dipilih;
-- PostgreSQL/Redis migration dan Docker E2E harus dibuktikan hijau oleh workflow pada repository target;
-- reward settlement, contribution accounting, dan balance projection;
+- migration fresh dan rehearsal upgrade alpha.3 serta integration test PostgreSQL lokal telah lulus; validasi penuh alpha.4, Docker E2E, dan workflow repository target tetap menjadi gate sebelum upload;
+- reconciliation exception approval/resolution dan selected-provider settlement evidence;
 - wallet signing, payout approval, dan payout nyata;
 - load, stress, soak, dan chaos testing.
 
@@ -56,7 +58,7 @@ event projection dan hashrate foundation
 - Algoritma: SHA-256
 - Model awal: upstream pool gateway
 - Reward awal: `FOLLOW_UPSTREAM`
-- Fee platform: 2%
+- Fee platform awal: 0,5% (default configurable dan wajib transparan)
 - Hardware: CPU, GPU, FPGA, ASIC, HYBRID, OTHER, dan UNKNOWN
 - Ledger: immutable double-entry journal
 - Monitoring: Stratum dan agent opsional
@@ -78,6 +80,7 @@ apps/
   upstream-simulator/  Local Stratum V1 upstream simulator
   outbox-worker/       PostgreSQL outbox dispatcher ke Redis Stream
   mining-worker/       Event projection dan hashrate aggregation
+  accounting-worker/   Contribution, settlement, fee snapshot, ledger, reconciliation, dan reversal
   wallet-worker/       Boundary wallet, tetap nonaktif
   scheduler/           Central scheduler foundation
   monitoring-agent/    Universal inventory dan telemetry agent foundation
@@ -93,7 +96,7 @@ packages/
   state-machine/       Finite state transition guard
   security/            Password scrypt, JWT HMAC, TOTP, AES-GCM, dan worker credential helpers
   ledger/              Double-entry invariants
-  reward-engine/       FOLLOW_UPSTREAM allocation foundation
+  reward-engine/       Exact atomic FOLLOW_UPSTREAM allocation and fee policy resolution
 ```
 
 ## Persyaratan
@@ -113,7 +116,6 @@ pnpm db:generate
 ```
 
 `pnpm-lock.yaml` sudah tersedia dan seluruh importer workspace telah disinkronkan. CI serta Docker menggunakan lockfile sebagai sumber dependency yang reproducible.
-
 
 ## Review website tanpa Docker
 
@@ -334,7 +336,6 @@ pnpm verify:alpha5
 
 Verifikasi migrasi database kosong dan salinan database alpha.4 dijelaskan dalam `docs/releases/v0.2.0-alpha.5-upgrade.md`. Jangan menjalankan pemeriksaan migrasi terhadap satu-satunya salinan database penting.
 
-
 ## Upgrade alpha.6 ke v0.3.0-alpha.1
 
 Gunakan paket penuh atau ekstrak patch incremental di atas folder alpha.6, lalu jalankan `bash apply-patch.sh` atau `.\apply-patch.ps1`. Tambahkan secret Control Plane, deploy migration schema version 7, dan verifikasi target environment dengan:
@@ -345,7 +346,6 @@ pnpm verify:v030-alpha1
 
 Prosedur database kosong dan upgrade salinan alpha.6 tersedia di `docs/releases/v0.3.0-alpha.1-upgrade.md`.
 
-
 ## Upgrade v0.3.0-alpha.1 ke v0.3.0-alpha.2
 
 Ekstrak paket di akar repository sehingga `.github/` berada di akar dan source berada di `MiningPlatform/`. Buat snapshot database, lalu verifikasi migrasi upgrade pada salinan database disposable:
@@ -355,6 +355,16 @@ MIGRATION_TEST_ACK=v030-alpha1-upgrade-copy DATABASE_URL='postgresql://...' pnpm
 ```
 
 Panduan lengkap tersedia di `docs/releases/v0.3.0-alpha.2-upgrade.md`. Status build baru boleh disebut tervalidasi setelah workflow root `CI` berhasil.
+
+## Upgrade v0.3.0-alpha.2 ke v0.3.0-alpha.3
+
+Buat snapshot database dan lakukan rehearsal pada salinan disposable. Upgrade ini menambahkan schema version 9, memindahkan default alpha lama 2% ke policy aktif 0,5%, mempertahankan fee akun yang memang dikustomisasi, dan tidak menghitung ulang allocation historis.
+
+```bash
+MIGRATION_TEST_ACK=v030-alpha2-upgrade-copy DATABASE_URL='postgresql://...' pnpm verify:migration:v030-alpha3:upgrade
+```
+
+Panduan dan bukti lokal tersedia di `docs/releases/v0.3.0-alpha.3-upgrade.md` serta `docs/releases/v0.3.0-alpha.3-validation.md`.
 
 ## Release and build diagnostics
 
@@ -380,7 +390,6 @@ Worker credential inventory can be reviewed without exposing credential secrets:
 pnpm worker:credential list demo.worker1
 ```
 
-
 ## Upstream resilience alpha.6
 
 The local gateway now supports a session-scoped pool adapter registry with primary/backup selection, circuit breaker, recovery backoff with jitter, provider-scoped jobs, bounded share submission, and a conservative VarDiff foundation.
@@ -394,7 +403,6 @@ STRATUM_VARDIFF_ENABLED=false
 Static review: `docs/ui/upstream-resilience-review.html`. Architecture: `docs/architecture/upstream-resilience-alpha-6.md`.
 
 Alpha.6 remains an internal protocol release. Provider fixtures, Prisma/database integration, distributed health, shared upstream multiplexing, load testing, and Docker verification remain release blockers.
-
 
 ## Control Plane v0.3.0-alpha.2
 

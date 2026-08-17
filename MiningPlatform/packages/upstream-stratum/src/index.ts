@@ -13,6 +13,7 @@ export * from './session-state-machine.js';
 export * from './simulator.js';
 export * from './types.js';
 export * from './gateway-job-router.js';
+export * from './health-coordinator.js';
 export * from './pool-adapter.js';
 export * from './pool-manager.js';
 export * from './share-queue.js';

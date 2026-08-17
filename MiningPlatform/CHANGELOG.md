@@ -1,28 +1,110 @@
 # Changelog
 
-## [Unreleased] - 2026-08-13
+## [0.3.0-alpha.5] - 2026-08-16
 
 ### Added
 
-- Professional Control Plane frontend with responsive navigation, authenticated operational dashboards, worker management, hashrate insights, and gated financial surfaces.
-- Lightweight Bitcoin reward feed backed by cached public block data for current subsidy and fee context.
-- A production-accessible `/control-plane-preview` route with representative data for Vercel review.
+- Schema v10 financial-truth foundation with immutable accepted-share contribution facts, reward-period contribution snapshots, exact atomic-unit settlement fields, and atomic journal lines.
+- `accounting-worker` for idempotent contribution ingestion, deterministic `FOLLOW_UPSTREAM` allocation, versioned fee-policy snapshots, balanced posting, reconciliation closure, audit records, and transactional outbox events.
+- OWNER+TOTP settlement import CLI with explicit confirmation, immutable source reference, SHA-256 checksum, zero-tolerance reconciliation, and duplicate/conflict detection.
+- Equal-and-opposite journal reversal CLI; posted journal entries, lines, allocations, and contribution snapshots are protected by database immutability triggers.
+- Authenticated reward, reward-period audit trace, ledger-entry, and balance endpoints with user isolation and `rewards:read`/`ledger:read` API-key scopes.
+- ADR-0011, financial-truth operations runbook, fresh/upgrade v10 migration verifier, and end-to-end accounting integration test.
 
 ### Changed
 
-- Production web requests now default to the same-origin `/api/v1` endpoint, while development keeps its explicit local API fallback.
-- Release, migration, Prisma generation, and Docker E2E workflows now use isolated CI configuration and deterministic dependency startup.
+- Initial platform fee remains **0.5% (50 basis points)** and now becomes an immutable policy snapshot on every persisted allocation.
+- Gross reward and provider costs use deterministic largest-remainder allocation; per-account platform fees round down at the atomic boundary in the user's favour.
+- User balances are calculated exclusively from user-liability lines in posted/reversed journals; no mutable balance field is authoritative.
+- Mining projection writes a durable contribution event only after upstream acceptance and now acknowledges unrelated domain events without incorrectly dead-lettering them.
+- Release metadata advances to `0.3.0-alpha.5`, schema version 10, and migration `20260816020000_financial_truth_foundation`.
 
 ### Fixed
 
-- Initial dashboard data loading is deferred to effect callbacks, satisfying React's `set-state-in-effect` rule without disabling lint safeguards.
-- Docker images include the Prisma author-header generator required by `db:generate`.
-- Fresh and upgrade migration checks sanitize Prisma-only URL parameters before invoking `psql`.
-- Release-manifest checks use the same payload boundary as manifest generation.
+- Journal-line database validation now requires decimal and atomic amounts to represent the exact same asset value, in addition to balancing both representations.
+- The v9-to-v10 verifier now creates its own deterministic legacy fixture instead of depending on optional development seed data, and invokes pnpm without the deprecated shell path.
+- The end-to-end accounting harness now uses per-run fixture identities, so the same disposable database can be validated repeatedly without uniqueness collisions.
+- The accounting harness now provisions its own user, mining account, and worker, removing its dependency on optional development seed records during upgrade rehearsals.
+- The PostgreSQL authentication integration test now provisions isolated test-only cryptographic configuration instead of depending on ambient machine secrets.
+- Managed-source checksums now canonicalize CRLF to LF, keeping verification stable across Windows and Linux checkouts.
+- Script typechecking now resolves accounting dependencies directly from workspace source, so clean GitHub runners do not depend on pre-existing package build artifacts.
+- The alpha.5 migration now explicitly reinstalls deferred journal-balance constraints, and its fresh/upgrade verifier proves those database triggers are present.
 
-### Removed
+### Safety boundary
 
-- Superseded generic v0.3.0 release and migration verification scripts; the versioned alpha verification paths remain authoritative.
+- Settlement variance is fail-closed: alpha.5 requires zero atomic tolerance and creates no allocation or journal for an exception.
+- Payouts, wallet signing, transaction broadcast, conversion, and real funds remain disabled.
+- Exception approval/resolution, selected-provider evidence, multi-replica event recovery, load/soak evidence, and controlled-funds gates remain pending.
+
+### Validation evidence
+
+- Reward-engine tests pass 11/11, including exact remainders, user-favouring 50 bps rounding, and per-account cost-cap edge cases.
+- Accounting unit tests pass 2/2; mining-worker, accounting-worker, API, and operator scripts pass targeted typechecks.
+- PostgreSQL disposable validation passes all 10 migrations from empty, formal v9-to-v10 upgrade/backfill over representative prior-schema rows, and repeatable financial trace tests proving every journal balances, posted entries remain immutable, reversal creates a new equal-and-opposite entry, retries do not double-credit, reward allocation stays unique, rejected transactions roll back completely, and `source = user allocation + platform fee + clearing residual` with zero residual.
+- All local commit gates pass: lint 27/27, typecheck 41/41, tests 41/41, production build 27/27 with 21 generated Next.js routes, alpha.5 static checks, Compose configuration, a 502-file managed-source manifest, and a 503-file release manifest.
+
+### Development assistance
+
+- OpenAI Codex assisted with architecture review, implementation, documentation, automated tests, migration and release validation, and engineering gap analysis for this project.
+- Product ownership, requirements, final decisions, approvals, and release responsibility remain with Abia Nugrahanto.
+
+## [0.3.0-alpha.4] - 2026-08-15
+
+### Added
+
+- Redis-backed distributed upstream health coordination with atomic failure tracking, circuit opening, and a single cross-replica half-open probe.
+- ADR-0010 and an operations runbook that define the safe boundary for future shared-upstream multiplexing.
+
+### Changed
+
+- Redis server time is authoritative for distributed circuit and probe leases, avoiding gateway clock-skew errors.
+- Production multi-upstream startup requires Redis health coordination and cleans up partially opened dependencies on failure.
+- The root Turbo test pipeline now forwards `REDIS_INTEGRATION_URL`, ensuring CI executes the cross-client Redis test instead of conditionally skipping it.
+
+### Fixed
+
+- Upstream failover regression tests use realistic connection/response budgets and assert the primary selection before inducing failure, preventing false backup selection under parallel CI load.
+- Every Prisma-generating service Dockerfile now includes the author-header helper required by `db:generate`, fixing clean container builds that previously failed after dependency installation.
+- Docker E2E now checks the canonical version-neutral `/version` route instead of the nonexistent `/api/v1/version` path.
+- Public landing-page fee labels and examples now consistently show the owner-approved initial platform fee of 0.5% instead of the former 2% alpha placeholder.
+- Dependency overrides now live in `pnpm-workspace.yaml`, where pnpm 10 applies them, instead of the ignored legacy `package.json` field.
+- Managed-source manifests now exclude generated TypeScript build-info files, keeping source checksums stable before and after local builds.
+
+### Validation boundary
+
+- Cross-client Redis integration, fail-open fallback, configuration, type, lint, static-release, and build gates are required before alpha.4 is accepted.
+- Provider-specific fixtures, controlled real-provider tests, safe multiplexing implementation, regional routing, VarDiff evidence, load, soak, and chaos tests remain release blockers for P0.2.
+- This remains an alpha release; real mining funds, wallet signing, conversion, and payouts stay disabled.
+
+### Validation evidence
+
+- Mandatory local gates completed on 2026-08-16: migrations 9/9, lint 26/26, typecheck 38/38, tests 38/38, production build 26/26, 20 Next.js routes, Redis cross-client tests 13/13 without skips, clean Stratum image startup, and Docker API/web/Nginx E2E.
+- Alpha.4 static checks and the final managed-source/release checksum gates pass over 483 files.
+- Repository CI on the committed branch remains an additional release gate and does not expand the no-real-funds alpha boundary.
+
+### Development assistance
+
+- OpenAI Codex assisted with architecture review, implementation, documentation, automated tests, migration and release validation, and engineering gap analysis for this project.
+- Product ownership, requirements, final decisions, approvals, and release responsibility remain with Abia Nugrahanto.
+
+## [0.3.0-alpha.3] - 2026-08-13
+
+### Added
+
+- `PROJECT_VISION.md` as the highest project-documentation authority, supported by the Product Constitution and Production Gap Register.
+- Versioned mining-fee policies with scope, effective windows, basis-point precision, deterministic resolution, and immutable allocation snapshots.
+- Schema version 9 migration that establishes the owner-approved initial platform fee of 0.5% (50 basis points).
+
+### Changed
+
+- Registration and public system configuration now resolve the active database fee policy instead of relying on a source constant.
+- Existing accounts on the former 2% alpha default migrate to policy version 1 at 0.5%; custom account rates are retained as explicit account policies.
+- Historical reward allocation amounts are retained and annotated with legacy policy snapshots rather than recalculated.
+
+### Validation boundary
+
+- Fee-policy unit, type, static-release, fresh-migration, and upgrade-migration gates are required before alpha.3 is accepted.
+- This remains an alpha release; real mining funds, wallet signing, conversion, and payouts stay disabled.
 
 ## [0.3.0-alpha.2] - 2026-08-03
 

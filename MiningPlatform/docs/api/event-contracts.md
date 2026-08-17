@@ -37,58 +37,62 @@ export interface DomainEvent<TPayload> {
 
 ## Mining Events
 
-| Event | Producer | Description |
-|---|---|---|
-| `mining.session.connected.v1` | stratum-server | TCP session accepted |
-| `mining.session.subscribed.v1` | stratum-server | Stratum subscription completed |
-| `mining.session.authorized.v1` | stratum-server | Worker authorization completed |
-| `mining.session.disconnected.v1` | stratum-server | Session closed |
-| `mining.job.received.v1` | stratum-server | Upstream job received and normalized |
-| `mining.share.received.v1` | stratum-server | Submission parsed and assigned an event ID |
-| `mining.share.local-accepted.v1` | stratum-server | Submission satisfies local validation |
-| `mining.share.local-rejected.v1` | stratum-server | Submission fails local validation |
-| `mining.share.upstream-pending.v1` | stratum-server | Valid local share sent upstream |
-| `mining.share.upstream-accepted.v1` | stratum-server | Upstream accepted the share |
-| `mining.share.upstream-rejected.v1` | stratum-server | Upstream rejected the share |
-| `mining.hashrate.updated.v1` | mining-worker | Realtime hashrate window changed |
-| `mining.worker.state-changed.v1` | mining-worker | Worker operational state changed |
-| `mining.worker.device-detected.v1` | stratum-server/monitoring-agent | Evidence-based hardware profile detected |
-| `mining.upstream.pool-selected.v1` | stratum-server | Active upstream provider selected |
-| `mining.upstream.failover-started.v1` | stratum-server | Recovery and failover cycle started |
-| `mining.upstream.failover-completed.v1` | stratum-server | Backup provider became active |
-| `mining.upstream.failover-failed.v1` | stratum-server | No eligible provider recovered the session |
-| `mining.upstream.health-changed.v1` | stratum-server | Provider health or circuit state changed |
-| `mining.worker.difficulty-changed.v1` | stratum-server | Downstream assigned difficulty changed |
-
+| Event                                   | Producer                        | Description                                |
+| --------------------------------------- | ------------------------------- | ------------------------------------------ |
+| `mining.session.connected.v1`           | stratum-server                  | TCP session accepted                       |
+| `mining.session.subscribed.v1`          | stratum-server                  | Stratum subscription completed             |
+| `mining.session.authorized.v1`          | stratum-server                  | Worker authorization completed             |
+| `mining.session.disconnected.v1`        | stratum-server                  | Session closed                             |
+| `mining.job.received.v1`                | stratum-server                  | Upstream job received and normalized       |
+| `mining.share.received.v1`              | stratum-server                  | Submission parsed and assigned an event ID |
+| `mining.share.local-accepted.v1`        | stratum-server                  | Submission satisfies local validation      |
+| `mining.share.local-rejected.v1`        | stratum-server                  | Submission fails local validation          |
+| `mining.share.upstream-pending.v1`      | stratum-server                  | Valid local share sent upstream            |
+| `mining.share.upstream-accepted.v1`     | stratum-server                  | Upstream accepted the share                |
+| `mining.share.upstream-rejected.v1`     | stratum-server                  | Upstream rejected the share                |
+| `mining.hashrate.updated.v1`            | mining-worker                   | Realtime hashrate window changed           |
+| `mining.worker.state-changed.v1`        | mining-worker                   | Worker operational state changed           |
+| `mining.worker.device-detected.v1`      | stratum-server/monitoring-agent | Evidence-based hardware profile detected   |
+| `mining.upstream.pool-selected.v1`      | stratum-server                  | Active upstream provider selected          |
+| `mining.upstream.failover-started.v1`   | stratum-server                  | Recovery and failover cycle started        |
+| `mining.upstream.failover-completed.v1` | stratum-server                  | Backup provider became active              |
+| `mining.upstream.failover-failed.v1`    | stratum-server                  | No eligible provider recovered the session |
+| `mining.upstream.health-changed.v1`     | stratum-server                  | Provider health or circuit state changed   |
+| `mining.worker.difficulty-changed.v1`   | stratum-server                  | Downstream assigned difficulty changed     |
 
 ## Security and Worker Identity Events
 
-| Event | Producer | Description | Runtime status |
-|---|---|---|---|
-| `security.worker-authentication.succeeded.v1` | worker identity | Successful worker credential authentication | AuditLog implemented; event transport catalogued |
-| `security.worker-authentication.failed.v1` | worker identity | Failed, locked, or rate-limited authentication | AuditLog implemented; event transport catalogued |
-| `security.worker-credential.created.v1` | worker management | Worker credential created | CLI audit implemented; event transport catalogued |
-| `security.worker-credential.rotated.v1` | worker management | Active credential rotated | CLI audit implemented; event transport catalogued |
-| `security.worker-credential.revoked.v1` | worker management | Credential revoked | CLI audit implemented; event transport catalogued |
+| Event                                         | Producer          | Description                                    | Runtime status                                    |
+| --------------------------------------------- | ----------------- | ---------------------------------------------- | ------------------------------------------------- |
+| `security.worker-authentication.succeeded.v1` | worker identity   | Successful worker credential authentication    | AuditLog implemented; event transport catalogued  |
+| `security.worker-authentication.failed.v1`    | worker identity   | Failed, locked, or rate-limited authentication | AuditLog implemented; event transport catalogued  |
+| `security.worker-credential.created.v1`       | worker management | Worker credential created                      | CLI audit implemented; event transport catalogued |
+| `security.worker-credential.rotated.v1`       | worker management | Active credential rotated                      | CLI audit implemented; event transport catalogued |
+| `security.worker-credential.revoked.v1`       | worker management | Credential revoked                             | CLI audit implemented; event transport catalogued |
 
 These events and audit records never contain plaintext worker secrets, account passwords, raw IP addresses, private keys, or TOTP secrets.
 
 ## Monitoring Events
 
-| Event | Producer | Description |
-|---|---|---|
-| `monitoring.telemetry.received.v1` | monitoring-agent | Raw bounded miner telemetry received |
-| `monitoring.telemetry.aggregated.v1` | mining-worker | Telemetry window aggregated |
-| `monitoring.alert.opened.v1` | monitoring worker | Threshold or health incident opened |
-| `monitoring.alert.resolved.v1` | monitoring worker | Existing incident resolved |
+| Event                                | Producer          | Description                          |
+| ------------------------------------ | ----------------- | ------------------------------------ |
+| `monitoring.telemetry.received.v1`   | monitoring-agent  | Raw bounded miner telemetry received |
+| `monitoring.telemetry.aggregated.v1` | mining-worker     | Telemetry window aggregated          |
+| `monitoring.alert.opened.v1`         | monitoring worker | Threshold or health incident opened  |
+| `monitoring.alert.resolved.v1`       | monitoring worker | Existing incident resolved           |
 
-## Future Financial Events
+## Financial Events
 
-These contracts are reserved but are outside the v0.2.0 execution path:
+| Event                             | Producer              | Description                                                                 | Runtime status                                                      |
+| --------------------------------- | --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `reward.contribution.accepted.v1` | mining-worker         | Durable upstream-accepted share is ready for immutable accounting ingestion | Implemented through PostgreSQL outbox                               |
+| `reward.settlement.imported.v1`   | settlement import CLI | Checksummed provider settlement and reconciliation were persisted           | Implemented; variance is fail-closed                                |
+| `reward.period.closed.v1`         | accounting-worker     | Atomic allocation, journals, and reconciliation completed                   | Implemented for exact-match `FOLLOW_UPSTREAM`                       |
+| `reward.allocated.v1`             | accounting-worker     | Individual allocation persisted                                             | Reserved; aggregate close and journal events are emitted in alpha.5 |
+| `ledger.journal.posted.v1`        | accounting-worker     | Balanced original or reversal journal was posted                            | Implemented through PostgreSQL outbox                               |
 
-- `reward.period.closed.v1`
-- `reward.allocated.v1`
-- `ledger.journal.posted.v1`
+The following contracts remain reserved and cannot be emitted by an enabled real-funds path:
+
 - `payout.requested.v1`
 - `payout.approved.v1`
 - `wallet.transaction.broadcast.v1`

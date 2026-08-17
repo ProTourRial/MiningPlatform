@@ -34,6 +34,7 @@ import type {
   RegisterDto,
   ResetPasswordDto,
 } from './auth.dto.js';
+import { feePercentFromBasisPoints, requireActiveDefaultFeePolicy } from '../fees/fee-policy.js';
 
 export interface RequestFingerprint {
   ipHash?: string;
@@ -68,7 +69,12 @@ function plusHours(hours: number): Date {
 
 async function appendOutbox(
   tx: Prisma.TransactionClient,
-  input: { eventName: string; aggregateType: string; aggregateId: string; payload: Prisma.InputJsonValue },
+  input: {
+    eventName: string;
+    aggregateType: string;
+    aggregateId: string;
+    payload: Prisma.InputJsonValue;
+  },
 ): Promise<void> {
   const eventId = randomUUID();
   await tx.outboxEvent.create({
@@ -93,7 +99,10 @@ export class AuthService {
     const email = normalizeEmail(dto.email);
     const [existing, existingMiningAccount] = await Promise.all([
       prisma.user.findUnique({ where: { email }, select: { id: true } }),
-      prisma.miningAccount.findUnique({ where: { username: dto.miningUsername.toLowerCase() }, select: { id: true } }),
+      prisma.miningAccount.findUnique({
+        where: { username: dto.miningUsername.toLowerCase() },
+        select: { id: true },
+      }),
     ]);
     if (existing) throw new ConflictException('Email is already registered');
     if (existingMiningAccount) throw new ConflictException('Mining username is already registered');
@@ -103,8 +112,13 @@ export class AuthService {
     const tokenHash = hashOpaqueToken(rawVerificationToken);
 
     const user = await prisma.$transaction(async (tx) => {
-      const asset = await tx.asset.findFirst({ where: { symbol: 'BTC', enabled: true }, select: { id: true } });
-      if (!asset) throw new ServiceUnavailableException('BTC asset must be seeded before registration');
+      const asset = await tx.asset.findFirst({
+        where: { symbol: 'BTC', enabled: true },
+        select: { id: true },
+      });
+      if (!asset)
+        throw new ServiceUnavailableException('BTC asset must be seeded before registration');
+      const feePolicy = await requireActiveDefaultFeePolicy(tx);
       const created = await tx.user.create({
         data: {
           email,
@@ -119,9 +133,10 @@ export class AuthService {
         data: {
           userId: created.id,
           assetId: asset.id,
+          feePolicyId: feePolicy.id,
           username: dto.miningUsername.toLowerCase(),
           rewardMethod: 'FOLLOW_UPSTREAM',
-          platformFeePercent: '2',
+          platformFeePercent: feePercentFromBasisPoints(feePolicy.feeBasisPoints),
         },
       });
       const verificationToken = await tx.emailVerificationToken.create({
@@ -174,7 +189,12 @@ export class AuthService {
         data: { consumedAt: now, tokenEncrypted: null },
       });
       await tx.auditLog.create({
-        data: { actorUserId: user.id, action: 'EMAIL_VERIFIED', resourceType: 'User', resourceId: user.id },
+        data: {
+          actorUserId: user.id,
+          action: 'EMAIL_VERIFIED',
+          resourceType: 'User',
+          resourceId: user.id,
+        },
       });
       return user;
     });
@@ -186,7 +206,10 @@ export class AuthService {
       where: { email },
       include: { security: true },
     });
-    const passwordMatches = await verifyPassword(dto.password, user?.passwordHash ?? (await dummyHash));
+    const passwordMatches = await verifyPassword(
+      dto.password,
+      user?.passwordHash ?? (await dummyHash),
+    );
     if (!user || !user.security || !passwordMatches) {
       if (user?.security) await this.recordFailedLogin(user.id, user.security.failedLoginCount);
       throw new UnauthorizedException('Invalid email, password, or second factor');
@@ -200,14 +223,16 @@ export class AuthService {
     if (user.security.totpEnabled) {
       const totpValid = Boolean(
         dto.totpCode &&
-        user.security.totpSecretEncrypted &&
-        verifyTotpCode(
-          decryptSecret(user.security.totpSecretEncrypted, authRuntimeConfig().encryptionKey),
-          dto.totpCode,
-        ),
+          user.security.totpSecretEncrypted &&
+          verifyTotpCode(
+            decryptSecret(user.security.totpSecretEncrypted, authRuntimeConfig().encryptionKey),
+            dto.totpCode,
+          ),
       );
       const recoveryHash = dto.recoveryCode ? hashOpaqueToken(dto.recoveryCode) : undefined;
-      const recoveryValid = Boolean(recoveryHash && user.security.recoveryCodesHash.includes(recoveryHash));
+      const recoveryValid = Boolean(
+        recoveryHash && user.security.recoveryCodesHash.includes(recoveryHash),
+      );
       if (!totpValid && !recoveryValid) {
         await this.recordFailedLogin(user.id, user.security.failedLoginCount);
         throw new UnauthorizedException('Invalid email, password, or second factor');
@@ -215,7 +240,11 @@ export class AuthService {
       if (recoveryValid && recoveryHash) {
         await prisma.userSecurity.update({
           where: { userId: user.id },
-          data: { recoveryCodesHash: user.security.recoveryCodesHash.filter((hash) => hash !== recoveryHash) },
+          data: {
+            recoveryCodesHash: user.security.recoveryCodesHash.filter(
+              (hash) => hash !== recoveryHash,
+            ),
+          },
         });
       }
     }
@@ -236,7 +265,9 @@ export class AuthService {
     if (!token) throw new UnauthorizedException('Refresh token is invalid or expired');
     if (token.status === 'ROTATED' || token.status === 'REUSED') {
       await this.revokeTokenFamily(token.familyId, token.session.userId, token.id, fingerprint);
-      throw new UnauthorizedException('Refresh token reuse detected; the session family was revoked');
+      throw new UnauthorizedException(
+        'Refresh token reuse detected; the session family was revoked',
+      );
     }
     if (
       token.status !== 'ACTIVE' ||
@@ -294,7 +325,9 @@ export class AuthService {
     } catch (error) {
       if (error instanceof RefreshTokenReuseError) {
         await this.revokeTokenFamily(error.familyId, token.session.userId, token.id, fingerprint);
-        throw new UnauthorizedException('Refresh token reuse detected; the session family was revoked');
+        throw new UnauthorizedException(
+          'Refresh token reuse detected; the session family was revoked',
+        );
       }
       throw error;
     }
@@ -400,7 +433,12 @@ export class AuthService {
         });
       }
       await tx.auditLog.create({
-        data: { actorUserId: token.userId, action: 'PASSWORD_RESET', resourceType: 'User', resourceId: token.userId },
+        data: {
+          actorUserId: token.userId,
+          action: 'PASSWORD_RESET',
+          resourceType: 'User',
+          resourceId: token.userId,
+        },
       });
     });
     return { reset: true };
@@ -418,7 +456,10 @@ export class AuthService {
       where: { userId: user.id },
       data: { totpPendingSecretEncrypted: encrypted },
     });
-    return { secret, otpAuthUri: buildTotpUri({ secret, account: user.email, issuer: 'MiningPlatform' }) };
+    return {
+      secret,
+      otpAuthUri: buildTotpUri({ secret, account: user.email, issuer: 'MiningPlatform' }),
+    };
   }
 
   async enableTotp(principal: AuthPrincipal, code: string) {
@@ -451,13 +492,20 @@ export class AuthService {
   }
 
   async disableTotp(principal: AuthPrincipal, dto: DisableTotpDto) {
-    const user = await prisma.user.findUnique({ where: { id: principal.userId }, include: { security: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: principal.userId },
+      include: { security: true },
+    });
     if (!user?.security?.totpEnabled || !user.security.totpSecretEncrypted) {
       throw new NotFoundException('TOTP is not enabled');
     }
     const passwordValid = await verifyPassword(dto.password, user.passwordHash);
-    const secret = decryptSecret(user.security.totpSecretEncrypted, authRuntimeConfig().encryptionKey);
-    if (!passwordValid || !verifyTotpCode(secret, dto.code)) throw new UnauthorizedException('Invalid credentials');
+    const secret = decryptSecret(
+      user.security.totpSecretEncrypted,
+      authRuntimeConfig().encryptionKey,
+    );
+    if (!passwordValid || !verifyTotpCode(secret, dto.code))
+      throw new UnauthorizedException('Invalid credentials');
     await prisma.$transaction(async (tx) => {
       await tx.userSecurity.update({
         where: { userId: user.id },
@@ -469,7 +517,12 @@ export class AuthService {
         },
       });
       await tx.auditLog.create({
-        data: { actorUserId: user.id, action: 'TOTP_DISABLED', resourceType: 'UserSecurity', resourceId: user.security!.id },
+        data: {
+          actorUserId: user.id,
+          action: 'TOTP_DISABLED',
+          resourceType: 'UserSecurity',
+          resourceId: user.security!.id,
+        },
       });
     });
     return { enabled: false };
@@ -517,7 +570,8 @@ export class AuthService {
       where: { userId },
       data: {
         failedLoginCount: { increment: 1 },
-        lockedUntil: next >= LOGIN_MAXIMUM_FAILURES ? new Date(Date.now() + LOGIN_LOCK_MS) : undefined,
+        lockedUntil:
+          next >= LOGIN_MAXIMUM_FAILURES ? new Date(Date.now() + LOGIN_LOCK_MS) : undefined,
       },
     });
   }

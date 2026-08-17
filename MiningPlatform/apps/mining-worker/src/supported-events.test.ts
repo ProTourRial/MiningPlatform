@@ -21,6 +21,10 @@ test('unsupported event versions are rejected before projection', () => {
   );
 });
 
+test('accounting events are not claimed by the mining projection', () => {
+  assert.equal(supportedMiningEvents.has(MiningEvents.contributionAccepted), false);
+  assert.equal(supportedMiningEvents.has(MiningEvents.settlementImported), false);
+});
 
 test('upstream resilience events are accepted by the mining projection event gate', () => {
   for (const eventName of [

@@ -49,7 +49,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://mining:change-me-postgres@127.0.0.1:5432/mining_platform?schema=public
       - name: Build and start application services
-        run: docker compose --env-file .env.ci.example up -d --build api web nginx
+        run: docker compose --env-file .env.ci.example up -d --build api web outbox-worker mining-worker accounting-worker nginx
       - name: Wait for API readiness
         run: node scripts/wait-for-http.mjs http://127.0.0.1/api/v1/health/ready 180000
       - name: Verify public endpoints

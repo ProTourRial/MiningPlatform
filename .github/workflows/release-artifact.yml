@@ -32,6 +32,7 @@ jobs:
       - run: pnpm db:generate
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      - run: pnpm verify:v030-alpha5:static
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

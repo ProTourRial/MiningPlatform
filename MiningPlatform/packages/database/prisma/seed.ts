@@ -14,6 +14,26 @@ if (!connectionString) throw new Error('DATABASE_URL is required');
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
 async function main() {
+  const defaultFeePolicy = await prisma.miningFeePolicy.upsert({
+    where: { policyKey_version: { policyKey: 'platform-default', version: 1 } },
+    update: {
+      status: 'ACTIVE',
+      feeBasisPoints: 50,
+      effectiveUntil: null,
+      changeReason: 'Owner-approved initial platform fee baseline: 0.5%.',
+    },
+    create: {
+      id: 'fee-policy-platform-default-v1',
+      policyKey: 'platform-default',
+      version: 1,
+      status: 'ACTIVE',
+      scope: 'PLATFORM_DEFAULT',
+      feeBasisPoints: 50,
+      effectiveFrom: new Date('2026-08-12T17:00:00.000Z'),
+      changeReason: 'Owner-approved initial platform fee baseline: 0.5%.',
+    },
+  });
+
   const btc = await prisma.asset.upsert({
     where: { symbol: 'BTC' },
     update: {},
@@ -30,11 +50,41 @@ async function main() {
 
   await prisma.ledgerAccount.createMany({
     data: [
-      { code: 'BTC-HOT-WALLET', name: 'BTC Hot Wallet', type: 'ASSET', assetId: btc.id, systemAccount: true },
-      { code: 'BTC-REWARD-CLEARING', name: 'BTC Reward Clearing', type: 'CLEARING', assetId: btc.id, systemAccount: true },
-      { code: 'BTC-USER-LIABILITY', name: 'BTC User Reward Liability', type: 'LIABILITY', assetId: btc.id, systemAccount: true },
-      { code: 'BTC-PLATFORM-FEE', name: 'BTC Platform Fee Revenue', type: 'REVENUE', assetId: btc.id, systemAccount: true },
-      { code: 'BTC-NETWORK-FEE', name: 'BTC Network Fee Expense', type: 'EXPENSE', assetId: btc.id, systemAccount: true }
+      {
+        code: 'BTC-HOT-WALLET',
+        name: 'BTC Hot Wallet',
+        type: 'ASSET',
+        assetId: btc.id,
+        systemAccount: true,
+      },
+      {
+        code: 'BTC-REWARD-CLEARING',
+        name: 'BTC Reward Clearing',
+        type: 'CLEARING',
+        assetId: btc.id,
+        systemAccount: true,
+      },
+      {
+        code: 'BTC-USER-LIABILITY',
+        name: 'BTC User Reward Liability',
+        type: 'LIABILITY',
+        assetId: btc.id,
+        systemAccount: true,
+      },
+      {
+        code: 'BTC-PLATFORM-FEE',
+        name: 'BTC Platform Fee Revenue',
+        type: 'REVENUE',
+        assetId: btc.id,
+        systemAccount: true,
+      },
+      {
+        code: 'BTC-NETWORK-FEE',
+        name: 'BTC Network Fee Expense',
+        type: 'EXPENSE',
+        assetId: btc.id,
+        systemAccount: true,
+      },
     ],
     skipDuplicates: true,
   });
@@ -63,14 +113,18 @@ async function main() {
     });
     const miningAccount = await prisma.miningAccount.upsert({
       where: { userId_assetId: { userId: user.id, assetId: btc.id } },
-      update: {},
+      update: {
+        feePolicyId: defaultFeePolicy.id,
+        platformFeePercent: '0.5',
+      },
       create: {
         id: 'dev-mining-account-btc',
         userId: user.id,
         assetId: btc.id,
+        feePolicyId: defaultFeePolicy.id,
         username: 'demo',
         rewardMethod: 'FOLLOW_UPSTREAM',
-        platformFeePercent: '2',
+        platformFeePercent: '0.5',
       },
     });
     await prisma.worker.upsert({
@@ -86,10 +140,8 @@ async function main() {
       },
     });
   }
-
 }
 
-main()
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().finally(async () => {
+  await prisma.$disconnect();
+});

@@ -32,6 +32,8 @@ export const MiningEvents = {
   workerDifficultyChanged: 'mining.worker.difficulty-changed.v1',
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
+  contributionAccepted: 'reward.contribution.accepted.v1',
+  settlementImported: 'reward.settlement.imported.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
   rewardAllocated: 'reward.allocated.v1',
   journalPosted: 'ledger.journal.posted.v1',
@@ -87,7 +89,6 @@ export interface ShareAcceptedPayload {
   upstreamRequired: boolean;
 }
 
-
 export interface ShareUpstreamPendingPayload {
   sessionId: string;
   workerId: string;
@@ -101,6 +102,23 @@ export interface ShareUpstreamDecisionPayload extends ShareUpstreamPendingPayloa
   upstreamAccepted: boolean;
   errorCode?: number;
   errorMessage?: string;
+}
+
+export interface ContributionAcceptedPayload {
+  sourceEventId: string;
+  shareId: string;
+  miningAccountId: string;
+  assetId: string;
+  upstreamPoolId: string;
+  acceptedDifficulty: string;
+  acceptedAt: string;
+}
+
+export interface SettlementImportedPayload {
+  rewardPeriodId: string;
+  reconciliationId: string;
+  importIdempotencyKey: string;
+  importedAt: string;
 }
 
 export interface ShareRejectedPayload {
@@ -125,7 +143,13 @@ export interface WorkerDeviceDetectedPayload {
   workerName: string;
   detectedType: 'CPU' | 'GPU' | 'FPGA' | 'ASIC' | 'HYBRID' | 'OTHER' | 'UNKNOWN';
   possibleTypes: readonly ('CPU' | 'GPU' | 'FPGA' | 'ASIC' | 'HYBRID' | 'OTHER' | 'UNKNOWN')[];
-  detectionSource: 'USER_DECLARED' | 'STRATUM_USER_AGENT' | 'MONITORING_AGENT' | 'MINER_API' | 'COMBINED' | 'UNKNOWN';
+  detectionSource:
+    | 'USER_DECLARED'
+    | 'STRATUM_USER_AGENT'
+    | 'MONITORING_AGENT'
+    | 'MINER_API'
+    | 'COMBINED'
+    | 'UNKNOWN';
   confidence: 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CONFIRMED';
   minerSoftware?: string;
   softwareVersion?: string;
@@ -138,7 +162,6 @@ export interface WorkerDeviceDetectedPayload {
   evidence: readonly string[];
   detectedAt: string;
 }
-
 
 export interface UpstreamPoolSelectedPayload {
   sessionId: string;

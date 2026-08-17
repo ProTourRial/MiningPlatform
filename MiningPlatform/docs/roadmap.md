@@ -1,5 +1,7 @@
 # Roadmap
 
+Roadmap ini tunduk pada [`../PROJECT_VISION.md`](../PROJECT_VISION.md) sebagai lapisan dokumentasi tertinggi dan [`product/PRODUCT_CONSTITUTION.md`](product/PRODUCT_CONSTITUTION.md) sebagai penerjemah invariant, urutan investasi, serta release gate. `v1.0.0` adalah milestone produksi pertama, bukan akhir pengembangan produk.
+
 ## Release Sequence
 
 ```text
@@ -16,10 +18,15 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.2
+## Current Checkpoint: v0.3.0-alpha.5
 
 Implemented:
 
+- Root Project Vision ditetapkan sebagai lapisan dokumentasi tertinggi, dengan Product Constitution dan Production Gap Register sebagai dokumen pelaksana.
+- Default fee awal 0,5% dipindahkan ke versioned database policy (50 basis points), lengkap dengan scope, effective window, resolver deterministik, dan immutable allocation snapshot foundation.
+- Redis distributed upstream health, single cross-replica half-open probe, fail-open local fallback, and ADR-0010 safe multiplexing boundary.
+- Immutable upstream-accepted contribution facts, atomic settlement import, deterministic 50 bps fee snapshots, balanced ledger posting, liability balance projection, and equal-and-opposite reversals under ADR-0011.
+- Authenticated reward/ledger/balance read APIs plus OWNER+TOTP settlement import and reversal commands.
 - v0.2.0-alpha.6 mining foundation, multi-upstream registry, circuit breaker, failover, provider-scoped jobs, bounded share queue, and VarDiff foundation.
 - Official domain architecture, bounded contexts, context map, data flow, event flow, event catalog, and canonical ADR set.
 - Registration, transactional email verification, login/logout, access token, atomic token-family refresh rotation/replay revocation, password reset, and TOTP 2FA.
@@ -32,13 +39,12 @@ Implemented:
 
 Release blockers:
 
-- Successful pnpm, Prisma, PostgreSQL, Redis, Docker, and browser validation in the target GitHub repository.
+- Successful alpha.5 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, and repository CI validation on the exact commit.
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.
-- Reward settlement, automatic ledger posting, balance projection, reconciliation, wallet orchestration, and payouts.
+- Reconciliation exception approval/resolution, provider settlement evidence, wallet orchestration, and payouts.
 - Load, stress, and chaos validation.
-
 
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
 
@@ -120,3 +126,16 @@ Release gate: `docs/releases/v0.2.0-definition-of-done.md`.
 - Production observability and on-call runbooks.
 - Reconciliation acceptance criteria.
 - Operational approval for real funds.
+
+## Strategic Horizon After v1.0.0
+
+Urutan strategis setelah milestone produksi pertama:
+
+1. Conversion Engine, Asset/Network Catalog, referral economics, dan multi-asset reward configuration.
+2. Auto payout, multi-network, multi-chain, serta treasury/risk automation yang tetap berbasis ledger dan rekonsiliasi.
+3. Public Developer API, SDK, authenticated webhooks, desktop miner supervisor, dan mobile monitoring.
+4. Enterprise/farm management, organizations, teams, fleet grouping, bulk configuration, regional Stratum, dan intelligent routing.
+5. Support/news ecosystem dan community layer setelah moderation serta trust-and-safety matang.
+6. Own-pool infrastructure untuk algoritma terpilih setelah hashrate, liquidity, node operations, security, dan economics memenuhi gate investasi.
+
+Default fee awal lintas tahap adalah **0,5%**, tetapi penyelesaiannya harus memakai versioned fee policy agar dapat dikonfigurasi berdasarkan aset, algoritma, jaringan, campaign, referral, atau tier tanpa mengubah settlement historis.

@@ -1,19 +1,21 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.2",
-  "releaseName": "Control Plane Hardening",
+  "version": "0.3.0-alpha.5",
+  "releaseName": "Financial Truth Foundation",
   "artifactType": "full-release",
-  "schemaVersion": 8,
-  "migration": "20260803040000_auth_session_rotation_hardening",
+  "schemaVersion": 10,
+  "migration": "20260816020000_financial_truth_foundation",
   "compatibleFrom": [
-    "0.3.0-alpha.1",
-    "0.2.0-alpha.6"
+    "0.3.0-alpha.4",
+    "0.3.0-alpha.3",
+    "0.3.0-alpha.2",
+    "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "0fec3445f8d6deb2023eaba1bdcc5c5bd8ea7ee6f564cc08ff390cf37c880c15",
+  "payloadChecksum": "1274e17b3ea3b0c1da94d03f5e0885bb849a39c0d16b1c52337f152f156ad777",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 463,
-  "buildDate": "2026-08-03T04:33:00+07:00",
+  "payloadFileCount": 503,
+  "buildDate": "2026-08-16T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }
