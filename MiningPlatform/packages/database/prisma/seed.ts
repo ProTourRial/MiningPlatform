@@ -5,6 +5,7 @@
  */
 
 import 'dotenv/config';
+import { createHash } from 'node:crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 
@@ -19,6 +20,7 @@ async function main() {
     update: {
       status: 'ACTIVE',
       feeBasisPoints: 50,
+      feePartsPerMillion: 5000,
       effectiveUntil: null,
       changeReason: 'Owner-approved initial platform fee baseline: 0.5%.',
     },
@@ -29,8 +31,35 @@ async function main() {
       status: 'ACTIVE',
       scope: 'PLATFORM_DEFAULT',
       feeBasisPoints: 50,
+      feePartsPerMillion: 5000,
       effectiveFrom: new Date('2026-08-12T17:00:00.000Z'),
       changeReason: 'Owner-approved initial platform fee baseline: 0.5%.',
+    },
+  });
+
+  const referralProgram = await prisma.referralProgram.upsert({
+    where: { programKey_version: { programKey: 'standard-referral', version: 1 } },
+    update: { status: 'ACTIVE' },
+    create: {
+      id: 'referral-program-standard-v1',
+      programKey: 'standard-referral',
+      version: 1,
+      status: 'ACTIVE',
+      minerFeePartsPerMillion: 3750,
+      commissionPartsPerMillion: 1250,
+      effectiveFrom: new Date('2026-08-21T00:00:00.000Z'),
+      changeReason:
+        'Owner-approved referral economics: miner fee 0.375% and referral commission 0.125%.',
+    },
+  });
+  await prisma.referralCode.upsert({
+    where: { code: 'MP05' },
+    update: {},
+    create: {
+      id: 'referral-code-default-mp05',
+      code: 'MP05',
+      programId: referralProgram.id,
+      beneficiaryType: 'SITE_DONATION',
     },
   });
 
@@ -125,6 +154,21 @@ async function main() {
         username: 'demo',
         rewardMethod: 'FOLLOW_UPSTREAM',
         platformFeePercent: '0.5',
+      },
+    });
+    const personalCode = `MP${createHash('sha256')
+      .update(user.id)
+      .digest('hex')
+      .slice(0, 16)
+      .toUpperCase()}`;
+    await prisma.referralCode.upsert({
+      where: { code: personalCode },
+      update: {},
+      create: {
+        code: personalCode,
+        programId: referralProgram.id,
+        ownerUserId: user.id,
+        beneficiaryType: 'USER',
       },
     });
     await prisma.worker.upsert({

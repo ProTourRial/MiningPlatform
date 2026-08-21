@@ -71,7 +71,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm db:migrate:deploy
-      - run: pnpm verify:v030-alpha5:static
+      - run: pnpm verify:v030-alpha6:static
       - run: pnpm verify:payment-addresses
       - run: pnpm lint
       - run: pnpm typecheck
@@ -80,6 +80,7 @@ jobs:
         env:
           SEED_DEVELOPMENT_DATA: "true"
       - run: pnpm test:integration:accounting
+      - run: pnpm test:integration:reconciliation
       - run: pnpm build
       - run: pnpm release:manifest:verify
 
@@ -111,9 +112,9 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha5:fresh
+      - run: pnpm verify:migration:v030-alpha6:fresh
         env:
-          MIGRATION_TEST_ACK: v030-alpha5-fresh-empty-database
+          MIGRATION_TEST_ACK: v030-alpha6-fresh-empty-database
 
   migration-upgrade:
     runs-on: ubuntu-latest
@@ -143,7 +144,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha5:upgrade
+      - run: pnpm verify:migration:v030-alpha6:upgrade
         env:
-          MIGRATION_TEST_ACK: v030-alpha4-upgrade-copy
+          MIGRATION_TEST_ACK: v030-alpha5-upgrade-copy
           SEED_DEVELOPMENT_DATA: "true"

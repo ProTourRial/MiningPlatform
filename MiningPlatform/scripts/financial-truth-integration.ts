@@ -23,6 +23,25 @@ async function main(): Promise<void> {
   const runId = randomUUID();
   const fixtureId = (name: string): string => `financial-truth-${name}-${runId}`;
   const asset = await prisma.asset.findUniqueOrThrow({ where: { symbol: 'BTC' } });
+  await prisma.ledgerAccount.createMany({
+    data: [
+      {
+        code: `${asset.symbol}-REWARD-CLEARING`,
+        name: `${asset.symbol} Reward Clearing`,
+        type: 'CLEARING',
+        assetId: asset.id,
+        systemAccount: true,
+      },
+      {
+        code: `${asset.symbol}-PLATFORM-FEE`,
+        name: `${asset.symbol} Platform Fee Revenue`,
+        type: 'REVENUE',
+        assetId: asset.id,
+        systemAccount: true,
+      },
+    ],
+    skipDuplicates: true,
+  });
   const feePolicy = await prisma.miningFeePolicy.findUniqueOrThrow({
     where: { policyKey_version: { policyKey: 'platform-default', version: 1 } },
   });
@@ -55,6 +74,36 @@ async function main(): Promise<void> {
       name: 'worker1',
       passwordHash: 'DISPOSABLE_FINANCIAL_TRUTH_FIXTURE',
       status: 'OFFLINE',
+    },
+  });
+  const referralProgram = await prisma.referralProgram.create({
+    data: {
+      id: fixtureId('referral-program'),
+      programKey: fixtureId('referral-program'),
+      version: 1,
+      status: 'ACTIVE',
+      minerFeePartsPerMillion: 3750,
+      commissionPartsPerMillion: 1250,
+      effectiveFrom: periodStart,
+      changeReason: 'Financial truth integration referral economics fixture.',
+    },
+  });
+  const referralCode = await prisma.referralCode.create({
+    data: {
+      id: fixtureId('referral-code'),
+      code: `FT${runId.replace(/-/g, '').slice(0, 16).toUpperCase()}`,
+      programId: referralProgram.id,
+      beneficiaryType: 'SITE_DONATION',
+    },
+  });
+  await prisma.referralAttribution.create({
+    data: {
+      id: fixtureId('referral-attribution'),
+      miningAccountId: miningAccount.id,
+      referralCodeId: referralCode.id,
+      sourceWorkerId: worker.id,
+      sourceWorkerNameHash: 'b'.repeat(64),
+      attributedAt: periodStart,
     },
   });
   const upstreamPool = await prisma.upstreamPool.create({
@@ -231,9 +280,11 @@ async function main(): Promise<void> {
   assert.equal(closed.grossAtomic, 100_000n);
   assert.equal(closed.upstreamFeeAtomic, 1_000n);
   assert.equal(closed.networkFeeAtomic, 500n);
-  assert.equal(closed.platformFeeAtomic, 500n);
+  assert.equal(closed.platformFeeAtomic, 375n);
+  assert.equal(closed.referralCommissionAtomic, 125n);
+  assert.equal(closed.platformRetainedAtomic, 250n);
   assert.equal(closed.distributableAtomic, 98_500n);
-  assert.equal(closed.userNetAtomic, 98_000n);
+  assert.equal(closed.userNetAtomic, 98_125n);
   assert.equal(
     closed.grossAtomic,
     closed.upstreamFeeAtomic +
@@ -249,12 +300,16 @@ async function main(): Promise<void> {
       },
     },
   });
-  assert.equal(allocation.feeBasisPoints, 50);
+  assert.equal(allocation.feeBasisPoints.toString(), '37.5');
+  assert.equal(allocation.feePartsPerMillion, 3750);
   assert.equal(allocation.grossAtomic, 100_000n);
   assert.equal(allocation.upstreamFeeAtomic, 1_000n);
   assert.equal(allocation.networkFeeAtomic, 500n);
-  assert.equal(allocation.platformFeeAtomic, 500n);
-  assert.equal(allocation.netAtomic, 98_000n);
+  assert.equal(allocation.platformFeeAtomic, 375n);
+  assert.equal(allocation.referralCommissionPartsPerMillion, 1250);
+  assert.equal(allocation.referralCommissionAtomic, 125n);
+  assert.equal(allocation.platformRetainedAtomic, 250n);
+  assert.equal(allocation.netAtomic, 98_125n);
   assert.equal(
     allocation.grossAtomic,
     allocation.upstreamFeeAtomic +
@@ -293,6 +348,10 @@ async function main(): Promise<void> {
   );
   assert.equal(clearingPostedAtomic, allocation.netAtomic + allocation.platformFeeAtomic);
   assert.equal(clearingResidualAtomic, 0n);
+  const donationCommission = journal.lines
+    .filter((line) => line.ledgerAccount.code.endsWith('-SITE-DONATION-REFERRAL-LIABILITY'))
+    .reduce((sum, line) => sum + line.creditAtomic - line.debitAtomic, 0n);
+  assert.equal(donationCommission, 125n);
 
   const retryAllocationCountBefore = await prisma.rewardAllocation.count({
     where: { rewardPeriodId: rewardPeriod.id },
@@ -332,7 +391,7 @@ async function main(): Promise<void> {
   assert.equal(
     (balanceBeforeReversal._sum.creditAtomic ?? 0n) -
       (balanceBeforeReversal._sum.debitAtomic ?? 0n),
-    98_000n,
+    98_125n,
   );
 
   await assert.rejects(
@@ -500,8 +559,12 @@ async function main(): Promise<void> {
       {
         contributionConcurrency: 'PASS',
         settlementConcurrency: 'PASS',
-        exactFeeBasisPoints: allocation.feeBasisPoints,
+        exactFeeBasisPoints: allocation.feeBasisPoints.toString(),
+        exactFeePartsPerMillion: allocation.feePartsPerMillion,
         exactPlatformFeeAtomic: allocation.platformFeeAtomic.toString(),
+        exactReferralCommissionAtomic: allocation.referralCommissionAtomic.toString(),
+        exactPlatformRetainedAtomic: allocation.platformRetainedAtomic.toString(),
+        donationCommissionAtomic: donationCommission.toString(),
         exactUserNetAtomic: allocation.netAtomic.toString(),
         everyJournalBalanced: 'PASS',
         postedEntryImmutable: 'PASS',

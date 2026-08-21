@@ -3,7 +3,7 @@
 - Status: Active engineering register
 - Authority: [`../../PROJECT_VISION.md`](../../PROJECT_VISION.md)
 - Implementation policy: [`PRODUCT_CONSTITUTION.md`](PRODUCT_CONSTITUTION.md)
-  Baseline audited: 2026-08-16 (`0.3.0-alpha.5` workspace)
+  Baseline audited: 2026-08-21 (`0.3.0-alpha.6` workspace)
 
 ## Purpose
 

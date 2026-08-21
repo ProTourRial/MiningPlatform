@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.5",
-  "generated_files": 502,
+  "version": "0.3.0-alpha.6",
+  "generated_files": 520,
   "primary_product_reference": "PROJECT_VISION.md",
   "product_constitution": "docs/product/PRODUCT_CONSTITUTION.md",
   "production_gap_register": "docs/product/PRODUCTION_GAP_REGISTER.md",
@@ -10,6 +10,11 @@
     "algorithm": "SHA256",
     "reward_method": "FOLLOW_UPSTREAM",
     "platform_fee_percent": 0.5,
+    "referral_miner_fee_percent": 0.375,
+    "referral_commission_percent_of_gross": 0.125,
+    "default_referral_code": "MP05",
+    "default_referral_beneficiary": "SITE_DONATION",
+    "auto_withdrawal_default": false,
     "user_deposit": false,
     "ledger": "double-entry",
     "event_delivery": "at-least-once",
@@ -20,8 +25,8 @@
     "scheduler": "centralized"
   },
   "target_release": "0.3.0",
-  "architecture_baseline": "ADR-0001 through ADR-0011",
-  "release_status": "financial-truth-alpha",
+  "architecture_baseline": "ADR-0001 through ADR-0012",
+  "release_status": "reconciliation-referral-alpha",
   "implemented": {
     "product_authority": [
       "project-vision-highest-documentation-layer",
@@ -223,7 +228,7 @@
     "lockfile_version": "9.0",
     "install_command": "pnpm install --frozen-lockfile"
   },
-  "schema_version": 10,
+  "schema_version": 12,
   "release_manifest": "release-manifest.json",
   "build_metadata": {
     "api_endpoint": "GET /version",
@@ -232,8 +237,8 @@
   },
   "credential_cli": ["create", "rotate", "revoke", "list"],
   "database_summary": {
-    "models": 44,
-    "enums": 32,
-    "latest_migration": "20260816020000_financial_truth_foundation"
+    "models": 48,
+    "enums": 34,
+    "latest_migration": "20260821020000_referral_fee_foundation"
   }
 }

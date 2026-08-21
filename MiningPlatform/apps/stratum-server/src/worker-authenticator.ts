@@ -25,7 +25,10 @@ export type WorkerAuthenticationFailureCode =
   | 'ACCOUNT_DISABLED'
   | 'CREDENTIAL_LOCKED'
   | 'CREDENTIAL_EXPIRED'
-  | 'CREDENTIAL_REVOKED';
+  | 'CREDENTIAL_REVOKED'
+  | 'INVALID_REFERRAL_CODE'
+  | 'SELF_REFERRAL'
+  | 'REFERRAL_CONFLICT';
 
 export type WorkerAuthenticationResult =
   | { authenticated: true; worker: AuthenticatedWorker }

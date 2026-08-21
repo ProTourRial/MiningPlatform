@@ -6,17 +6,18 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { feePercentFromBasisPoints } from './modules/fees/fee-policy.js';
+import { feePercentFromPartsPerMillion } from './modules/fees/fee-policy.js';
 
-test('converts basis points to exact decimal percent strings', () => {
-  assert.equal(feePercentFromBasisPoints(0), '0');
-  assert.equal(feePercentFromBasisPoints(50), '0.5');
-  assert.equal(feePercentFromBasisPoints(125), '1.25');
-  assert.equal(feePercentFromBasisPoints(10_000), '100');
+test('converts parts per million to exact decimal percent strings', () => {
+  assert.equal(feePercentFromPartsPerMillion(0), '0');
+  assert.equal(feePercentFromPartsPerMillion(5000), '0.5');
+  assert.equal(feePercentFromPartsPerMillion(3750), '0.375');
+  assert.equal(feePercentFromPartsPerMillion(12_500), '1.25');
+  assert.equal(feePercentFromPartsPerMillion(1_000_000), '100');
 });
 
-test('rejects invalid fee basis points', () => {
-  assert.throws(() => feePercentFromBasisPoints(-1), /between 0 and 10000/);
-  assert.throws(() => feePercentFromBasisPoints(10_001), /between 0 and 10000/);
-  assert.throws(() => feePercentFromBasisPoints(0.5), /integer/);
+test('rejects invalid fee parts per million', () => {
+  assert.throws(() => feePercentFromPartsPerMillion(-1), /between 0 and 1000000/);
+  assert.throws(() => feePercentFromPartsPerMillion(1_000_001), /between 0 and 1000000/);
+  assert.throws(() => feePercentFromPartsPerMillion(0.5), /integer/);
 });

@@ -10,6 +10,7 @@ import { prisma } from '@mining/database';
 function serializeAllocation(
   allocation: Awaited<ReturnType<RewardsService['findAllocations']>>[number],
 ) {
+  const reconciliation = allocation.rewardPeriod.reconciliations[0] ?? null;
   return {
     id: allocation.id,
     miningAccountId: allocation.miningAccountId,
@@ -25,9 +26,15 @@ function serializeAllocation(
     platformFeeAtomic: allocation.platformFeeAtomic.toString(),
     netAmount: allocation.netAmount.toString(),
     netAtomic: allocation.netAtomic.toString(),
-    feeBasisPoints: allocation.feeBasisPoints,
+    feeBasisPoints: allocation.feeBasisPoints.toString(),
+    feePartsPerMillion: allocation.feePartsPerMillion,
+    referralCommissionPartsPerMillion: allocation.referralCommissionPartsPerMillion,
+    referralCommissionAtomic: allocation.referralCommissionAtomic.toString(),
+    platformRetainedAtomic: allocation.platformRetainedAtomic.toString(),
     feePolicyVersion: allocation.feePolicyVersion,
     feePolicySnapshot: allocation.feePolicySnapshot,
+    referralCodeSnapshot: allocation.referralCodeSnapshot,
+    referralProgramSnapshot: allocation.referralProgramSnapshot,
     strategyVersion: allocation.strategyVersion,
     roundingPolicy: allocation.roundingPolicy,
     journalEntryId: allocation.journalEntryId,
@@ -40,8 +47,8 @@ function serializeAllocation(
       periodEnd: allocation.rewardPeriod.periodEnd,
       asset: allocation.rewardPeriod.asset,
       upstreamPool: allocation.rewardPeriod.upstreamPool,
-      sourceReference: allocation.rewardPeriod.reconciliation?.sourceReference ?? null,
-      sourceChecksum: allocation.rewardPeriod.reconciliation?.sourceChecksum ?? null,
+      sourceReference: reconciliation?.sourceReference ?? null,
+      sourceChecksum: reconciliation?.sourceChecksum ?? null,
     },
   };
 }
@@ -56,7 +63,12 @@ export class RewardsService {
           include: {
             asset: { select: { symbol: true, decimals: true } },
             upstreamPool: { select: { poolKey: true, name: true } },
-            reconciliation: { select: { sourceReference: true, sourceChecksum: true } },
+            reconciliations: {
+              where: { status: 'MATCHED', reconciledAt: { not: null } },
+              select: { sourceReference: true, sourceChecksum: true },
+              orderBy: { importedAt: 'desc' },
+              take: 1,
+            },
           },
         },
       },
@@ -82,7 +94,18 @@ export class RewardsService {
       include: {
         asset: { select: { symbol: true, decimals: true } },
         upstreamPool: { select: { poolKey: true, name: true } },
-        reconciliation: true,
+        reconciliations: {
+          select: {
+            id: true,
+            status: true,
+            sourceReference: true,
+            sourceChecksum: true,
+            importedAt: true,
+            resolvedAt: true,
+            reconciledAt: true,
+          },
+          orderBy: { importedAt: 'asc' },
+        },
         contributionSnapshots: {
           where: { miningAccount: { userId, deletedAt: null } },
           orderBy: { miningAccountId: 'asc' },
@@ -94,7 +117,12 @@ export class RewardsService {
               include: {
                 asset: { select: { symbol: true, decimals: true } },
                 upstreamPool: { select: { poolKey: true, name: true } },
-                reconciliation: { select: { sourceReference: true, sourceChecksum: true } },
+                reconciliations: {
+                  where: { status: 'MATCHED', reconciledAt: { not: null } },
+                  select: { sourceReference: true, sourceChecksum: true },
+                  orderBy: { importedAt: 'desc' },
+                  take: 1,
+                },
               },
             },
           },
@@ -102,6 +130,9 @@ export class RewardsService {
       },
     });
     if (!period) throw new NotFoundException('Reward period not found');
+    const activeReconciliation = period.reconciliations.find(
+      (reconciliation) => reconciliation.status === 'MATCHED' && reconciliation.reconciledAt,
+    );
     return {
       id: period.id,
       status: period.status,
@@ -112,8 +143,9 @@ export class RewardsService {
       settlementVersion: period.settlementVersion,
       asset: period.asset,
       upstreamPool: period.upstreamPool,
-      sourceReference: period.reconciliation?.sourceReference ?? null,
-      sourceChecksum: period.reconciliation?.sourceChecksum ?? null,
+      sourceReference: activeReconciliation?.sourceReference ?? null,
+      sourceChecksum: activeReconciliation?.sourceChecksum ?? null,
+      reconciliationTrace: period.reconciliations,
       contributionSnapshots: period.contributionSnapshots.map((snapshot) => ({
         miningAccountId: snapshot.miningAccountId,
         acceptedDifficulty: snapshot.acceptedDifficulty.toString(),

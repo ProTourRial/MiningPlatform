@@ -15,5 +15,5 @@
       "@mining/shared": ["packages/shared/src/index.ts"]
     }
   },
-  "include": ["./*.ts"]
+  "include": ["./**/*.ts"]
 }

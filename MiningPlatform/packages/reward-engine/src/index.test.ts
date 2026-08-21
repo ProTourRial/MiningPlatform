@@ -14,17 +14,21 @@ import {
   type FeePolicyCandidate,
 } from './index.js';
 
-const policy = (overrides: Partial<FeePolicyCandidate> = {}): FeePolicyCandidate => ({
-  id: 'default-v1',
-  policyKey: 'platform-default',
-  version: 1,
-  status: 'ACTIVE',
-  scope: 'PLATFORM_DEFAULT',
-  feeBasisPoints: 50,
-  effectiveFrom: new Date('2026-08-12T17:00:00Z'),
-  effectiveUntil: null,
-  ...overrides,
-});
+const policy = (overrides: Partial<FeePolicyCandidate> = {}): FeePolicyCandidate => {
+  const feeBasisPoints = overrides.feeBasisPoints ?? 50;
+  return {
+    id: 'default-v1',
+    policyKey: 'platform-default',
+    version: 1,
+    status: 'ACTIVE',
+    scope: 'PLATFORM_DEFAULT',
+    feeBasisPoints,
+    feePartsPerMillion: overrides.feePartsPerMillion ?? feeBasisPoints * 100,
+    effectiveFrom: new Date('2026-08-12T17:00:00Z'),
+    effectiveUntil: null,
+    ...overrides,
+  };
+};
 
 test('allocates reward and preserves all satoshis', () => {
   const allocations = allocateFollowUpstreamReward(
@@ -114,6 +118,7 @@ test('resolves the most specific effective fee policy and snapshots it', () => {
     version: 2,
     scope: 'MINING_ACCOUNT',
     feeBasisPoints: 25,
+    feePartsPerMillion: 2500,
     effectiveFrom: '2026-08-12T17:00:00.000Z',
     effectiveUntil: null,
     resolvedAt: '2026-08-13T00:00:00.000Z',
@@ -157,8 +162,8 @@ test('allocates gross reward and provider costs exactly with deterministic remai
     upstreamFeeAtomic: 10n,
     networkFeeAtomic: 1n,
     contributions: [
-      { miningAccountId: 'account-b', contributionUnits: 1n, feeBasisPoints: 50n },
-      { miningAccountId: 'account-a', contributionUnits: 2n, feeBasisPoints: 50n },
+      { miningAccountId: 'account-b', contributionUnits: 1n, feePartsPerMillion: 5000n },
+      { miningAccountId: 'account-a', contributionUnits: 2n, feePartsPerMillion: 5000n },
     ],
   });
 
@@ -208,8 +213,8 @@ test('applies per-account fee policies and rounds platform fees in the user favo
     upstreamFeeAtomic: 0n,
     networkFeeAtomic: 0n,
     contributions: [
-      { miningAccountId: 'default-fee', contributionUnits: 1n, feeBasisPoints: 50n },
-      { miningAccountId: 'custom-fee', contributionUnits: 1n, feeBasisPoints: 25n },
+      { miningAccountId: 'default-fee', contributionUnits: 1n, feePartsPerMillion: 5000n },
+      { miningAccountId: 'custom-fee', contributionUnits: 1n, feePartsPerMillion: 2500n },
     ],
   });
 
@@ -233,7 +238,7 @@ test('rejects settlements whose costs exceed gross reward', () => {
         upstreamFeeAtomic: 101n,
         networkFeeAtomic: 0n,
         contributions: [
-          { miningAccountId: 'account-a', contributionUnits: 1n, feeBasisPoints: 50n },
+          { miningAccountId: 'account-a', contributionUnits: 1n, feePartsPerMillion: 5000n },
         ],
       }),
     /cannot exceed gross reward/,
@@ -246,8 +251,8 @@ test('caps independently rounded provider costs at each account gross allocation
     upstreamFeeAtomic: 1n,
     networkFeeAtomic: 1n,
     contributions: [
-      { miningAccountId: 'account-a', contributionUnits: 1n, feeBasisPoints: 50n },
-      { miningAccountId: 'account-b', contributionUnits: 1n, feeBasisPoints: 50n },
+      { miningAccountId: 'account-a', contributionUnits: 1n, feePartsPerMillion: 5000n },
+      { miningAccountId: 'account-b', contributionUnits: 1n, feePartsPerMillion: 5000n },
     ],
   });
 
@@ -263,4 +268,25 @@ test('caps independently rounded provider costs at each account gross allocation
       { miningAccountId: 'account-b', upstreamFeeAtomic: 0n, networkFeeAtomic: 1n, netAtomic: 0n },
     ],
   );
+});
+
+test('applies the exact referral fee and funds commission from the charged platform fee', () => {
+  const [allocation] = allocateSettledReward({
+    grossAtomic: 100_000n,
+    upstreamFeeAtomic: 0n,
+    networkFeeAtomic: 0n,
+    contributions: [
+      {
+        miningAccountId: 'referred-account',
+        contributionUnits: 1n,
+        feePartsPerMillion: 3750n,
+        referralCommissionPartsPerMillion: 1250n,
+      },
+    ],
+  });
+
+  assert.equal(allocation?.platformFeeAtomic, 375n);
+  assert.equal(allocation?.referralCommissionAtomic, 125n);
+  assert.equal(allocation?.platformRetainedAtomic, 250n);
+  assert.equal(allocation?.netAtomic, 99_625n);
 });

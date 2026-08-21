@@ -19,7 +19,8 @@ export type RewardAllocation = {
 export type SettlementContribution = {
   miningAccountId: string;
   contributionUnits: bigint;
-  feeBasisPoints: bigint;
+  feePartsPerMillion: bigint;
+  referralCommissionPartsPerMillion?: bigint;
 };
 
 export type SettledRewardAllocation = {
@@ -29,6 +30,8 @@ export type SettledRewardAllocation = {
   upstreamFeeAtomic: bigint;
   networkFeeAtomic: bigint;
   platformFeeAtomic: bigint;
+  referralCommissionAtomic: bigint;
+  platformRetainedAtomic: bigint;
   netAtomic: bigint;
 };
 
@@ -49,6 +52,7 @@ export type FeePolicyCandidate = {
   status: 'DRAFT' | 'ACTIVE' | 'RETIRED';
   scope: FeePolicyScope;
   feeBasisPoints: number;
+  feePartsPerMillion: number;
   effectiveFrom: Date;
   effectiveUntil?: Date | null;
   assetId?: string | null;
@@ -76,6 +80,7 @@ export type FeePolicySnapshot = Readonly<{
   version: number;
   scope: FeePolicyScope;
   feeBasisPoints: number;
+  feePartsPerMillion: number;
   effectiveFrom: string;
   effectiveUntil: string | null;
   resolvedAt: string;
@@ -125,11 +130,19 @@ export function resolveEffectiveFeePolicy(
       throw new Error(`Invalid fee policy version: ${policy.policyKey}`);
     }
     if (
-      !Number.isInteger(policy.feeBasisPoints) ||
+      !Number.isFinite(policy.feeBasisPoints) ||
       policy.feeBasisPoints < 0 ||
       policy.feeBasisPoints > 10_000
     ) {
       throw new Error(`Invalid fee basis points: ${policy.policyKey}`);
+    }
+    if (
+      !Number.isInteger(policy.feePartsPerMillion) ||
+      policy.feePartsPerMillion < 0 ||
+      policy.feePartsPerMillion > 1_000_000 ||
+      policy.feeBasisPoints !== policy.feePartsPerMillion / 100
+    ) {
+      throw new Error(`Invalid fee parts per million: ${policy.policyKey}`);
     }
     if (
       Number.isNaN(policy.effectiveFrom.getTime()) ||
@@ -174,6 +187,7 @@ export function snapshotFeePolicy(
     version: policy.version,
     scope: policy.scope,
     feeBasisPoints: policy.feeBasisPoints,
+    feePartsPerMillion: policy.feePartsPerMillion,
     effectiveFrom: policy.effectiveFrom.toISOString(),
     effectiveUntil: policy.effectiveUntil?.toISOString() ?? null,
     resolvedAt: resolvedAt.toISOString(),
@@ -235,8 +249,15 @@ function assertSettlementContributions(
     if (contribution.contributionUnits <= 0n) {
       throw new Error('Contribution units must be greater than zero');
     }
-    if (contribution.feeBasisPoints < 0n || contribution.feeBasisPoints > 10_000n) {
-      throw new Error(`Invalid fee basis points: ${contribution.miningAccountId}`);
+    if (contribution.feePartsPerMillion < 0n || contribution.feePartsPerMillion > 1_000_000n) {
+      throw new Error(`Invalid fee parts per million: ${contribution.miningAccountId}`);
+    }
+    const referralCommissionPartsPerMillion = contribution.referralCommissionPartsPerMillion ?? 0n;
+    if (
+      referralCommissionPartsPerMillion < 0n ||
+      referralCommissionPartsPerMillion > contribution.feePartsPerMillion
+    ) {
+      throw new Error(`Invalid referral commission rate: ${contribution.miningAccountId}`);
     }
     seen.add(contribution.miningAccountId);
   }
@@ -333,7 +354,13 @@ export function allocateSettledReward(input: {
     const grossAtomic = gross.get(contribution.miningAccountId) ?? 0n;
     const upstreamFeeAtomic = upstreamFees.get(contribution.miningAccountId) ?? 0n;
     const networkFeeAtomic = networkFees.get(contribution.miningAccountId) ?? 0n;
-    const platformFeeAtomic = (grossAtomic * contribution.feeBasisPoints) / 10_000n;
+    const platformFeeAtomic = (grossAtomic * contribution.feePartsPerMillion) / 1_000_000n;
+    const referralCommissionAtomic =
+      (grossAtomic * (contribution.referralCommissionPartsPerMillion ?? 0n)) / 1_000_000n;
+    if (referralCommissionAtomic > platformFeeAtomic) {
+      throw new Error(`Referral commission exceeds platform fee: ${contribution.miningAccountId}`);
+    }
+    const platformRetainedAtomic = platformFeeAtomic - referralCommissionAtomic;
     const netAtomic = grossAtomic - upstreamFeeAtomic - networkFeeAtomic - platformFeeAtomic;
     if (netAtomic < 0n) {
       throw new Error(
@@ -347,6 +374,8 @@ export function allocateSettledReward(input: {
       upstreamFeeAtomic,
       networkFeeAtomic,
       platformFeeAtomic,
+      referralCommissionAtomic,
+      platformRetainedAtomic,
       netAtomic,
     };
   });

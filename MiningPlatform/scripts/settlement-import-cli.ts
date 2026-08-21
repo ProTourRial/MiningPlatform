@@ -8,8 +8,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { prisma } from '@mining/database';
-import { decryptSecret, verifyTotpCode } from '@mining/security';
 import { MiningEvents, type SettlementImportedPayload } from '@mining/shared';
+import { authenticateOwnerOperator } from './lib/owner-operator.js';
 
 interface SettlementImportDocument {
   importIdempotencyKey: string;
@@ -74,11 +74,6 @@ async function main(): Promise<void> {
   const filePath = resolve(argument('file'));
   const operatorEmail = argument('operator-email').trim().toLowerCase();
   const confirmation = argument('confirm');
-  const totp = process.env.SETTLEMENT_OPERATOR_TOTP ?? '';
-  const encryptionKey = process.env.AUTH_ENCRYPTION_KEY ?? '';
-  if (!/^\d{6}$/.test(totp))
-    throw new Error('SETTLEMENT_OPERATOR_TOTP must contain exactly 6 digits');
-  if (!encryptionKey) throw new Error('AUTH_ENCRYPTION_KEY is required');
 
   const raw = await readFile(filePath);
   const sourceChecksum = createHash('sha256').update(raw).digest('hex');
@@ -110,22 +105,11 @@ async function main(): Promise<void> {
   const varianceAtomic = receivedAtomic - internalExpectedAtomic;
   const matched = varianceAtomic === 0n;
 
-  const operator = await prisma.user.findUnique({
-    where: { email: operatorEmail },
-    include: { security: true },
+  const operator = await authenticateOwnerOperator({
+    email: operatorEmail,
+    totpEnvironmentVariable: 'SETTLEMENT_OPERATOR_TOTP',
+    purpose: 'Settlement',
   });
-  if (
-    !operator ||
-    operator.role !== 'OWNER' ||
-    operator.status !== 'ACTIVE' ||
-    !operator.emailVerifiedAt ||
-    !operator.security?.totpEnabled ||
-    !operator.security.totpSecretEncrypted
-  ) {
-    throw new Error('Settlement operator must be an ACTIVE, verified OWNER with TOTP enabled');
-  }
-  const secret = decryptSecret(operator.security.totpSecretEncrypted, encryptionKey);
-  if (!verifyTotpCode(secret, totp)) throw new Error('Invalid operator TOTP code');
 
   const asset = await prisma.asset.findUnique({ where: { symbol: assetSymbol } });
   if (!asset?.enabled) throw new Error(`Enabled asset not found: ${assetSymbol}`);
@@ -168,12 +152,12 @@ async function main(): Promise<void> {
           upstreamFee: atomicToDecimal(upstreamFeeAtomic, asset.decimals),
           networkFee: atomicToDecimal(networkFeeAtomic, asset.decimals),
           distributableReward: atomicToDecimal(internalExpectedAtomic, asset.decimals),
-        grossAtomic,
-        upstreamFeeAtomic,
-        networkFeeAtomic,
-        distributableAtomic: internalExpectedAtomic,
-        userNetAtomic: internalExpectedAtomic,
-        failureCode: matched ? null : 'UPSTREAM_SETTLEMENT_VARIANCE',
+          grossAtomic,
+          upstreamFeeAtomic,
+          networkFeeAtomic,
+          distributableAtomic: internalExpectedAtomic,
+          userNetAtomic: internalExpectedAtomic,
+          failureCode: matched ? null : 'UPSTREAM_SETTLEMENT_VARIANCE',
         },
       });
       const reconciliation = await tx.upstreamReconciliation.create({
@@ -181,6 +165,7 @@ async function main(): Promise<void> {
           assetId: asset.id,
           upstreamPoolId: upstreamPool.id,
           rewardPeriodId: rewardPeriod.id,
+          importedByUserId: operator.id,
           upstreamGrossReward: atomicToDecimal(grossAtomic, asset.decimals),
           upstreamFee: atomicToDecimal(upstreamFeeAtomic, asset.decimals),
           receivedAmount: atomicToDecimal(receivedAtomic, asset.decimals),

@@ -5,11 +5,9 @@
  */
 
 import { hmacSensitiveValue, verifyWorkerCredentialSecret } from '@mining/security';
+import { randomUUID } from 'node:crypto';
 import type { StratumServerConfig } from './config.js';
-import {
-  RedisWorkerAuthRateLimiter,
-  type WorkerAuthRateLimiter,
-} from './auth-rate-limiter.js';
+import { RedisWorkerAuthRateLimiter, type WorkerAuthRateLimiter } from './auth-rate-limiter.js';
 import type {
   WorkerAuthenticationContext,
   WorkerAuthenticationFailureCode,
@@ -34,8 +32,19 @@ export interface WorkerCredentialCandidate {
 }
 
 export interface WorkerCredentialStore {
-  findCandidates(accountUsername: string, workerName: string): Promise<readonly WorkerCredentialCandidate[]>;
-  recordSuccess(candidate: WorkerCredentialCandidate, context: WorkerAuthenticationContext): Promise<void>;
+  findCandidates(
+    accountUsername: string,
+    workerName: string,
+  ): Promise<readonly WorkerCredentialCandidate[]>;
+  recordSuccess(
+    candidate: WorkerCredentialCandidate,
+    context: WorkerAuthenticationContext,
+    referralCode: string | undefined,
+    workerNameHash: string,
+  ): Promise<
+    | { accepted: true }
+    | { accepted: false; code: 'INVALID_REFERRAL_CODE' | 'SELF_REFERRAL' | 'REFERRAL_CONFLICT' }
+  >;
   recordFailure(input: {
     candidate?: WorkerCredentialCandidate;
     context: WorkerAuthenticationContext;
@@ -56,6 +65,13 @@ interface PrismaWorkerCredentialClient {
   };
   auditLog: {
     create(input: unknown): Promise<unknown>;
+  };
+  referralCode: {
+    findUnique(input: unknown): Promise<unknown>;
+  };
+  referralAttribution: {
+    findUnique(input: unknown): Promise<unknown>;
+    createMany(input: unknown): Promise<unknown>;
   };
   $transaction<T>(callback: (tx: PrismaWorkerCredentialClient) => Promise<T>): Promise<T>;
 }
@@ -86,7 +102,10 @@ export class PrismaWorkerCredentialStore implements WorkerCredentialStore {
     return new PrismaWorkerCredentialStore(prisma as unknown as PrismaWorkerCredentialClient);
   }
 
-  async findCandidates(accountUsername: string, workerName: string): Promise<readonly WorkerCredentialCandidate[]> {
+  async findCandidates(
+    accountUsername: string,
+    workerName: string,
+  ): Promise<readonly WorkerCredentialCandidate[]> {
     const record = (await this.client.worker.findFirst({
       where: {
         name: workerName,
@@ -127,8 +146,100 @@ export class PrismaWorkerCredentialStore implements WorkerCredentialStore {
     }));
   }
 
-  async recordSuccess(candidate: WorkerCredentialCandidate, context: WorkerAuthenticationContext): Promise<void> {
-    await this.client.$transaction(async (tx) => {
+  async recordSuccess(
+    candidate: WorkerCredentialCandidate,
+    context: WorkerAuthenticationContext,
+    referralCode: string | undefined,
+    workerNameHash: string,
+  ): Promise<
+    | { accepted: true }
+    | {
+        accepted: false;
+        code: 'INVALID_REFERRAL_CODE' | 'SELF_REFERRAL' | 'REFERRAL_CONFLICT';
+      }
+  > {
+    return this.client.$transaction(async (tx) => {
+      if (referralCode) {
+        const now = new Date();
+        const code = (await tx.referralCode.findUnique({
+          where: { code: referralCode },
+          include: { program: true },
+        })) as {
+          id: string;
+          ownerUserId: string | null;
+          active: boolean;
+          program: {
+            status: string;
+            effectiveFrom: Date;
+            effectiveUntil: Date | null;
+          };
+        } | null;
+        const invalid =
+          !code ||
+          !code.active ||
+          code.program.status !== 'ACTIVE' ||
+          code.program.effectiveFrom > now ||
+          (code.program.effectiveUntil !== null && code.program.effectiveUntil <= now);
+        const existing = (await tx.referralAttribution.findUnique({
+          where: { miningAccountId: candidate.miningAccountId },
+          select: { referralCodeId: true },
+        })) as { referralCodeId: string } | null;
+        const rejection = invalid
+          ? 'INVALID_REFERRAL_CODE'
+          : code?.ownerUserId === candidate.userId
+          ? 'SELF_REFERRAL'
+          : existing && existing.referralCodeId !== code?.id
+          ? 'REFERRAL_CONFLICT'
+          : null;
+        if (rejection) {
+          await tx.auditLog.create({
+            data: {
+              actorUserId: candidate.userId,
+              action: 'WORKER_REFERRAL_REJECTED',
+              resourceType: 'Worker',
+              resourceId: candidate.workerId,
+              ipHash: context.remoteIpHash,
+              userAgentHash: context.userAgentHash,
+              metadata: { sessionId: context.sessionId, referralCode, reason: rejection },
+            },
+          });
+          return { accepted: false as const, code: rejection };
+        }
+        if (!existing) {
+          await tx.referralAttribution.createMany({
+            data: {
+              id: randomUUID(),
+              miningAccountId: candidate.miningAccountId,
+              referralCodeId: code!.id,
+              sourceWorkerId: candidate.workerId,
+              sourceWorkerNameHash: workerNameHash,
+            },
+            skipDuplicates: true,
+          });
+          const persisted = (await tx.referralAttribution.findUnique({
+            where: { miningAccountId: candidate.miningAccountId },
+            select: { referralCodeId: true },
+          })) as { referralCodeId: string };
+          if (persisted.referralCodeId !== code!.id) {
+            await tx.auditLog.create({
+              data: {
+                actorUserId: candidate.userId,
+                action: 'WORKER_REFERRAL_REJECTED',
+                resourceType: 'Worker',
+                resourceId: candidate.workerId,
+                ipHash: context.remoteIpHash,
+                userAgentHash: context.userAgentHash,
+                metadata: {
+                  sessionId: context.sessionId,
+                  referralCode,
+                  reason: 'REFERRAL_CONFLICT',
+                },
+              },
+            });
+            return { accepted: false as const, code: 'REFERRAL_CONFLICT' as const };
+          }
+        }
+      }
       await tx.workerCredential.update({
         where: { credentialId: candidate.credentialId },
         data: {
@@ -156,9 +267,11 @@ export class PrismaWorkerCredentialStore implements WorkerCredentialStore {
           metadata: {
             sessionId: context.sessionId,
             credentialId: candidate.credentialId,
+            referralCode: referralCode ?? null,
           },
         },
       });
+      return { accepted: true as const };
     });
   }
 
@@ -177,9 +290,10 @@ export class PrismaWorkerCredentialStore implements WorkerCredentialStore {
           where: { credentialId: input.candidate.credentialId },
           data: {
             failedAttempts: { increment: 1 },
-            lockedUntil: failedAttempts >= input.maximumFailures
-              ? new Date(Date.now() + input.lockMs)
-              : input.candidate.lockedUntil,
+            lockedUntil:
+              failedAttempts >= input.maximumFailures
+                ? new Date(Date.now() + input.lockMs)
+                : input.candidate.lockedUntil,
             lastIpHash: input.context.remoteIpHash,
           },
         });
@@ -204,14 +318,27 @@ export class PrismaWorkerCredentialStore implements WorkerCredentialStore {
   }
 }
 
-function parseWorkerIdentity(value: string): { accountUsername: string; workerName: string } | null {
-  const separator = value.indexOf('.');
-  if (separator <= 0 || separator === value.length - 1) return null;
-  const accountUsername = value.slice(0, separator).trim();
-  const workerName = value.slice(separator + 1).trim();
+export function parseWorkerIdentity(
+  value: string,
+): { accountUsername: string; workerName: string; referralCode?: string } | null {
+  const hashSeparator = value.indexOf('#');
+  if (hashSeparator !== -1 && hashSeparator !== value.lastIndexOf('#')) return null;
+  const referralCode =
+    hashSeparator === -1
+      ? undefined
+      : value
+          .slice(hashSeparator + 1)
+          .trim()
+          .toUpperCase();
+  if (referralCode !== undefined && !/^[A-Z0-9]{3,24}$/.test(referralCode)) return null;
+  const identity = (hashSeparator === -1 ? value : value.slice(0, hashSeparator)).trim();
+  const separator = identity.indexOf('.');
+  if (separator <= 0 || separator === identity.length - 1) return null;
+  const accountUsername = identity.slice(0, separator).trim();
+  const workerName = identity.slice(separator + 1).trim();
   if (!/^[a-zA-Z0-9_-]{1,64}$/.test(accountUsername)) return null;
   if (!/^[a-zA-Z0-9_.-]{1,128}$/.test(workerName)) return null;
-  return { accountUsername, workerName };
+  return { accountUsername, workerName, ...(referralCode ? { referralCode } : {}) };
 }
 
 export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
@@ -240,7 +367,13 @@ export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
     password: string,
     context: WorkerAuthenticationContext,
   ): Promise<WorkerAuthenticationResult> {
-    const rateLimitKey = `${context.remoteIpHash}:${workerName.toLowerCase()}`;
+    const referralSeparator = workerName.indexOf('#');
+    const rateLimitIdentity = (
+      referralSeparator === -1 ? workerName : workerName.slice(0, referralSeparator)
+    )
+      .trim()
+      .toLowerCase();
+    const rateLimitKey = `${context.remoteIpHash}:${rateLimitIdentity}`;
     if (await this.limiter.isBlocked(rateLimitKey)) {
       await this.store.recordFailure({
         context,
@@ -258,7 +391,10 @@ export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
       return { authenticated: false, code: 'INVALID_FORMAT' };
     }
 
-    const candidates = await this.store.findCandidates(identity.accountUsername, identity.workerName);
+    const candidates = await this.store.findCandidates(
+      identity.accountUsername,
+      identity.workerName,
+    );
     let matching: WorkerCredentialCandidate | undefined;
     for (const candidate of candidates) {
       if (await verifyWorkerCredentialSecret(password, candidate.secretHash)) matching = candidate;
@@ -270,7 +406,11 @@ export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
     }
 
     const now = this.now();
-    if (['DISABLED', 'PENDING'].includes(matching.workerStatus) || matching.userStatus !== 'ACTIVE' || !matching.accountEnabled) {
+    if (
+      ['DISABLED', 'PENDING'].includes(matching.workerStatus) ||
+      matching.userStatus !== 'ACTIVE' ||
+      !matching.accountEnabled
+    ) {
       await this.fail(rateLimitKey, matching, workerName, context, 'ACCOUNT_DISABLED');
       return { authenticated: false, code: 'ACCOUNT_DISABLED' };
     }
@@ -291,13 +431,25 @@ export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
       return { authenticated: false, code: 'CREDENTIAL_LOCKED' };
     }
 
-    await this.store.recordSuccess(matching, context);
+    const workerNameHash = hmacSensitiveValue(workerName.toLowerCase(), this.config.ipHashKey);
+    const success = await this.store.recordSuccess(
+      matching,
+      context,
+      identity.referralCode,
+      workerNameHash,
+    );
+    if (!success.accepted) {
+      await this.limiter.recordFailure(rateLimitKey);
+      return { authenticated: false, code: success.code };
+    }
     await this.limiter.recordSuccess(rateLimitKey);
     return {
       authenticated: true,
       worker: {
         workerId: matching.workerId,
-        workerName: matching.workerName,
+        workerName: identity.referralCode
+          ? `${matching.workerName}#${identity.referralCode}`
+          : matching.workerName,
         userId: matching.userId,
         miningAccountId: matching.miningAccountId,
       },

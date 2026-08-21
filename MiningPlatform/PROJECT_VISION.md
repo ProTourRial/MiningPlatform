@@ -474,6 +474,10 @@ Sumber pendapatan utama MiningPlatform adalah fee atas layanan mining.
 
 **Keputusan baseline saat ini:** default fee awal adalah **0,5% dari gross mining reward**. Angka ini harus diterapkan melalui policy yang configurable, versioned, transparan, dan dapat diaudit; perubahan mendatang tidak boleh mengubah settlement historis.
 
+**Keputusan referral saat ini:** miner tanpa kode referral valid dikenai **0,50%**. Miner dengan kode referral valid dikenai tepat **0,375%**, dan beneficiary kode memperoleh komisi tepat **0,125% dari gross mining reward referral**. Komisi tersebut merupakan bagian dari fee platform yang dibebankan—bukan potongan tambahan kepada miner—sehingga pada settlement referral platform menahan bersih 0,25%. Presisi finansial wajib memakai parts-per-million (5.000 / 3.750 / 1.250 PPM), dibekukan pada allocation, dan tidak boleh dibulatkan ke integer basis point.
+
+Kode default **MP05** menggunakan beneficiary `SITE_DONATION`. Komisinya dicatat sebagai kewajiban donasi dalam ledger; pencairan ke wallet donasi tetap fail-closed sampai alamat donasi nyata diverifikasi dan seluruh payout gate lulus.
+
 Contoh konseptual:
 
 ```text
@@ -634,6 +638,8 @@ Pengguna menentukan:
 - payout address;
 - payout threshold;
 - auto-withdraw status.
+
+Auto-withdraw berstatus **OFF secara default** dan dapat dipilih `OFF/ON` per akun mining/aset. Pilihan `ON` adalah preferensi, bukan izin untuk melewati kontrol: payout hanya efektif bila global payout gate aktif, alamat tujuan aktif dan terverifikasi, threshold terpenuhi, saldo telah reserved, wallet sehat, serta seluruh approval dan audit control lulus.
 
 Scheduler harus:
 

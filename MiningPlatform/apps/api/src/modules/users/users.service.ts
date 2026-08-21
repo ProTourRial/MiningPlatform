@@ -26,7 +26,48 @@ export class UsersService {
         security: { select: { totpEnabled: true, lastLoginAt: true, passwordChangedAt: true } },
         miningAccounts: {
           where: { deletedAt: null },
-          select: { id: true, username: true, enabled: true, rewardMethod: true, platformFeePercent: true, asset: { select: { symbol: true, algorithm: true } } },
+          select: {
+            id: true,
+            username: true,
+            enabled: true,
+            rewardMethod: true,
+            platformFeePercent: true,
+            autoWithdrawalEnabled: true,
+            asset: { select: { symbol: true, algorithm: true } },
+            referralAttribution: {
+              select: {
+                attributedAt: true,
+                referralCode: {
+                  select: {
+                    code: true,
+                    beneficiaryType: true,
+                    program: {
+                      select: {
+                        version: true,
+                        minerFeePartsPerMillion: true,
+                        commissionPartsPerMillion: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        ownedReferralCodes: {
+          where: { active: true },
+          select: {
+            code: true,
+            createdAt: true,
+            program: {
+              select: {
+                version: true,
+                minerFeePartsPerMillion: true,
+                commissionPartsPerMillion: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -43,7 +84,10 @@ export class UsersService {
   async update(userId: string, dto: UpdateProfileDto) {
     await prisma.$transaction(async (tx) => {
       if (dto.displayName !== undefined) {
-        await tx.user.update({ where: { id: userId }, data: { displayName: dto.displayName.trim() } });
+        await tx.user.update({
+          where: { id: userId },
+          data: { displayName: dto.displayName.trim() },
+        });
       }
       await tx.userProfile.upsert({
         where: { userId },
@@ -62,7 +106,12 @@ export class UsersService {
         },
       });
       await tx.auditLog.create({
-        data: { actorUserId: userId, action: 'USER_PROFILE_UPDATED', resourceType: 'User', resourceId: userId },
+        data: {
+          actorUserId: userId,
+          action: 'USER_PROFILE_UPDATED',
+          resourceType: 'User',
+          resourceId: userId,
+        },
       });
     });
     return this.me(userId);
@@ -71,7 +120,14 @@ export class UsersService {
   async sessions(userId: string) {
     return prisma.authSession.findMany({
       where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
-      select: { id: true, createdAt: true, lastUsedAt: true, expiresAt: true, ipHash: true, userAgentHash: true },
+      select: {
+        id: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        ipHash: true,
+        userAgentHash: true,
+      },
       orderBy: { lastUsedAt: 'desc' },
     });
   }

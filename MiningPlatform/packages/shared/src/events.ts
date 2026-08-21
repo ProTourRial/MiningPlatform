@@ -34,6 +34,9 @@ export const MiningEvents = {
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   contributionAccepted: 'reward.contribution.accepted.v1',
   settlementImported: 'reward.settlement.imported.v1',
+  reconciliationResolutionRequested: 'reward.reconciliation.resolution-requested.v1',
+  reconciliationResolutionApproved: 'reward.reconciliation.resolution-approved.v1',
+  reconciliationResolutionRejected: 'reward.reconciliation.resolution-rejected.v1',
   rewardPeriodClosed: 'reward.period.closed.v1',
   rewardAllocated: 'reward.allocated.v1',
   journalPosted: 'ledger.journal.posted.v1',
@@ -119,6 +122,26 @@ export interface SettlementImportedPayload {
   reconciliationId: string;
   importIdempotencyKey: string;
   importedAt: string;
+}
+
+export interface ReconciliationResolutionRequestedPayload {
+  resolutionId: string;
+  reconciliationId: string;
+  rewardPeriodId: string;
+  correctedSourceReference: string;
+  correctedSourceChecksum: string;
+  requestedByUserId: string;
+  requestedAt: string;
+}
+
+export interface ReconciliationResolutionDecisionPayload {
+  resolutionId: string;
+  reconciliationId: string;
+  rewardPeriodId: string;
+  decision: 'APPROVED' | 'REJECTED';
+  decidedByUserId: string;
+  decidedAt: string;
+  replacementReconciliationId: string | null;
 }
 
 export interface ShareRejectedPayload {

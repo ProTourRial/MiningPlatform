@@ -4,7 +4,7 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   ConflictException,
   Injectable,
@@ -34,7 +34,10 @@ import type {
   RegisterDto,
   ResetPasswordDto,
 } from './auth.dto.js';
-import { feePercentFromBasisPoints, requireActiveDefaultFeePolicy } from '../fees/fee-policy.js';
+import {
+  feePercentFromPartsPerMillion,
+  requireActiveDefaultFeePolicy,
+} from '../fees/fee-policy.js';
 
 export interface RequestFingerprint {
   ipHash?: string;
@@ -61,6 +64,10 @@ class RefreshTokenReuseError extends Error {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function personalReferralCode(userId: string): string {
+  return `MP${createHash('sha256').update(userId).digest('hex').slice(0, 16).toUpperCase()}`;
 }
 
 function plusHours(hours: number): Date {
@@ -129,6 +136,25 @@ export class AuthService {
         },
         select: { id: true, email: true, displayName: true, role: true, status: true },
       });
+      const referralProgram = await tx.referralProgram.findFirst({
+        where: {
+          status: 'ACTIVE',
+          effectiveFrom: { lte: new Date() },
+          OR: [{ effectiveUntil: null }, { effectiveUntil: { gt: new Date() } }],
+        },
+        orderBy: [{ version: 'desc' }, { effectiveFrom: 'desc' }],
+      });
+      if (!referralProgram) {
+        throw new ServiceUnavailableException('No active referral program is configured');
+      }
+      await tx.referralCode.create({
+        data: {
+          code: personalReferralCode(created.id),
+          programId: referralProgram.id,
+          ownerUserId: created.id,
+          beneficiaryType: 'USER',
+        },
+      });
       await tx.miningAccount.create({
         data: {
           userId: created.id,
@@ -136,7 +162,7 @@ export class AuthService {
           feePolicyId: feePolicy.id,
           username: dto.miningUsername.toLowerCase(),
           rewardMethod: 'FOLLOW_UPSTREAM',
-          platformFeePercent: feePercentFromBasisPoints(feePolicy.feeBasisPoints),
+          platformFeePercent: feePercentFromPartsPerMillion(feePolicy.feePartsPerMillion),
         },
       });
       const verificationToken = await tx.emailVerificationToken.create({
