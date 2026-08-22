@@ -22,6 +22,8 @@
 
 ### Fixed
 
+- Vercel Preview builds no longer publish a monorepo-relative tracing root that makes the platform packager resolve the Next.js runtime from `/apps/web` instead of the configured project directory; monorepo tracing is now limited to Docker standalone output.
+- Direct web typechecks now build the `@mining/shared` declaration output first, so Vercel Deployment Checks use the same workspace dependency boundary as the repository pipeline.
 - Financial-truth zero-payout evidence is scoped to its isolated fixture user, so realistic upgrade rehearsal data can retain a representative legacy payout without producing a false failure.
 - An active session can no longer replace an enabled TOTP factor: re-enrollment is rejected atomically until the existing factor is disabled with the current password and TOTP.
 - A TOTP code accepted during enrollment or login can no longer be replayed for payout step-up; one monotonic counter now covers every successful TOTP authentication flow, while recovery-code removal is atomic under concurrency.

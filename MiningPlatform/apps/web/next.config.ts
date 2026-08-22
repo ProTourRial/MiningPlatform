@@ -9,14 +9,15 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const monorepoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const standaloneOutput = process.env.NEXT_OUTPUT_MODE === 'standalone';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
   transpilePackages: ['@mining/shared'],
-  output: process.env.NEXT_OUTPUT_MODE === 'standalone' ? 'standalone' : undefined,
-  outputFileTracingRoot: monorepoRoot,
+  output: standaloneOutput ? 'standalone' : undefined,
+  ...(standaloneOutput ? { outputFileTracingRoot: monorepoRoot } : {}),
   turbopack: {
     root: monorepoRoot,
   },
