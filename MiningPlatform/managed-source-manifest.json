@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 533,
-  "managedFilesChecksum": "81bb35b747c30a22c74700fd70e82b593d92e38208218a51ea247e32ddb0cabd",
+  "managedFilesChecksum": "5dace8eced772d478a6070bd0a2afe8819fbd398130b6e28e55826177ead98a6",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1126,8 +1126,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f4ea0c4ecde97235114664fd455f48010ff774de9c0825dcb140b3aec428a511",
-      "size": 34906
+      "sha256": "63ffd6cddd4deec761ca5c6199413677a73577724a7d58838a85741759d0be1a",
+      "size": 34975
     },
     {
       "path": "DELETE_FILES.txt",
@@ -2671,8 +2671,8 @@
     },
     {
       "path": "turbo.json",
-      "sha256": "f0fa5abc56747516b1ea57429db258502c61e8d1a3a60ebf7b0589bcafa12d7a",
-      "size": 926
+      "sha256": "fb925ff101cce835a3029e58a9e818c7c6f4c7d85bb239a7d9ffc3ef5ea5163c",
+      "size": 971
     }
   ]
 }
