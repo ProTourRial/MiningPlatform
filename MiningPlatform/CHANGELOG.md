@@ -22,6 +22,7 @@
 
 ### Fixed
 
+- Next.js and `eslint-config-next` advance from 16.0.0 to the stable 16.3.2 patch line so Vercel no longer blocks deployment for a vulnerable framework runtime.
 - Vercel Preview builds trace from the Git repository root so the required server manifest preserves the `MiningPlatform/apps/web` path expected by the platform packager; Turbo now forwards the `VERCEL` and `NEXT_OUTPUT_MODE` build inputs, while Docker standalone output retains the narrower monorepo-root boundary.
 - Direct web typechecks now build the `@mining/shared` declaration output first, so Vercel Deployment Checks use the same workspace dependency boundary as the repository pipeline.
 - Financial-truth zero-payout evidence is scoped to its isolated fixture user, so realistic upgrade rehearsal data can retain a representative legacy payout without producing a false failure.

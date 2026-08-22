@@ -14,7 +14,7 @@
     "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "e2accabc9580a7ea1a54d3345ce8caedd3b1cc8a2623ba9f517d63a39d5511c1",
+  "payloadChecksum": "4fe2a921c0d988e2ac6309dd99c27ace77f823b8d7a064b0c4c7658a90633b9f",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
   "payloadFileCount": 534,
   "buildDate": "2026-08-22T00:00:00+07:00",
