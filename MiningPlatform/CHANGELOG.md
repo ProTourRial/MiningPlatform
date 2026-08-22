@@ -13,6 +13,7 @@
 - Versioned signer protocol with canonical manifest digests and replay-bound HMAC authentication, plus an isolated transaction-signer service that independently validates destination, amount, fee, owned change outputs, key allowlist, and manifest expiry before calling a signer-only Bitcoin Core wallet.
 - Wallet-worker signer client and AES-256-GCM artifact encryption primitives with request/response binding, payload limits, timeouts, and regression tests; PSBT, signed PSBT, raw transactions, authorization values, and encrypted artifact fields are redacted from structured logs.
 - Separate transaction-signer container and Docker network. The API has no route or network membership to the signer, and production signer startup requires mutual TLS unless an explicit unsafe acknowledgement is supplied.
+- RandomX validation foundation with XMRig-compatible CryptoNote nonce placement and target parsing, strict job/share bounds, constant-time result comparison, deterministic share fingerprints, and a fail-closed client for the official `randomx-service` hashing boundary.
 
 ### Changed
 
@@ -26,6 +27,7 @@
 
 - The API and web application do not possess private keys and cannot sign or broadcast. The isolated signer and watch-only adapter boundary now exist, while durable wallet orchestration, broadcast recovery, confirmation/reorg handling, and final wallet reconciliation are still under implementation; all real-funds gates remain disabled by default.
 - Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
+- RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 
 ### Development assistance
 
