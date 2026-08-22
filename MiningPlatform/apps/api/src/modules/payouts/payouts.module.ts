@@ -6,6 +6,7 @@
 
 import { Module } from '@nestjs/common';
 import { PayoutsController } from './payouts.controller';
+import { PayoutsService } from './payouts.service.js';
 
-@Module({ controllers: [PayoutsController] })
+@Module({ controllers: [PayoutsController], providers: [PayoutsService] })
 export class PayoutsModule {}

@@ -11,14 +11,18 @@ export const DEFAULT_MINING_FEE_POLICY_KEY = 'platform-default';
 
 type FeePolicyDatabase = typeof prisma | Prisma.TransactionClient;
 
-export function feePercentFromBasisPoints(feeBasisPoints: number): string {
-  if (!Number.isInteger(feeBasisPoints) || feeBasisPoints < 0 || feeBasisPoints > 10_000) {
-    throw new Error('Fee basis points must be an integer between 0 and 10000');
+export function feePercentFromPartsPerMillion(feePartsPerMillion: number): string {
+  if (
+    !Number.isInteger(feePartsPerMillion) ||
+    feePartsPerMillion < 0 ||
+    feePartsPerMillion > 1_000_000
+  ) {
+    throw new Error('Fee parts per million must be an integer between 0 and 1000000');
   }
-  const whole = Math.trunc(feeBasisPoints / 100);
-  const fractional = feeBasisPoints % 100;
+  const whole = Math.trunc(feePartsPerMillion / 10_000);
+  const fractional = feePartsPerMillion % 10_000;
   if (fractional === 0) return String(whole);
-  return `${whole}.${String(fractional).padStart(2, '0').replace(/0+$/, '')}`;
+  return `${whole}.${String(fractional).padStart(4, '0').replace(/0+$/, '')}`;
 }
 
 export async function requireActiveDefaultFeePolicy(

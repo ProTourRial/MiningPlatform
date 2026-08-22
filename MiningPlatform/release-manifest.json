@@ -1,21 +1,22 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.5",
-  "releaseName": "Financial Truth Foundation",
+  "version": "0.3.0-alpha.6",
+  "releaseName": "Reconciliation and Referral Foundation",
   "artifactType": "full-release",
-  "schemaVersion": 10,
-  "migration": "20260816020000_financial_truth_foundation",
+  "schemaVersion": 12,
+  "migration": "20260821020000_referral_fee_foundation",
   "compatibleFrom": [
+    "0.3.0-alpha.5",
     "0.3.0-alpha.4",
     "0.3.0-alpha.3",
     "0.3.0-alpha.2",
     "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "1274e17b3ea3b0c1da94d03f5e0885bb849a39c0d16b1c52337f152f156ad777",
+  "payloadChecksum": "f58645b090aed7bcf65e106d0d17ed882d862c31298ebfa44e4066f312a306d6",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 503,
-  "buildDate": "2026-08-16T00:00:00+07:00",
+  "payloadFileCount": 521,
+  "buildDate": "2026-08-21T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }

@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.3.0-alpha.6] - 2026-08-21
+
+### Added
+
+- Schema v11 reconciliation-exception lifecycle with immutable imported evidence, explicit correction requests, two-owner approval/rejection, versioned replacement reconciliation, and a single settlement event after approval.
+- Schema v12 referral fee foundation with versioned referral programs, immutable account attribution, personal referral codes, and default promo code `MP05` whose commission beneficiary is the site-donation liability.
+- Exact PPM accounting for the **0.50%** standard fee, **0.375%** referred-miner fee, and **0.125% of gross reward** referral commission; allocations persist the rate, code, program, commission, and retained-platform snapshots.
+- Worker username parsing for `account.worker#CODE`, with valid-code enforcement, sticky attribution, self-referral rejection, conflict rejection, and audit records.
+- Authenticated auto-withdrawal preference per mining account/asset, default `OFF`, with an accessible `OFF/ON` dashboard control and explicit readiness blockers.
+- Fresh and alpha.5-to-alpha.6 migration rehearsal covering both new migrations, representative reconciliation exceptions, fee precision backfill, existing-user referral-code backfill, and the safe auto-withdrawal default.
+
+### Changed
+
+- Referral commission is funded from the charged platform fee rather than deducted in addition to the miner fee. For a referred allocation, 0.375% is split into 0.125% beneficiary liability and 0.25% retained platform revenue.
+- Reward journals can now credit miner liability, referral/donation liability, and retained platform revenue while preserving `source = user net + charged platform fee + clearing` and `charged fee = referral commission + platform retained`.
+- `PROJECT_VISION.md` now records the owner-approved referral economics and auto-withdrawal safety semantics as the highest documentation authority.
+- Release metadata advances to `0.3.0-alpha.6`, schema version 12, and migration `20260821020000_referral_fee_foundation`.
+
+### Safety boundary
+
+- Unknown, inactive, malformed, conflicting, and self-owned referral codes do not receive a discount. Referral attribution is immutable and mid-period attribution does not retroactively discount earlier contribution facts.
+- `MP05` accrues commission to a donation ledger liability; no real donation wallet address is invented or activated.
+- Auto withdrawal `ON` is only a stored user preference. It cannot bypass the global payout kill switch, verified-address requirement, minimum threshold, balance reservation, wallet health, or operational approvals.
+- Real wallet signing, transaction broadcast, conversion, and payouts remain disabled.
+
+### Validation evidence
+
+- Reward-engine tests prove exact 5,000/3,750/1,250 PPM arithmetic and commission funding from the charged fee.
+- Disposable PostgreSQL fresh and alpha.5 upgrade rehearsals pass all 12 migrations and verify reconciliation triggers, MP05 economics, personal-code backfill, 5,000 PPM default-policy backfill, and auto withdrawal `OFF`.
+- End-to-end accounting evidence proves a 100,000-unit referred allocation produces fee 375, donation commission 125, retained revenue 250, and user net 98,125 after provider costs; journals balance, retries do not double-credit, reversal remains equal-and-opposite, and payouts created remain zero.
+- Frozen-lockfile installation succeeds across all 28 workspaces; repository gates pass with lint 27/27, typecheck 41/41, tests 41/41, and production build 27/27 with 21 generated Next.js routes.
+- Accounting and reconciliation integrations pass all financial invariants, including balanced journals, posted-entry immutability, equal-and-opposite reversal, retry idempotency, unique reward allocation, transactional rollback, and exact source reconciliation.
+- The final 520-file managed-source manifest and 521-file release manifest verify successfully.
+- Docker E2E applies all 12 migrations, builds clean API/web/outbox/mining/accounting images, starts the isolated stack, and returns HTTP 200 for readiness, version, and disabled-wallet status without runtime errors.
+- Codex Security reviewed all 75 changed-file work items against the threat model and produced zero reportable findings. GitHub CI remains mandatory on the Draft PR before promotion.
+
+### Development assistance
+
+- OpenAI Codex assisted with architecture review, implementation, documentation, automated tests, migration and release validation, and engineering gap analysis for this project.
+- Product ownership, requirements, final decisions, approvals, and release responsibility remain with Abia Nugrahanto.
+
 ## [0.3.0-alpha.5] - 2026-08-16
 
 ### Added

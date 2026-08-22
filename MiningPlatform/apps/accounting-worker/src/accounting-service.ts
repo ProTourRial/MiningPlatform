@@ -5,7 +5,6 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto';
-import { prisma, type Prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
 import { assertBalanced } from '@mining/ledger';
 import {
@@ -19,10 +18,12 @@ import {
   type ContributionAcceptedPayload,
   type SettlementImportedPayload,
 } from '@mining/shared';
+import { serializableTransaction } from './serializable-transaction.js';
 
 const CONTRIBUTION_SCALE = 12;
 const STRATEGY_VERSION = 'follow-upstream-atomic-v1';
 const ROUNDING_POLICY = 'largest-remainder-user-favouring-v1';
+const PARTS_PER_MILLION_PER_BASIS_POINT = 100;
 
 export type AccountingResult =
   | { processed: true; resultReference: string }
@@ -30,27 +31,6 @@ export type AccountingResult =
 
 function eventHash(event: DomainEvent): string {
   return createHash('sha256').update(JSON.stringify(event)).digest('hex');
-}
-
-function isSerializableConflict(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034';
-}
-
-async function serializableTransaction<T>(
-  operation: (tx: Prisma.TransactionClient) => Promise<T>,
-): Promise<T> {
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
-    try {
-      return await prisma.$transaction(operation, {
-        isolationLevel: 'Serializable',
-        maxWait: 10_000,
-        timeout: 30_000,
-      });
-    } catch (error) {
-      if (!isSerializableConflict(error) || attempt === 4) throw error;
-    }
-  }
-  throw new Error('Serializable transaction retry budget exhausted');
 }
 
 export function decimalToScaledInteger(value: string, scale: number): bigint {
@@ -264,12 +244,19 @@ export class AccountingService {
       const miningAccountIds = [...grouped.keys()];
       const accounts = await tx.miningAccount.findMany({
         where: { id: { in: miningAccountIds }, enabled: true, deletedAt: null },
-        include: { user: true },
+        include: {
+          user: true,
+          referralAttribution: {
+            include: {
+              referralCode: { include: { program: true } },
+            },
+          },
+        },
       });
       if (accounts.length !== miningAccountIds.length) {
         throw new Error('Settlement includes a disabled or missing mining account');
       }
-      const policies = (await tx.miningFeePolicy.findMany({
+      const policyRecords = await tx.miningFeePolicy.findMany({
         where: {
           status: 'ACTIVE',
           effectiveFrom: { lte: reconciliation.rewardPeriod.periodEnd },
@@ -278,7 +265,11 @@ export class AccountingService {
             { effectiveUntil: { gt: reconciliation.rewardPeriod.periodEnd } },
           ],
         },
-      })) as FeePolicyCandidate[];
+      });
+      const policies: FeePolicyCandidate[] = policyRecords.map((policy) => ({
+        ...policy,
+        feeBasisPoints: Number(policy.feeBasisPoints.toString()),
+      }));
       const policyByAccount = new Map(
         accounts.map((account) => {
           const policy = resolveEffectiveFeePolicy(
@@ -293,15 +284,42 @@ export class AccountingService {
           return [account.id, policy] as const;
         }),
       );
+      const referralByAccount = new Map(
+        accounts.map((account) => {
+          const attribution = account.referralAttribution;
+          const program = attribution?.referralCode.program;
+          const accountFacts = facts.filter((fact) => fact.miningAccountId === account.id);
+          const effective = Boolean(
+            attribution &&
+              attribution.referralCode.active &&
+              program?.status === 'ACTIVE' &&
+              program.effectiveFrom <= reconciliation.rewardPeriod.periodEnd &&
+              (!program.effectiveUntil ||
+                program.effectiveUntil > reconciliation.rewardPeriod.periodEnd) &&
+              accountFacts.every((fact) => fact.acceptedAt >= attribution.attributedAt),
+          );
+          return [account.id, effective ? attribution : null] as const;
+        }),
+      );
       const allocations = allocateSettledReward({
         grossAtomic: reconciliation.upstreamGrossAtomic,
         upstreamFeeAtomic: reconciliation.upstreamFeeAtomic,
         networkFeeAtomic: reconciliation.networkFeeAtomic,
-        contributions: [...grouped.entries()].map(([miningAccountId, contribution]) => ({
-          miningAccountId,
-          contributionUnits: contribution.units,
-          feeBasisPoints: BigInt(policyByAccount.get(miningAccountId)!.feeBasisPoints),
-        })),
+        contributions: [...grouped.entries()].map(([miningAccountId, contribution]) => {
+          const attribution = referralByAccount.get(miningAccountId);
+          const program = attribution?.referralCode.program;
+          const policy = policyByAccount.get(miningAccountId)!;
+          return {
+            miningAccountId,
+            contributionUnits: contribution.units,
+            feePartsPerMillion: BigInt(
+              attribution ? program!.minerFeePartsPerMillion : policy.feePartsPerMillion,
+            ),
+            referralCommissionPartsPerMillion: BigInt(
+              attribution ? program!.commissionPartsPerMillion : 0,
+            ),
+          };
+        }),
       });
 
       const clearing = await tx.ledgerAccount.findUniqueOrThrow({
@@ -311,13 +329,24 @@ export class AccountingService {
         where: { code: `${reconciliation.asset.symbol}-PLATFORM-FEE` },
       });
       let platformFeeAtomic = 0n;
+      let referralCommissionAtomic = 0n;
+      let platformRetainedAtomic = 0n;
       let userNetAtomic = 0n;
       const accountById = new Map(accounts.map((account) => [account.id, account]));
 
       for (const allocation of allocations) {
         const account = accountById.get(allocation.miningAccountId)!;
         const policy = policyByAccount.get(allocation.miningAccountId)!;
-        const snapshot = snapshotFeePolicy(policy, reconciliation.importedAt);
+        const attribution = referralByAccount.get(allocation.miningAccountId);
+        const referralCode = attribution?.referralCode;
+        const referralProgram = referralCode?.program;
+        const snapshot = {
+          ...snapshotFeePolicy(policy, reconciliation.importedAt),
+          effectiveFeePartsPerMillion: Number(
+            attribution ? referralProgram!.minerFeePartsPerMillion : policy.feePartsPerMillion,
+          ),
+          referralApplied: Boolean(attribution),
+        };
         const postedAtomic = allocation.netAtomic + allocation.platformFeeAtomic;
         let journalEntryId: string | undefined;
         if (postedAtomic > 0n) {
@@ -333,20 +362,68 @@ export class AccountingService {
             },
             update: {},
           });
+          const referralLiability =
+            allocation.referralCommissionAtomic > 0n
+              ? await tx.ledgerAccount.upsert({
+                  where: {
+                    code:
+                      referralCode!.beneficiaryType === 'SITE_DONATION'
+                        ? `${reconciliation.asset.symbol}-SITE-DONATION-REFERRAL-LIABILITY`
+                        : `${reconciliation.asset.symbol}-REFERRAL-LIABILITY-${
+                            referralCode!.ownerUserId
+                          }`,
+                  },
+                  create: {
+                    code:
+                      referralCode!.beneficiaryType === 'SITE_DONATION'
+                        ? `${reconciliation.asset.symbol}-SITE-DONATION-REFERRAL-LIABILITY`
+                        : `${reconciliation.asset.symbol}-REFERRAL-LIABILITY-${
+                            referralCode!.ownerUserId
+                          }`,
+                    name:
+                      referralCode!.beneficiaryType === 'SITE_DONATION'
+                        ? `${reconciliation.asset.symbol} Site Donation Referral Liability`
+                        : `${reconciliation.asset.symbol} User Referral Commission Liability`,
+                    type: 'LIABILITY',
+                    userId:
+                      referralCode!.beneficiaryType === 'USER' ? referralCode!.ownerUserId : null,
+                    assetId: reconciliation.assetId,
+                    systemAccount: referralCode!.beneficiaryType === 'SITE_DONATION',
+                  },
+                  update: {},
+                })
+              : null;
           const journalLines = [
             { accountCode: clearing.code, debit: postedAtomic, credit: 0n },
             { accountCode: liability.code, debit: 0n, credit: allocation.netAtomic },
-            ...(allocation.platformFeeAtomic > 0n
+            ...(allocation.platformRetainedAtomic > 0n
               ? [
                   {
                     accountCode: platformRevenue.code,
                     debit: 0n,
-                    credit: allocation.platformFeeAtomic,
+                    credit: allocation.platformRetainedAtomic,
+                  },
+                ]
+              : []),
+            ...(allocation.referralCommissionAtomic > 0n
+              ? [
+                  {
+                    accountCode: referralLiability!.code,
+                    debit: 0n,
+                    credit: allocation.referralCommissionAtomic,
                   },
                 ]
               : []),
           ];
           assertBalanced(journalLines);
+          const ledgerAccountByCode = new Map([
+            [clearing.code, clearing.id],
+            [liability.code, liability.id],
+            [platformRevenue.code, platformRevenue.id],
+            ...(referralLiability
+              ? ([[referralLiability.code, referralLiability.id]] as const)
+              : []),
+          ]);
           const journal = await tx.journalEntry.create({
             data: {
               idempotencyKey: `reward-allocation:${reconciliation.rewardPeriodId}:${account.id}:v1`,
@@ -359,12 +436,7 @@ export class AccountingService {
               effectiveAt: reconciliation.rewardPeriod.periodEnd,
               lines: {
                 create: journalLines.map((line) => ({
-                  ledgerAccountId:
-                    line.accountCode === clearing.code
-                      ? clearing.id
-                      : line.accountCode === liability.code
-                      ? liability.id
-                      : platformRevenue.id,
+                  ledgerAccountId: ledgerAccountByCode.get(line.accountCode)!,
                   assetId: reconciliation.assetId,
                   debit: scaledIntegerToDecimal(line.debit, reconciliation.asset.decimals),
                   credit: scaledIntegerToDecimal(line.credit, reconciliation.asset.decimals),
@@ -405,8 +477,39 @@ export class AccountingService {
             miningAccountId: account.id,
             feePolicyId: policy.id,
             feePolicyVersion: policy.version,
-            feeBasisPoints: policy.feeBasisPoints,
+            feeBasisPoints: (
+              Number(
+                attribution ? referralProgram!.minerFeePartsPerMillion : policy.feePartsPerMillion,
+              ) / PARTS_PER_MILLION_PER_BASIS_POINT
+            ).toString(),
+            feePartsPerMillion: Number(
+              attribution ? referralProgram!.minerFeePartsPerMillion : policy.feePartsPerMillion,
+            ),
             feePolicySnapshot: { ...snapshot },
+            referralAttributionId: attribution?.id,
+            referralProgramId: referralProgram?.id,
+            referralProgramVersion: referralProgram?.version,
+            referralCommissionPartsPerMillion: referralProgram?.commissionPartsPerMillion ?? 0,
+            referralCodeSnapshot: referralCode
+              ? {
+                  id: referralCode.id,
+                  code: referralCode.code,
+                  beneficiaryType: referralCode.beneficiaryType,
+                  ownerUserId: referralCode.ownerUserId,
+                  attributedAt: attribution!.attributedAt.toISOString(),
+                }
+              : undefined,
+            referralProgramSnapshot: referralProgram
+              ? {
+                  id: referralProgram.id,
+                  programKey: referralProgram.programKey,
+                  version: referralProgram.version,
+                  minerFeePartsPerMillion: referralProgram.minerFeePartsPerMillion,
+                  commissionPartsPerMillion: referralProgram.commissionPartsPerMillion,
+                  effectiveFrom: referralProgram.effectiveFrom.toISOString(),
+                  effectiveUntil: referralProgram.effectiveUntil?.toISOString() ?? null,
+                }
+              : undefined,
             contribution: scaledIntegerToDecimal(allocation.contributionUnits, CONTRIBUTION_SCALE),
             grossAmount: scaledIntegerToDecimal(
               allocation.grossAtomic,
@@ -430,6 +533,8 @@ export class AccountingService {
             upstreamFeeAtomic: allocation.upstreamFeeAtomic,
             networkFeeAtomic: allocation.networkFeeAtomic,
             platformFeeAtomic: allocation.platformFeeAtomic,
+            referralCommissionAtomic: allocation.referralCommissionAtomic,
+            platformRetainedAtomic: allocation.platformRetainedAtomic,
             netAtomic: allocation.netAtomic,
             strategyVersion: STRATEGY_VERSION,
             roundingPolicy: ROUNDING_POLICY,
@@ -437,6 +542,8 @@ export class AccountingService {
           },
         });
         platformFeeAtomic += allocation.platformFeeAtomic;
+        referralCommissionAtomic += allocation.referralCommissionAtomic;
+        platformRetainedAtomic += allocation.platformRetainedAtomic;
         userNetAtomic += allocation.netAtomic;
       }
 
@@ -472,6 +579,8 @@ export class AccountingService {
           upstreamFeeAtomic: reconciliation.upstreamFeeAtomic,
           networkFeeAtomic: reconciliation.networkFeeAtomic,
           platformFeeAtomic,
+          referralCommissionAtomic,
+          platformRetainedAtomic,
           distributableAtomic,
           userNetAtomic,
           totalContribution: scaledIntegerToDecimal(totalContribution, CONTRIBUTION_SCALE),
@@ -502,6 +611,8 @@ export class AccountingService {
             sourceChecksum: reconciliation.sourceChecksum,
             grossAtomic: reconciliation.upstreamGrossAtomic.toString(),
             platformFeeAtomic: platformFeeAtomic.toString(),
+            referralCommissionAtomic: referralCommissionAtomic.toString(),
+            platformRetainedAtomic: platformRetainedAtomic.toString(),
             userNetAtomic: userNetAtomic.toString(),
             eventHash: eventHash(event),
           },
@@ -522,6 +633,8 @@ export class AccountingService {
             rewardPeriodId: reconciliation.rewardPeriodId,
             reconciliationId: reconciliation.id,
             platformFeeAtomic: platformFeeAtomic.toString(),
+            referralCommissionAtomic: referralCommissionAtomic.toString(),
+            platformRetainedAtomic: platformRetainedAtomic.toString(),
             userNetAtomic: userNetAtomic.toString(),
           },
           occurredAt: new Date(),

@@ -70,8 +70,8 @@ for (const entry of entries) {
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0-alpha.5',
-  releaseName: 'Financial Truth Foundation',
+  version: '0.3.0-alpha.6',
+  releaseName: 'Reconciliation and Referral Foundation',
   packagingRevision: 'r1',
   verificationMode: 'managed-files-only',
   extraFilesPolicy: 'ignored',

@@ -8,9 +8,9 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.3.0-alpha.5`
+Versi saat ini: `0.3.0-alpha.6`
 
-Rilis ini merupakan **financial-truth, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Default fee awal 0,5% disimpan sebagai policy terversi 50 basis points dan dibekukan per allocation. Share yang diterima upstream kini dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection melalui accounting-worker. Multi-upstream memiliki koordinasi circuit breaker Redis lintas-replika, sedangkan shared multiplexing tetap ditahan oleh ADR-0010 sampai invariant provider terbukti.
+Rilis ini merupakan **financial-truth, reconciliation, referral, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Fee standar awal 0,5% disimpan sebagai policy terversi. Kode referral valid menurunkan fee miner menjadi tepat 0,375% dan mengalokasikan 0,125% dari gross reward sebagai komisi beneficiary menggunakan presisi PPM; kode default `MP05` mengarah ke liability donasi situs. Share yang diterima upstream kini dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection melalui accounting-worker. Auto withdrawal dapat dipilih pengguna per akun/aset dengan default OFF, tetapi tetap tidak efektif selama payout gate produksi belum lulus.
 
 Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
@@ -58,7 +58,7 @@ event projection dan hashrate foundation
 - Algoritma: SHA-256
 - Model awal: upstream pool gateway
 - Reward awal: `FOLLOW_UPSTREAM`
-- Fee platform awal: 0,5% (default configurable dan wajib transparan)
+- Fee platform awal: 0,5%; 0,375% dengan referral valid dan komisi beneficiary 0,125% dari gross
 - Hardware: CPU, GPU, FPGA, ASIC, HYBRID, OTHER, dan UNKNOWN
 - Ledger: immutable double-entry journal
 - Monitoring: Stratum dan agent opsional

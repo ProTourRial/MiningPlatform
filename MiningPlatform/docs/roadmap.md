@@ -18,7 +18,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.5
+## Current Checkpoint: v0.3.0-alpha.6
 
 Implemented:
 

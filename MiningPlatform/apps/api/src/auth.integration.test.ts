@@ -10,6 +10,7 @@ import test from 'node:test';
 import { prisma } from '@mining/database';
 import { hashOpaqueToken } from '@mining/security';
 import { AuthService } from './modules/auth/auth.service.js';
+import { PayoutsService } from './modules/payouts/payouts.service.js';
 
 process.env.AUTH_JWT_SECRET = 'integration-test-only-jwt-secret-at-least-32-bytes';
 process.env.AUTH_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64url');
@@ -57,16 +58,49 @@ test('registration, verification, login, refresh rotation, and replay family rev
   const miningAccount = await prisma.miningAccount.findUniqueOrThrow({
     where: { username: miningUsername },
     select: {
+      id: true,
+      autoWithdrawalEnabled: true,
       platformFeePercent: true,
-      feePolicy: { select: { policyKey: true, version: true, feeBasisPoints: true } },
+      feePolicy: {
+        select: {
+          policyKey: true,
+          version: true,
+          feeBasisPoints: true,
+          feePartsPerMillion: true,
+        },
+      },
     },
   });
   assert.equal(miningAccount.platformFeePercent.toString(), '0.5');
-  assert.deepEqual(miningAccount.feePolicy, {
-    policyKey: 'platform-default',
-    version: 1,
-    feeBasisPoints: 50,
+  assert.equal(miningAccount.autoWithdrawalEnabled, false);
+  assert.equal(miningAccount.feePolicy.policyKey, 'platform-default');
+  assert.equal(miningAccount.feePolicy.version, 1);
+  assert.equal(miningAccount.feePolicy.feeBasisPoints.toString(), '50');
+  assert.equal(miningAccount.feePolicy.feePartsPerMillion, 5000);
+  const personalReferralCode = await prisma.referralCode.findFirstOrThrow({
+    where: { ownerUserId: registration.user.id, active: true },
+    include: { program: true },
   });
+  assert.match(personalReferralCode.code, /^MP[A-F0-9]{16}$/);
+  assert.equal(personalReferralCode.program.minerFeePartsPerMillion, 3750);
+  assert.equal(personalReferralCode.program.commissionPartsPerMillion, 1250);
+
+  const payouts = new PayoutsService();
+  const enabledPreference = await payouts.updatePreference(
+    registration.user.id,
+    miningAccount.id,
+    true,
+  );
+  assert.equal(enabledPreference.autoWithdrawalEnabled, true);
+  assert.equal(enabledPreference.effective, false);
+  assert.ok(enabledPreference.blockers.includes('GLOBAL_PAYOUT_GATE_DISABLED'));
+  assert.ok(enabledPreference.blockers.includes('NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS'));
+  const disabledPreference = await payouts.updatePreference(
+    registration.user.id,
+    miningAccount.id,
+    false,
+  );
+  assert.equal(disabledPreference.autoWithdrawalEnabled, false);
 
   await service.verifyEmail(registration.verificationToken);
   const firstSession = await service.login({ email, password }, fingerprint);

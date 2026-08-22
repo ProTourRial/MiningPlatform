@@ -5,8 +5,8 @@
  */
 
 import { prisma } from '@mining/database';
-import { decryptSecret, verifyTotpCode } from '@mining/security';
 import { AccountingService } from '../apps/accounting-worker/src/accounting-service.js';
+import { authenticateOwnerOperator } from './lib/owner-operator.js';
 
 function usage(): never {
   throw new Error(
@@ -37,30 +37,11 @@ async function main(): Promise<void> {
   if (confirmation !== `reverse:${journalEntryId}`) {
     throw new Error(`Confirmation mismatch. Expected --confirm=reverse:${journalEntryId}`);
   }
-  const totp = process.env.SETTLEMENT_OPERATOR_TOTP ?? '';
-  const encryptionKey = process.env.AUTH_ENCRYPTION_KEY ?? '';
-  if (!/^\d{6}$/.test(totp))
-    throw new Error('SETTLEMENT_OPERATOR_TOTP must contain exactly 6 digits');
-  if (!encryptionKey) throw new Error('AUTH_ENCRYPTION_KEY is required');
-
-  const operator = await prisma.user.findUnique({
-    where: { email: operatorEmail },
-    include: { security: true },
+  const operator = await authenticateOwnerOperator({
+    email: operatorEmail,
+    totpEnvironmentVariable: 'SETTLEMENT_OPERATOR_TOTP',
+    purpose: 'Journal reversal',
   });
-  if (
-    !operator ||
-    operator.role !== 'OWNER' ||
-    operator.status !== 'ACTIVE' ||
-    !operator.emailVerifiedAt ||
-    !operator.security?.totpEnabled ||
-    !operator.security.totpSecretEncrypted
-  ) {
-    throw new Error(
-      'Journal reversal operator must be an ACTIVE, verified OWNER with TOTP enabled',
-    );
-  }
-  const secret = decryptSecret(operator.security.totpSecretEncrypted, encryptionKey);
-  if (!verifyTotpCode(secret, totp)) throw new Error('Invalid operator TOTP code');
 
   const result = await new AccountingService().reverseJournal({
     journalEntryId,

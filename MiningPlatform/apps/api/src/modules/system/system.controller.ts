@@ -6,7 +6,10 @@
 
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { feePercentFromBasisPoints, requireActiveDefaultFeePolicy } from '../fees/fee-policy.js';
+import {
+  feePercentFromPartsPerMillion,
+  requireActiveDefaultFeePolicy,
+} from '../fees/fee-policy.js';
 
 @ApiTags('system')
 @Controller({ path: 'system', version: '1' })
@@ -18,11 +21,12 @@ export class SystemController {
       asset: process.env.MINING_ASSET ?? 'BTC',
       algorithm: process.env.MINING_ALGORITHM ?? 'SHA256',
       rewardMethod: process.env.REWARD_METHOD ?? 'FOLLOW_UPSTREAM',
-      platformFeePercent: Number(feePercentFromBasisPoints(feePolicy.feeBasisPoints)),
+      platformFeePercent: Number(feePercentFromPartsPerMillion(feePolicy.feePartsPerMillion)),
       feePolicy: {
         key: feePolicy.policyKey,
         version: feePolicy.version,
-        basisPoints: feePolicy.feeBasisPoints,
+        basisPoints: feePolicy.feeBasisPoints.toString(),
+        partsPerMillion: feePolicy.feePartsPerMillion,
         effectiveFrom: feePolicy.effectiveFrom.toISOString(),
       },
       payoutsEnabled: process.env.PAYOUTS_ENABLED === 'true',
