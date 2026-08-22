@@ -87,7 +87,9 @@
     "test:integration:reconciliation": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-integration.ts",
     "test:integration:payout-control": "pnpm --filter @mining/api exec node --import tsx --test src/payout-control.integration.test.ts",
     "verify:migration:v030-alpha7:fresh": "node scripts/verify-v030-alpha7-migration.mjs fresh",
-    "verify:migration:v030-alpha7:upgrade": "node scripts/verify-v030-alpha7-migration.mjs upgrade"
+    "verify:migration:v030-alpha7:upgrade": "node scripts/verify-v030-alpha7-migration.mjs upgrade",
+    "verify:migration:v030-alpha8:fresh": "node scripts/verify-v030-alpha8-migration.mjs fresh",
+    "verify:migration:v030-alpha8:upgrade": "node scripts/verify-v030-alpha8-migration.mjs upgrade"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

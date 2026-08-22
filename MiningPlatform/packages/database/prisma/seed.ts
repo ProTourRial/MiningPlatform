@@ -119,6 +119,21 @@ async function main() {
     });
   }
 
+  await prisma.payoutControl.upsert({
+    where: { assetId: btc.id },
+    update: {},
+    create: {
+      id: `payout-control-${btc.id}`,
+      assetId: btc.id,
+      requestsEnabled: false,
+      signingEnabled: false,
+      broadcastEnabled: false,
+      paused: true,
+      pauseReason:
+        'Controlled payout execution is installed but remains paused pending production approval.',
+    },
+  });
+
   await prisma.ledgerAccount.createMany({
     data: [
       {

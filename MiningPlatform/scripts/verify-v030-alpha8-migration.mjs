@@ -1,0 +1,280 @@
+/**
+ * MiningPlatform
+ * Author: Abia Nugrahanto
+ * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+ */
+
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+const mode = process.argv[2];
+if (!['fresh', 'upgrade'].includes(mode)) {
+  throw new Error('Usage: node scripts/verify-v030-alpha8-migration.mjs <fresh|upgrade>');
+}
+if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
+const expectedAck =
+  mode === 'fresh' ? 'v030-alpha8-fresh-empty-database' : 'v030-alpha7-upgrade-empty-database';
+if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
+  throw new Error(
+    `Set MIGRATION_TEST_ACK=${expectedAck} after provisioning a new disposable database`,
+  );
+}
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
+const latestMigration = '20260823010000_controlled_payout_execution';
+const migrationsRoot = join(root, 'packages/database/prisma/migrations');
+if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
+  throw new Error(`Missing migration: ${latestMigration}`);
+}
+
+const psqlUrl = new URL(process.env.DATABASE_URL);
+psqlUrl.searchParams.delete('schema');
+const psqlContainer = process.env.MIGRATION_PSQL_CONTAINER;
+
+function run(command, args, options = {}) {
+  process.stdout.write(
+    `\n> ${command} ${options.redactArgs ? '[arguments redacted]' : args.join(' ')}\n`,
+  );
+  const executePackageManagerWithNode = command === 'pnpm' && process.env.npm_execpath;
+  const executable = executePackageManagerWithNode ? process.execPath : command;
+  const executableArgs = executePackageManagerWithNode ? [process.env.npm_execpath, ...args] : args;
+  const result = spawnSync(executable, executableArgs, {
+    cwd: root,
+    stdio: 'inherit',
+    shell: options.shell ?? false,
+    env: process.env,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(`${command} exited with status ${result.status ?? 1}`);
+}
+
+function psql(command) {
+  if (!psqlContainer) {
+    run('psql', [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', '--command', command], {
+      redactArgs: true,
+    });
+    return;
+  }
+  run(
+    'docker',
+    [
+      'exec',
+      '--env',
+      `PGPASSWORD=${decodeURIComponent(psqlUrl.password)}`,
+      psqlContainer,
+      'psql',
+      '--username',
+      decodeURIComponent(psqlUrl.username),
+      '--dbname',
+      psqlUrl.pathname.slice(1),
+      '--set',
+      'ON_ERROR_STOP=1',
+      '--command',
+      command,
+    ],
+    { redactArgs: true },
+  );
+}
+
+// Never reset a caller-supplied database. The verifier only accepts a newly
+// provisioned database with no Prisma migration history or public tables.
+psql(`
+  DO $$
+  BEGIN
+    IF to_regclass('public."_prisma_migrations"') IS NOT NULL
+      OR EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name <> '_prisma_migrations'
+      )
+    THEN RAISE EXCEPTION 'migration verifier requires a new empty disposable database'; END IF;
+  END $$;
+`);
+
+let temporaryPrismaRoot;
+try {
+  if (mode === 'upgrade') {
+    mkdirSync(verifierTempRoot, { recursive: true });
+    temporaryPrismaRoot = join(
+      verifierTempRoot,
+      `miningplatform-alpha8-migrations-${process.pid}-${Date.now()}`,
+    );
+    const temporaryMigrations = join(temporaryPrismaRoot, 'migrations');
+    mkdirSync(temporaryMigrations, { recursive: true });
+    for (const migration of [
+      '20260730000100_baseline_core_mining',
+      '20260730000200_hardening_alpha_2',
+      '20260731020000_universal_miner_detection',
+      '20260731030000_architecture_miner_identity',
+      '20260731110000_upstream_resilience',
+      '20260731190000_identity_access',
+      '20260803010000_control_plane_foundation',
+      '20260803040000_auth_session_rotation_hardening',
+      '20260813010000_versioned_fee_policy',
+      '20260816020000_financial_truth_foundation',
+      '20260821010000_reconciliation_exception_lifecycle',
+      '20260821020000_referral_fee_foundation',
+      '20260822010000_payout_control_foundation',
+    ]) {
+      cpSync(join(migrationsRoot, migration), join(temporaryMigrations, migration), {
+        recursive: true,
+      });
+    }
+    cpSync(
+      join(migrationsRoot, 'migration_lock.toml'),
+      join(temporaryMigrations, 'migration_lock.toml'),
+    );
+    writeFileSync(
+      join(temporaryPrismaRoot, 'schema.prisma'),
+      'datasource db {\n  provider = "postgresql"\n}\n',
+      'utf8',
+    );
+    writeFileSync(
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+      `import { defineConfig, env } from 'prisma/config';\nexport default defineConfig({ schema: ${JSON.stringify(
+        join(temporaryPrismaRoot, 'schema.prisma'),
+      )}, migrations: { path: ${JSON.stringify(
+        temporaryMigrations,
+      )} }, datasource: { url: env('DATABASE_URL') } });\n`,
+      'utf8',
+    );
+    run('pnpm', [
+      '--filter',
+      '@mining/database',
+      'exec',
+      'prisma',
+      'migrate',
+      'deploy',
+      '--config',
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+    ]);
+    psql(`
+      INSERT INTO "Asset" (
+        "id", "symbol", "name", "algorithm", "decimals", "enabled",
+        "minimumPayout", "requiredConfirmations", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-btc', 'BTC', 'Bitcoin', 'SHA256', 8, true, 0.001, 3, NOW()
+      );
+      INSERT INTO "AssetNetwork" (
+        "id", "assetId", "networkKey", "displayName", "chainFamily",
+        "addressValidator", "isTestnet", "enabled", "updatedAt"
+      ) VALUES (
+        'asset-network-alpha8-upgrade-btc', 'alpha8-upgrade-btc', 'bitcoin-mainnet',
+        'Bitcoin Mainnet', 'BITCOIN', 'BITCOIN', false, true, NOW()
+      );
+      INSERT INTO "User" (
+        "id", "email", "passwordHash", "displayName", "role", "status",
+        "accountType", "emailVerifiedAt", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-user', 'alpha8-upgrade@local.invalid', 'UPGRADE_FIXTURE',
+        'Alpha8 Upgrade User', 'USER', 'ACTIVE', 'INDIVIDUAL', NOW(), NOW()
+      );
+      INSERT INTO "PayoutRoute" (
+        "id", "assetNetworkId", "routeKey", "version", "status", "minimumPayoutAtomic",
+        "fixedNetworkFeeAtomic", "addressCooldownSeconds", "requiredConfirmations",
+        "manualApprovalRequired", "effectiveFrom", "changeReason"
+      ) SELECT 'alpha8-upgrade-route', network."id", 'upgrade-pilot', 1, 'PILOT', 1,
+        0, 0, 3, true, NOW() - INTERVAL '1 day', 'Representative alpha.7 pilot payout.'
+      FROM "AssetNetwork" network JOIN "Asset" asset ON asset."id" = network."assetId"
+      WHERE asset."symbol" = 'BTC' AND network."networkKey" = 'bitcoin-mainnet';
+      INSERT INTO "PayoutAddress" (
+        "id", "userId", "assetId", "assetNetworkId", "payoutRouteId", "address",
+        "addressHash", "status", "verified", "verifiedAt", "active", "cooldownUntil",
+        "activatedAt", "updatedAt"
+      ) SELECT 'alpha8-upgrade-address', 'alpha8-upgrade-user', asset."id", network."id",
+        'alpha8-upgrade-route', '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', repeat('a', 64),
+        'ACTIVE', true, NOW() - INTERVAL '1 day', true, NOW() - INTERVAL '1 day',
+        NOW() - INTERVAL '1 day', NOW()
+      FROM "Asset" asset JOIN "AssetNetwork" network ON network."assetId" = asset."id"
+      WHERE asset."symbol" = 'BTC' AND network."networkKey" = 'bitcoin-mainnet';
+      INSERT INTO "Payout" (
+        "id", "idempotencyKey", "userId", "assetId", "payoutAddressId", "payoutRouteId",
+        "amount", "networkFee", "status", "scheduledAt", "updatedAt"
+      ) SELECT 'alpha8-upgrade-payout', 'alpha8-upgrade-payout-key', 'alpha8-upgrade-user',
+        asset."id", 'alpha8-upgrade-address', 'alpha8-upgrade-route', 0.001, 0, 'REVIEW', NOW(), NOW()
+      FROM "Asset" asset WHERE asset."symbol" = 'BTC';
+    `);
+  }
+
+  run('pnpm', ['db:migrate:deploy']);
+  run('pnpm', ['db:seed']);
+  run('pnpm', ['--filter', '@mining/database', 'exec', 'prisma', 'migrate', 'status']);
+
+  psql(`
+    DO $$
+    DECLARE btc_id TEXT;
+    BEGIN
+      SELECT "id" INTO btc_id FROM "Asset" WHERE "symbol" = 'BTC';
+      IF to_regclass('public."PayoutEligibility"') IS NULL
+        OR to_regclass('public."BalanceReservation"') IS NULL
+        OR to_regclass('public."PayoutApproval"') IS NULL
+        OR to_regclass('public."SigningRequest"') IS NULL
+        OR to_regclass('public."BroadcastAttempt"') IS NULL
+        OR to_regclass('public."ChainObservation"') IS NULL
+        OR to_regclass('public."PayoutReconciliation"') IS NULL
+        OR to_regclass('public."WalletReconciliation"') IS NULL
+        OR to_regclass('public."PayoutControl"') IS NULL
+      THEN RAISE EXCEPTION 'controlled payout execution tables are missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
+          AND column_name = 'payoutWalletId'
+      ) THEN RAISE EXCEPTION 'payout route wallet binding is missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM "PayoutControl" WHERE "assetId" = btc_id AND "paused"
+          AND NOT "requestsEnabled" AND NOT "signingEnabled" AND NOT "broadcastEnabled"
+      ) THEN RAISE EXCEPTION 'payout control did not seed fail-closed'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'Payout' AND t.tgname = 'Payout_required_evidence_trigger'
+          AND t.tgdeferrable AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'BalanceReservation' AND t.tgname = 'BalanceReservation_lifecycle_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'PayoutApproval' AND t.tgname = 'PayoutApproval_separation_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'PayoutRoute' AND t.tgname = 'PayoutRoute_wallet_alignment_trigger'
+          AND NOT t.tgisinternal
+      ) THEN RAISE EXCEPTION 'controlled payout invariant triggers are missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'PayoutApproval'
+          AND indexname = 'PayoutApproval_payoutId_key'
+      ) THEN RAISE EXCEPTION 'one final payout approval decision is not database-enforced'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1 FROM "Payout" WHERE "id" = 'alpha8-upgrade-payout' AND "status" = 'REVIEW'
+          AND "executionVersion" = 1 AND "miningAccountId" IS NULL AND "amountAtomic" IS NULL
+      ) THEN RAISE EXCEPTION 'alpha.7 payout history was rewritten during upgrade'; END IF;
+    END $$;
+  `);
+
+  process.env.AUTH_JWT_SECRET ??= 'alpha8-migration-test-jwt-secret-at-least-32-bytes';
+  process.env.AUTH_ENCRYPTION_KEY ??= Buffer.alloc(32, 17).toString('base64url');
+  run('pnpm', [
+    '--filter',
+    '@mining/api',
+    'exec',
+    'node',
+    '--import',
+    'tsx',
+    '--test',
+    '--test-concurrency=1',
+    'src/payout-execution.integration.test.ts',
+  ]);
+  process.stdout.write(`\nControlled payout ${mode} migration verification passed.\n`);
+} finally {
+  if (
+    temporaryPrismaRoot &&
+    resolve(dirname(temporaryPrismaRoot)) === verifierTempRoot &&
+    basename(temporaryPrismaRoot).startsWith('miningplatform-alpha8-migrations-')
+  ) {
+    rmSync(temporaryPrismaRoot, { recursive: true, force: true });
+  }
+}

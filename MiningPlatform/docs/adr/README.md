@@ -17,6 +17,7 @@ Owner: Abia Nugrahanto
 | 0011 | Atomic Financial Truth and Immutable Settlement Ledger     | Accepted |
 | 0012 | Exact Referral Fee Accounting                              | Accepted |
 | 0013 | Payout Address and Route Control Foundation                | Accepted |
+| 0014 | Controlled Payout Execution and Isolated Signing           | Accepted |
 
 Nomor ADR tidak boleh digunakan ulang. Perubahan keputusan yang signifikan dibuat sebagai ADR baru yang menyatakan ADR lama superseded.
 

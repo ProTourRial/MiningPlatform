@@ -1,5 +1,33 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Controlled payout execution foundation with database-backed eligibility snapshots, exact journal balance reservation, append-only approval evidence, user-owned selected payout destinations, cancellation/rejection reversal journals, and fail-closed request/signing/broadcast controls.
+- Schema v14 evidence records for signing requests, broadcast attempts, chain observations, payout reconciliation, wallet reconciliation, and per-asset emergency payout controls; historical alpha.7 payouts remain preserved as execution version 1.
+- Authenticated APIs for selecting an account payout destination, creating idempotent payout requests, listing payout history, cancelling pre-approval requests, and recording separated administrator approval or rejection.
+- Fresh and alpha.7-to-schema-14 migration rehearsal plus controlled-payout integration coverage for retry safety, balanced reservation, self-approval rejection, unique final decisions, cancellation boundaries, rejection reversal, and wallet-reservation oversubscription prevention.
+- ADR-0014 defining the isolated signer boundary, payout evidence state machine, independent production gates, and reconciliation requirements.
+
+### Changed
+
+- Payout readiness now evaluates the selected account destination, active route window, minimum/maximum amount, current posted user liability, recent matched wallet reconciliation, signer configuration, wallet reserve, single-payout limit, and rolling daily limit.
+- Wallet liquidity checks lock the selected hot wallet and subtract all active reservations before admitting a new request, preventing concurrent accounts from committing the same node balance.
+- `PILOT` and `ACTIVE` payout routes now bind an explicit asset-matched hot wallet, eliminating nondeterministic wallet selection when an asset has multiple treasury wallets.
+- One payout may have only one append-only approval decision, enforced by both the service state machine and a database uniqueness constraint.
+- Payout preference reads expose explicit blockers for request, signing, and broadcast gates; auto withdrawal remains ineffective whenever any required gate or destination prerequisite is missing.
+
+### Safety boundary
+
+- The API and web application do not possess private keys and cannot sign or broadcast. Isolated signer, Bitcoin RPC broadcast, confirmation/reorg handling, and final wallet reconciliation are still under implementation and all real-funds gates remain disabled by default.
+- Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
+
+### Development assistance
+
+- OpenAI Codex is assisting with architecture review, implementation, documentation, automated tests, migration validation, security analysis, and deployment readiness work.
+- Product ownership, requirements, final decisions, approvals, production credentials, and release responsibility remain with Abia Nugrahanto.
+
 ## [0.3.0-alpha.7] - 2026-08-22
 
 ### Added
