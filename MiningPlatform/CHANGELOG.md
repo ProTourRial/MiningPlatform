@@ -17,6 +17,7 @@
 - Isolated CryptoNote JSON-RPC upstream adapter for RandomX login, mandatory seeded-job normalization, bounded job retention and expiry, TLS-capable transport, correlated submissions, response timeouts, line-size limits, and fail-closed protocol parsing.
 - ADR-0015 defining separate RandomX validation and CryptoNote upstream boundaries, algorithm-discriminated accounting evidence, and fail-closed production activation gates.
 - Native Pool Gap Register promoted to an active engineering track, prioritizing the Bitcoin regtest path from `getblocktemplate` and deterministic coinbase construction through `submitblock`, maturity, native reward allocation, versioned fees, balanced ledger posting, and exact coinbase/wallet/liability reconciliation.
+- Owner-confirmed native Bitcoin mainnet coinbase default `1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA`, with the separate BEP20 deposit destination retained as non-Bitcoin receiving metadata and explicit network-mismatch safeguards documented.
 
 ### Changed
 
@@ -32,6 +33,7 @@
 - Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
+- The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
 
 ### Development assistance
 

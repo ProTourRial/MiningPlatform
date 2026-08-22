@@ -15,6 +15,11 @@ export const environmentSchema = z.object({
   REWARD_METHOD: z.literal('FOLLOW_UPSTREAM').default('FOLLOW_UPSTREAM'),
   PLATFORM_FEE_PERCENT: z.coerce.number().min(0).max(100).default(0.5),
   PAYOUTS_ENABLED: z.enum(['true', 'false']).default('false'),
+  NATIVE_BITCOIN_MINING_ENABLED: z.enum(['true', 'false']).default('false'),
+  BITCOIN_COINBASE_PAYOUT_NETWORK: z.literal('mainnet').default('mainnet'),
+  BITCOIN_COINBASE_PAYOUT_ADDRESS: z
+    .literal('1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA')
+    .default('1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA'),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

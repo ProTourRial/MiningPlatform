@@ -17,6 +17,16 @@ source saat ini: PSBT builder, signer terisolasi, approval/reservation, dan Bitc
 sudah tersedia, tetapi durable execution, real credentials, broadcast recovery, confirmation, dan
 final reconciliation belum lengkap. Karena itu real funds tetap nonaktif.
 
+## Owner-confirmed network destinations
+
+- Native Bitcoin mainnet coinbase default: `1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA`.
+- BNB Smart Chain/BEP20 deposit destination: `0xfc9284292aae1a49db0e8ff9f9075710559dc9cc`.
+
+Keduanya merupakan alamat publik, bukan signing material. Alamat BEP20 tidak boleh digunakan sebagai
+coinbase Bitcoin. Native mining masih dipaksa nonaktif; regtest memakai destination disposable yang
+dimiliki wallet regtest. Sebelum mainnet diaktifkan, startup harus memvalidasi network/checksum dan
+menolak mismatch antara policy, descriptor/output script, dan destination yang disetujui owner.
+
 ## Priority register
 
 | Priority | Gap                                                         | Dampak                                                        | Exit evidence minimum                                                                                                  |
@@ -133,6 +143,8 @@ getblocktemplate
 Acceptance invariants:
 
 - template/job/share/block correlation dapat ditelusuri end-to-end;
+- coinbase output membayar destination yang telah divalidasi untuk network yang benar dan menyimpan
+  digest policy/output-script sebagai evidence;
 - retry tidak membuat duplicate block, round, allocation, journal, atau credit;
 - setiap journal balance dan posted entry immutable;
 - orphan/reorg membuat bukti dan reversal baru;
