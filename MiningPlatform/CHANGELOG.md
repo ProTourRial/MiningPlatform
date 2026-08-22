@@ -9,6 +9,10 @@
 - Authenticated APIs for selecting an account payout destination, creating idempotent payout requests, listing payout history, cancelling pre-approval requests, and recording separated administrator approval or rejection.
 - Fresh and alpha.7-to-schema-14 migration rehearsal plus controlled-payout integration coverage for retry safety, balanced reservation, self-approval rejection, unique final decisions, cancellation boundaries, rejection reversal, and wallet-reservation oversubscription prevention.
 - ADR-0014 defining the isolated signer boundary, payout evidence state machine, independent production gates, and reconciliation requirements.
+- Bitcoin Core watch-only RPC adapter with exact satoshi conversion, synchronized wallet snapshots, PSBT construction and output verification, reserved-fee enforcement, input unlock on preparation failure, finalization, mempool preflight, raw broadcast, and confirmation/reorg observations.
+- Versioned signer protocol with canonical manifest digests and replay-bound HMAC authentication, plus an isolated transaction-signer service that independently validates destination, amount, fee, owned change outputs, key allowlist, and manifest expiry before calling a signer-only Bitcoin Core wallet.
+- Wallet-worker signer client and AES-256-GCM artifact encryption primitives with request/response binding, payload limits, timeouts, and regression tests; PSBT, signed PSBT, raw transactions, authorization values, and encrypted artifact fields are redacted from structured logs.
+- Separate transaction-signer container and Docker network. The API has no route or network membership to the signer, and production signer startup requires mutual TLS unless an explicit unsafe acknowledgement is supplied.
 
 ### Changed
 
@@ -20,7 +24,7 @@
 
 ### Safety boundary
 
-- The API and web application do not possess private keys and cannot sign or broadcast. Isolated signer, Bitcoin RPC broadcast, confirmation/reorg handling, and final wallet reconciliation are still under implementation and all real-funds gates remain disabled by default.
+- The API and web application do not possess private keys and cannot sign or broadcast. The isolated signer and watch-only adapter boundary now exist, while durable wallet orchestration, broadcast recovery, confirmation/reorg handling, and final wallet reconciliation are still under implementation; all real-funds gates remain disabled by default.
 - Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
 
 ### Development assistance

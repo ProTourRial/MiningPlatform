@@ -5,8 +5,14 @@
  */
 
 import { validateBitcoinAddress, type BitcoinNetwork } from './bitcoin-address.js';
+import {
+  BitcoinJsonRpcClient,
+  BitcoinWatchOnlyRpcAdapter,
+  type BitcoinRpcClientOptions,
+} from './bitcoin-rpc.js';
 
 export * from './bitcoin-address.js';
+export * from './bitcoin-rpc.js';
 
 export type PayoutRequest = {
   idempotencyKey: string;
@@ -29,22 +35,32 @@ export interface BlockchainAdapter {
 
 export class BitcoinRpcAdapter implements BlockchainAdapter {
   readonly asset = 'BTC';
+  private readonly fundsAdapter: BitcoinWatchOnlyRpcAdapter | null;
 
-  constructor(private readonly network: BitcoinNetwork = 'mainnet') {}
+  constructor(
+    private readonly network: BitcoinNetwork = 'mainnet',
+    rpcOptions?: BitcoinRpcClientOptions,
+  ) {
+    this.fundsAdapter = rpcOptions
+      ? new BitcoinWatchOnlyRpcAdapter(network, new BitcoinJsonRpcClient(rpcOptions))
+      : null;
+  }
 
   async validateAddress(address: string): Promise<boolean> {
     return validateBitcoinAddress(address, this.network).valid;
   }
 
   async getConfirmedBalanceAtomic(): Promise<bigint> {
-    throw new Error('Bitcoin RPC adapter is not implemented');
+    if (!this.fundsAdapter) throw new Error('Bitcoin RPC funds adapter is not configured');
+    return (await this.fundsAdapter.getWalletSnapshot()).confirmedBalanceAtomic;
   }
 
   async broadcastBatch(_requests: readonly PayoutRequest[]): Promise<BroadcastResult> {
-    throw new Error('Bitcoin RPC adapter is not implemented');
+    throw new Error('Direct batch signing is prohibited; use the isolated PSBT signer workflow');
   }
 
   async getConfirmations(_transactionId: string): Promise<number> {
-    throw new Error('Bitcoin RPC adapter is not implemented');
+    if (!this.fundsAdapter) throw new Error('Bitcoin RPC funds adapter is not configured');
+    return (await this.fundsAdapter.getTransactionObservation(_transactionId)).confirmations;
   }
 }

@@ -331,6 +331,34 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
 
+  apps/transaction-signer:
+    dependencies:
+      '@mining/blockchain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/blockchain-adapters
+      '@mining/build-info':
+        specifier: workspace:*
+        version: link:../../packages/build-info
+      '@mining/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@mining/signer-protocol':
+        specifier: workspace:*
+        version: link:../../packages/signer-protocol
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
   apps/upstream-simulator:
     dependencies:
       '@mining/build-info':
@@ -355,12 +383,21 @@ importers:
 
   apps/wallet-worker:
     dependencies:
+      '@mining/blockchain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/blockchain-adapters
       '@mining/build-info':
         specifier: workspace:*
         version: link:../../packages/build-info
+      '@mining/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@mining/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@mining/signer-protocol':
+        specifier: workspace:*
+        version: link:../../packages/signer-protocol
     devDependencies:
       '@types/node':
         specifier: 22.0.0
@@ -437,6 +474,10 @@ importers:
         version: 5.6.3
 
   packages/blockchain-adapters:
+    dependencies:
+      '@mining/signer-protocol':
+        specifier: workspace:*
+        version: link:../signer-protocol
     devDependencies:
       '@types/node':
         specifier: 22.0.0
@@ -649,6 +690,21 @@ importers:
       eslint:
         specifier: 9.39.5
         version: 9.39.5(jiti@2.7.0)
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
+  packages/signer-protocol:
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
       typescript:
         specifier: 5.6.3
         version: 5.6.3

@@ -56,5 +56,6 @@ test('rejects wrong-network, mixed-case, whitespace, and broken checksums', () =
 test('BitcoinRpcAdapter performs offline address validation without enabling funds operations', async () => {
   const adapter = new BitcoinRpcAdapter('mainnet');
   assert.equal(await adapter.validateAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'), true);
-  await assert.rejects(adapter.getConfirmedBalanceAtomic(), /not implemented/);
+  await assert.rejects(adapter.getConfirmedBalanceAtomic(), /not configured/);
+  await assert.rejects(adapter.broadcastBatch([]), /isolated PSBT signer/);
 });

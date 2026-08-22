@@ -42,6 +42,7 @@ Status: unreleased controlled-payout implementation. Real payout execution remai
 - Tidak ada incident aktif.
 - Route berstatus `PILOT` atau `ACTIVE`; pilot payout wajib masuk dan tetap di `REVIEW` sampai approval control yang dapat diverifikasi database tersedia. Route nonaktif hanya boleh menuju `FAILED`/`CANCELLED`.
 - Signer terisolasi dan approval separation of duties lulus.
+- Follow the separate [`isolated-signer-runbook.md`](isolated-signer-runbook.md); API/web must never receive signer credentials or join the signer network.
 - Wallet/blockchain reconciliation, confirmation, reorg, retry, dan recovery drill lulus.
 - Risk/compliance dan owner go/no-go tertulis tersedia.
 - `PAYOUTS_ENABLED=true` hanya setelah seluruh approval produksi di atas.
