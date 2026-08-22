@@ -49,6 +49,24 @@ Release blockers:
 - Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
+## Active Native Pool Laboratory Track
+
+The native-pool track now runs alongside controlled payout completion. Its canonical gap register is
+[`product/NATIVE_POOL_GAP_REGISTER.md`](product/NATIVE_POOL_GAP_REGISTER.md).
+
+Execution order:
+
+1. Bitcoin Core regtest readiness and authoritative `getblocktemplate` adapter.
+2. Deterministic coinbase, merkle root, and native mining-job builder.
+3. Block-candidate reconstruction, validation, and `submitblock` evidence.
+4. Pool round plus immature/mature/orphan/reorg lifecycle.
+5. Native PPLNS/PROP allocation, versioned fee resolution, and balanced immutable ledger.
+6. Coinbase UTXO, wallet, user-liability, fee, clearing, and reserve reconciliation.
+7. Production Stratum capacity, global extranonce, HA, DDoS, monitoring, security, and legal gates.
+
+PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
+independent risk approval exist. Regtest success never authorizes mainnet custody or payout.
+
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
 
 - Pool adapter layer.

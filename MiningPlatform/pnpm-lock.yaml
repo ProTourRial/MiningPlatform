@@ -759,6 +759,9 @@ importers:
       '@mining/mining-core':
         specifier: workspace:*
         version: link:../mining-core
+      '@mining/randomx':
+        specifier: workspace:*
+        version: link:../randomx
       '@mining/stratum-protocol':
         specifier: workspace:*
         version: link:../stratum-protocol

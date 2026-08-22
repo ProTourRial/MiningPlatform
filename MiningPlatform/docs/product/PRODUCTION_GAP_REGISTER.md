@@ -3,6 +3,7 @@
 - Status: Active engineering register
 - Authority: [`../../PROJECT_VISION.md`](../../PROJECT_VISION.md)
 - Implementation policy: [`PRODUCT_CONSTITUTION.md`](PRODUCT_CONSTITUTION.md)
+- Native-pool track: [`NATIVE_POOL_GAP_REGISTER.md`](NATIVE_POOL_GAP_REGISTER.md)
   Baseline audited: 2026-08-22 (`0.3.0-alpha.7` workspace)
 
 ## Purpose
@@ -100,6 +101,11 @@ Validasi tersebut membuktikan baseline source dapat dibangun secara tipe dan fun
 | Observability             | FOUNDATION  | Health, Prometheus, Grafana provisioning, alert rules, structured logs                                                                                       | Traces, error tracking, SLOs, Alertmanager routing, on-call, incident timeline             |
 | Desktop/mobile/enterprise | NOT_STARTED | Product vision                                                                                                                                               | Implement only after core financial and security gates                                     |
 | Own pool                  | NOT_STARTED | Pool Adapter direction                                                                                                                                       | Evaluate after production gateway, hashrate, capital, node ops, and economics              |
+
+The owner has promoted the native-pool laboratory from a distant strategic horizon to an active
+engineering track. Exact priorities, current-source corrections, and regtest acceptance evidence are
+maintained in [`NATIVE_POOL_GAP_REGISTER.md`](NATIVE_POOL_GAP_REGISTER.md). This promotion does not
+authorize mainnet custody or real payouts.
 
 ## Critical path to first production milestone
 
