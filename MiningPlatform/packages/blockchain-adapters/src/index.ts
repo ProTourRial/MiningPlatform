@@ -4,6 +4,10 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
+import { validateBitcoinAddress, type BitcoinNetwork } from './bitcoin-address.js';
+
+export * from './bitcoin-address.js';
+
 export type PayoutRequest = {
   idempotencyKey: string;
   address: string;
@@ -26,8 +30,10 @@ export interface BlockchainAdapter {
 export class BitcoinRpcAdapter implements BlockchainAdapter {
   readonly asset = 'BTC';
 
-  async validateAddress(_address: string): Promise<boolean> {
-    throw new Error('Bitcoin RPC adapter is not implemented');
+  constructor(private readonly network: BitcoinNetwork = 'mainnet') {}
+
+  async validateAddress(address: string): Promise<boolean> {
+    return validateBitcoinAddress(address, this.network).valid;
   }
 
   async getConfirmedBalanceAtomic(): Promise<bigint> {

@@ -1,6 +1,7 @@
 /** MiningPlatform — Author: Abia Nugrahanto */
 import { FinancialReadinessPanel } from '@/components/dashboard/financial-readiness-panel';
 import { AutoWithdrawalPanel } from '@/components/dashboard/auto-withdrawal-panel';
+import { PayoutAddressPanel } from '@/components/dashboard/payout-address-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 
 export default function Page() {
@@ -11,6 +12,7 @@ export default function Page() {
       eyebrow="Treasury security"
     >
       <div className="space-y-6">
+        <PayoutAddressPanel />
         <AutoWithdrawalPanel />
         <FinancialReadinessPanel module="wallet" />
       </div>

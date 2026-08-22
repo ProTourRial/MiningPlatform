@@ -21,13 +21,14 @@ async function createOwner(id: string, email: string): Promise<string> {
       role: 'OWNER',
       status: 'ACTIVE',
       emailVerifiedAt: new Date(),
-      security: {
-        create: {
-          totpEnabled: true,
-          totpSecretEncrypted: 'INTEGRATION_ONLY_TOTP_ENROLLMENT_MARKER',
-          recoveryCodesHash: [],
-        },
-      },
+    },
+  });
+  await prisma.userSecurity.create({
+    data: {
+      userId: owner.id,
+      totpEnabled: true,
+      totpSecretEncrypted: 'INTEGRATION_ONLY_TOTP_ENROLLMENT_MARKER',
+      recoveryCodesHash: [],
     },
   });
   return owner.id;

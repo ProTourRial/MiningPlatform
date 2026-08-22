@@ -222,6 +222,28 @@ enum PayoutStatus {
   CANCELLED
 }
 
+enum StepUpScope {
+  PAYOUT_ADDRESS_WRITE
+}
+
+enum AddressValidator {
+  BITCOIN
+  UNSUPPORTED
+}
+
+enum PayoutRouteStatus {
+  DISABLED
+  ADDRESS_REGISTRATION
+  PILOT
+  ACTIVE
+}
+
+enum PayoutAddressStatus {
+  COOLDOWN
+  ACTIVE
+  DISABLED
+}
+
 enum WalletType {
   HOT
   COLD
@@ -302,6 +324,7 @@ model User {
   profile                            UserProfile?
   companyProfile                     CompanyProfile?
   authSessions                       AuthSession[]
+  stepUpAuthorizations               StepUpAuthorization[]
   emailVerificationTokens            EmailVerificationToken[]
   passwordResetTokens                PasswordResetToken[]
   apiKeys                            ApiKey[]
@@ -318,6 +341,7 @@ model User {
   importedReconciliations            UpstreamReconciliation[]   @relation("ReconciliationImporter")
   requestedReconciliationResolutions ReconciliationResolution[] @relation("ReconciliationResolutionRequester")
   decidedReconciliationResolutions   ReconciliationResolution[] @relation("ReconciliationResolutionDecider")
+  createdPayoutRoutes                PayoutRoute[]              @relation("PayoutRouteCreator")
 
   @@index([status])
 }
@@ -333,6 +357,7 @@ model UserSecurity {
   lockedUntil                DateTime?
   passwordChangedAt          DateTime  @default(now())
   lastLoginAt                DateTime?
+  lastTotpCounter            BigInt?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
   user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -351,22 +376,39 @@ model UserProfile {
 }
 
 model AuthSession {
-  id               String             @id @default(cuid())
-  userId           String
-  tokenFamilyId    String             @default(cuid())
-  refreshTokenHash String             @unique
-  userAgentHash    String?
-  ipHash           String?
-  expiresAt        DateTime
-  lastUsedAt       DateTime           @default(now())
-  revokedAt        DateTime?
-  revokeReason     String?
-  createdAt        DateTime           @default(now())
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokens    AuthRefreshToken[]
+  id                   String                @id @default(cuid())
+  userId               String
+  tokenFamilyId        String                @default(cuid())
+  refreshTokenHash     String                @unique
+  userAgentHash        String?
+  ipHash               String?
+  expiresAt            DateTime
+  lastUsedAt           DateTime              @default(now())
+  revokedAt            DateTime?
+  revokeReason         String?
+  createdAt            DateTime              @default(now())
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens        AuthRefreshToken[]
+  stepUpAuthorizations StepUpAuthorization[]
 
   @@index([userId, revokedAt, expiresAt])
   @@index([tokenFamilyId, revokedAt])
+}
+
+model StepUpAuthorization {
+  id         String      @id @default(cuid())
+  userId     String
+  sessionId  String
+  scope      StepUpScope
+  tokenHash  String      @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime    @default(now())
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session    AuthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scope, consumedAt, expiresAt])
+  @@index([sessionId, consumedAt, expiresAt])
 }
 
 model AuthRefreshToken {
@@ -482,6 +524,7 @@ model Asset {
   stratumJobs           StratumJob[]
   feePolicies           MiningFeePolicy[]
   contributionFacts     ContributionFact[]
+  networks              AssetNetwork[]
 }
 
 model MiningAccount {
@@ -1096,22 +1139,77 @@ model JournalLine {
   @@index([journalEntryId])
 }
 
-model PayoutAddress {
-  id          String    @id @default(cuid())
-  userId      String
-  assetId     String
-  address     String
-  label       String?
-  verified    Boolean   @default(false)
-  active      Boolean   @default(true)
-  activatedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset       Asset     @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  payouts     Payout[]
+model AssetNetwork {
+  id               String           @id @default(cuid())
+  assetId          String
+  networkKey       String
+  displayName      String
+  chainFamily      String
+  addressValidator AddressValidator
+  isTestnet        Boolean          @default(false)
+  enabled          Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  asset            Asset            @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  payoutRoutes     PayoutRoute[]
+  payoutAddresses  PayoutAddress[]
 
-  @@unique([assetId, address])
+  @@unique([assetId, networkKey])
+  @@index([enabled, chainFamily])
+}
+
+model PayoutRoute {
+  id                     String            @id @default(cuid())
+  assetNetworkId         String
+  routeKey               String
+  version                Int
+  status                 PayoutRouteStatus @default(DISABLED)
+  minimumPayoutAtomic    BigInt
+  maximumPayoutAtomic    BigInt?
+  fixedNetworkFeeAtomic  BigInt            @default(0)
+  addressCooldownSeconds Int               @default(86400)
+  requiredConfirmations  Int
+  manualApprovalRequired Boolean           @default(true)
+  effectiveFrom          DateTime
+  effectiveUntil         DateTime?
+  changeReason           String
+  createdByUserId        String?
+  createdAt              DateTime          @default(now())
+  assetNetwork           AssetNetwork      @relation(fields: [assetNetworkId], references: [id], onDelete: Restrict)
+  createdBy              User?             @relation("PayoutRouteCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  payoutAddresses        PayoutAddress[]
+  payouts                Payout[]
+
+  @@unique([assetNetworkId, routeKey, version])
+  @@index([status, effectiveFrom, effectiveUntil])
+}
+
+model PayoutAddress {
+  id             String              @id @default(cuid())
+  userId         String
+  assetId        String
+  assetNetworkId String
+  payoutRouteId  String
+  address        String
+  addressHash    String
+  label          String?
+  status         PayoutAddressStatus @default(COOLDOWN)
+  verified       Boolean             @default(false)
+  verifiedAt     DateTime?
+  active         Boolean             @default(false)
+  cooldownUntil  DateTime
+  activatedAt    DateTime?
+  disabledAt     DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset          Asset               @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  assetNetwork   AssetNetwork        @relation(fields: [assetNetworkId], references: [id], onDelete: Restrict)
+  payoutRoute    PayoutRoute         @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
+  payouts        Payout[]
+
+  @@unique([assetNetworkId, addressHash])
+  @@index([userId, payoutRouteId, status])
   @@index([userId, assetId, active])
 }
 
@@ -1121,6 +1219,7 @@ model Payout {
   userId          String
   assetId         String
   payoutAddressId String
+  payoutRouteId   String
   journalEntryId  String?       @unique
   amount          Decimal       @db.Decimal(36, 18)
   networkFee      Decimal       @default(0) @db.Decimal(36, 18)
@@ -1136,10 +1235,12 @@ model Payout {
   user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   asset           Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
   payoutAddress   PayoutAddress @relation(fields: [payoutAddressId], references: [id], onDelete: Restrict)
+  payoutRoute     PayoutRoute   @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
   journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
 
   @@index([status, scheduledAt])
   @@index([userId, createdAt])
+  @@index([payoutRouteId, status])
 }
 
 model Wallet {

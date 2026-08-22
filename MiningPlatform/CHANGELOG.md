@@ -1,5 +1,59 @@
 # Changelog
 
+## [0.3.0-alpha.7] - 2026-08-22
+
+### Added
+
+- Schema v13 controlled-payout foundation with explicit `AssetNetwork`, immutable versioned `PayoutRoute`, hardened payout-address lifecycle, and single-use `StepUpAuthorization`.
+- Password+TOTP step-up bound to the authenticated user, interactive session, and payout-address scope; raw tokens are returned once, persisted only as hashes, expire after five minutes, and are consumed atomically.
+- One global successful-TOTP counter shared by enrollment, login, factor disablement, and payout step-up, including atomic rejection of concurrent or cross-flow replay.
+- Offline Bitcoin mainnet Base58Check, BIP-173 Bech32, and BIP-350 Bech32m validation without enabling RPC balance, signing, broadcast, or confirmation operations.
+- Authenticated route/address APIs and wallet-dashboard controls for registration, cooldown activation, replacement, and disablement; normal reads expose only a masked address and network-bound SHA-256 fingerprint.
+- Database enforcement for immutable route/step-up identity, immutable address validation evidence, one active address per user/route, address/route payout alignment, registration-only payout rejection, and status-only transition guards that keep pilot payouts in `REVIEW` until a future approval control exists.
+- Fresh schema-13 and alpha.6-to-alpha.7 migration rehearsal with representative legacy address and payout backfill.
+
+### Changed
+
+- Auto-withdrawal readiness now evaluates the actual active address and route; registration-only routes add `PAYOUT_ROUTE_NOT_ACTIVE` and cannot become effective.
+- PostgreSQL `CURRENT_TIMESTAMP` is authoritative for payout-address cooldown and step-up expiry decisions, preventing application/database clock skew from activating a destination early.
+- Transactional address mutations return only an ID inside the transaction and load their masked read model after commit, avoiding concurrent relation queries on one PostgreSQL transaction connection.
+- Reconciliation resolution now performs scalar transaction reads sequentially, keeping one PostgreSQL transaction connection free from concurrent relation-query warnings.
+- Product authority, constitution, ADR index, roadmap, gap register, release metadata, build information, and operations guidance advance to the payout-control foundation.
+
+### Fixed
+
+- Financial-truth zero-payout evidence is scoped to its isolated fixture user, so realistic upgrade rehearsal data can retain a representative legacy payout without producing a false failure.
+- An active session can no longer replace an enabled TOTP factor: re-enrollment is rejected atomically until the existing factor is disabled with the current password and TOTP.
+- A TOTP code accepted during enrollment or login can no longer be replayed for payout step-up; one monotonic counter now covers every successful TOTP authentication flow, while recovery-code removal is atomic under concurrency.
+- TOTP setup, enablement, and disablement now require an interactive access-token session, so delegated API keys cannot mutate the human account's authentication factor.
+- Payout-address and auto-withdrawal reads now declare explicit API-key scopes, and preference changes require an interactive access-token session.
+- Concurrent wallet requests now share one in-flight refresh operation, preventing legitimate refresh-token rotation from revoking its own session family.
+- Step-up issuance and consumption now derive their timestamps from PostgreSQL, so application-clock skew cannot extend a sensitive authorization beyond its database-enforced five-minute window.
+- The active repository-root GitHub CI and release workflows now execute alpha.7 static, payout integration, fresh migration, and alpha.6-upgrade gates; the static checker verifies those active workflows instead of trusting the packaged nested copy.
+
+### Safety boundary
+
+- Checksum and network validation prove address format, not control of the corresponding private key.
+- A newly registered address must complete its route-defined cooldown and explicit activation; replacement disables the previous address rather than rewriting history.
+- The seeded BTC route is `ADDRESS_REGISTRATION`, so payout creation is rejected at the database even if an API path is introduced incorrectly.
+- `PAYOUTS_ENABLED=false` remains the default. Eligibility, balance reservation, batching, signing, broadcast, confirmation, reorg recovery, and real payouts remain disabled.
+
+### Validation evidence
+
+- Frozen-lockfile installation succeeds across all 28 workspaces; repository gates pass with lint 27/27, typecheck 42/42, tests 42/42, and production build 27/27 with 21 generated Next.js routes.
+- Targeted security tests pass 16/16, Bitcoin address-validator tests pass 4/4, and API tests pass 5/5 including payout-control integration.
+- Disposable PostgreSQL fresh and alpha.6 upgrade rehearsals apply all 13 migrations and verify backfill, immutability, single-use authorization, route gating, status-only transition rejection, safe terminal cancellation, and payout alignment.
+- API integration proves enabled-TOTP replacement is rejected, the original factor remains usable, login-to-step-up TOTP replay fails, API-key preference writes fail, and payout-control behavior remains intact; browser regression proves two concurrent 401 responses cause exactly one refresh rotation.
+- Payout-control integration proves hashed and once-consumed step-up, database-time expiry despite a deliberately skewed application clock, global TOTP replay rejection, checksum validation, masked reads, cooldown/activation, one active destination, immutable identity, registration-route rejection, audit records, and zero payout creation without driver warnings.
+- Accounting and reconciliation integrations pass the financial invariants for balanced journals, posted-entry immutability, equal-and-opposite reversal, retry idempotency, unique reward allocation, rollback, and exact source decomposition.
+- Docker E2E builds and starts API, web, outbox, mining, and accounting images behind Nginx, applies all 13 migrations, reports PostgreSQL/Redis/API healthy, and returns HTTP 200 for readiness, version, and disabled-wallet status; runtime configuration confirms `PAYOUTS_ENABLED=false` and the initial platform fee of 0.5%.
+- Codex Security review identified enabled-TOTP replacement, cross-flow TOTP replay, payout API-key scope gaps, API-key TOTP mutation, and application-clock-sensitive step-up expiry; all five remediations are implemented and covered by regression or static acceptance tests. Verified manifests, a final exact-tree security report, and exact-commit GitHub CI evidence remain mandatory promotion evidence.
+
+### Development assistance
+
+- OpenAI Codex assisted with architecture review, implementation, documentation, automated tests, migration and release validation, and engineering gap analysis for this project.
+- Product ownership, requirements, final decisions, approvals, and release responsibility remain with Abia Nugrahanto.
+
 ## [0.3.0-alpha.6] - 2026-08-21
 
 ### Added

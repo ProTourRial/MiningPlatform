@@ -23,6 +23,8 @@ const blockerLabel: Record<string, string> = {
   AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED: 'Scheduler auto payout belum diaktifkan pada rilis alpha.',
   GLOBAL_PAYOUT_GATE_DISABLED: 'Payout global masih dinonaktifkan oleh operator.',
   NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS: 'Belum ada alamat payout aktif yang terverifikasi.',
+  PAYOUT_ROUTE_NOT_ACTIVE:
+    'Alamat aktif masih berada pada rute registrasi/pilot, bukan rute payout aktif.',
 };
 
 export function AutoWithdrawalPanel() {

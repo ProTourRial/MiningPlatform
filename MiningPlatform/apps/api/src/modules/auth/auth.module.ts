@@ -9,10 +9,11 @@ import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthRateLimitGuard } from './auth-rate-limit.guard.js';
 import { AuthService } from './auth.service.js';
+import { StepUpService } from './step-up.service.js';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, AuthRateLimitGuard],
-  exports: [AuthGuard, AuthService],
+  providers: [AuthService, AuthGuard, AuthRateLimitGuard, StepUpService],
+  exports: [AuthGuard, AuthService, StepUpService],
 })
 export class AuthModule {}

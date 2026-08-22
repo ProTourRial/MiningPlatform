@@ -46,7 +46,12 @@ export function generateTotpSecret(bytes = 20): string {
   return base32Encode(randomBytes(bytes));
 }
 
-export function totpCode(secret: string, timestampMs = Date.now(), periodSeconds = 30, digits = 6): string {
+export function totpCode(
+  secret: string,
+  timestampMs = Date.now(),
+  periodSeconds = 30,
+  digits = 6,
+): string {
   const counter = Math.floor(timestampMs / 1_000 / periodSeconds);
   const message = Buffer.alloc(8);
   message.writeBigUInt64BE(BigInt(counter));
@@ -56,19 +61,41 @@ export function totpCode(secret: string, timestampMs = Date.now(), periodSeconds
   return binary.toString().padStart(digits, '0');
 }
 
-export function verifyTotpCode(secret: string, code: string, timestampMs = Date.now(), window = 1): boolean {
-  if (!/^\d{6}$/.test(code)) return false;
+export function verifyTotpCode(
+  secret: string,
+  code: string,
+  timestampMs = Date.now(),
+  window = 1,
+): boolean {
+  return verifyTotpCodeWithCounter(secret, code, timestampMs, window) !== undefined;
+}
+
+export function verifyTotpCodeWithCounter(
+  secret: string,
+  code: string,
+  timestampMs = Date.now(),
+  window = 1,
+): bigint | undefined {
+  if (!/^\d{6}$/.test(code)) return undefined;
   for (let step = -window; step <= window; step += 1) {
     const expected = totpCode(secret, timestampMs + step * 30_000);
     const left = Buffer.from(code);
     const right = Buffer.from(expected);
-    if (left.length === right.length && timingSafeEqual(left, right)) return true;
+    if (left.length === right.length && timingSafeEqual(left, right)) {
+      return BigInt(Math.floor(timestampMs / 1_000 / 30) + step);
+    }
   }
-  return false;
+  return undefined;
 }
 
 export function buildTotpUri(input: { secret: string; account: string; issuer: string }): string {
   const label = `${input.issuer}:${input.account}`;
-  const query = new URLSearchParams({ secret: input.secret, issuer: input.issuer, algorithm: 'SHA1', digits: '6', period: '30' });
+  const query = new URLSearchParams({
+    secret: input.secret,
+    issuer: input.issuer,
+    algorithm: 'SHA1',
+    digits: '6',
+    period: '30',
+  });
   return `otpauth://totp/${encodeURIComponent(label)}?${query.toString()}`;
 }

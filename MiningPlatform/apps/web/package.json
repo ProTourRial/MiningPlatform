@@ -1,6 +1,6 @@
 {
   "name": "@mining/web",
-  "version": "0.3.0-alpha.6",
+  "version": "0.3.0-alpha.7",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 3000",
@@ -8,7 +8,7 @@
     "start": "next start -p 3000",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('web tests not configured')\""
+    "test": "node --import tsx --test --test-concurrency=1 src/services/*.test.ts"
   },
   "dependencies": {
     "@mining/shared": "workspace:*",

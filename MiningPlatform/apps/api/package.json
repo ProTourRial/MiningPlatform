@@ -1,6 +1,6 @@
 {
   "name": "@mining/api",
-  "version": "0.3.0-alpha.6",
+  "version": "0.3.0-alpha.7",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
@@ -11,6 +11,7 @@
     "test": "node --import tsx --test --test-concurrency=1 src/*.test.ts"
   },
   "dependencies": {
+    "@mining/blockchain-adapters": "workspace:*",
     "@mining/build-info": "workspace:*",
     "@mining/config": "workspace:*",
     "@mining/database": "workspace:*",

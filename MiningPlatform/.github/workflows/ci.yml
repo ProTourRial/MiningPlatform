@@ -9,11 +9,28 @@ on:
     branches: [main, develop]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
+    name: Lint, typecheck, unit, build, release
     runs-on: ubuntu-latest
     env:
+      CI: 'true'
       DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -22,9 +39,147 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm verify:v030-alpha7:static
+      - run: pnpm release:manifest:verify
+
+  integration:
+    name: Accounting, reconciliation, payout control
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://mining:integration-postgres@127.0.0.1:5432/mining_platform?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
+      PAYOUTS_ENABLED: 'false'
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: integration-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate:deploy
+      - run: pnpm db:seed
+      - run: pnpm test:integration:accounting
+      - run: pnpm test:integration:reconciliation
+      - run: pnpm test:integration:payout-control
+
+  migration:
+    name: Fresh and alpha.6 upgrade migration
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://mining:migration-postgres@127.0.0.1:5432/mining_platform?schema=public
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: migration-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y postgresql-client
+      - name: Fresh migration
+        env:
+          MIGRATION_TEST_ACK: v030-alpha7-fresh-empty-database
+        run: pnpm verify:migration:v030-alpha7:fresh
+      - name: Upgrade migration
+        env:
+          MIGRATION_TEST_ACK: v030-alpha6-upgrade-copy
+        run: pnpm verify:migration:v030-alpha7:upgrade
+
+  docker-e2e:
+    name: Docker E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start dependencies
+        run: docker compose -p miningplatform_ci --env-file .env.ci.example up -d postgres redis minio
+      - name: Apply and seed schema
+        env:
+          DATABASE_URL: postgresql://mining:change-me-postgres@127.0.0.1:5432/mining_platform?schema=public
+        run: |
+          pnpm db:migrate:deploy
+          pnpm db:seed
+      - name: Build and start application boundary
+        run: docker compose -p miningplatform_ci --env-file .env.ci.example up -d --build api web nginx
+      - name: Verify readiness, version, and disabled payouts
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1/api/v1/health/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" = 60 ]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .version)" = "0.3.0-alpha.7"
+          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .schemaVersion)" = "13"
+          test "$(curl --fail --silent http://127.0.0.1/api/v1/system/configuration | jq -r .payoutsEnabled)" = "false"
+      - name: Capture logs on failure
+        if: failure()
+        run: docker compose -p miningplatform_ci --env-file .env.ci.example logs --no-color
+      - name: Clean disposable Docker state
+        if: always()
+        run: docker compose -p miningplatform_ci --env-file .env.ci.example down -v --remove-orphans

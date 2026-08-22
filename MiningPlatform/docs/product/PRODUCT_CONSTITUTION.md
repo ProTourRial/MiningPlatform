@@ -3,7 +3,7 @@
 - Status: **Canonical product constitution**
 - Owner: Abia Nugrahanto
 - Adopted: 2026-08-13
-Horizon: 5–10 years
+  Horizon: 5–10 years
 
 ## Authority
 
@@ -97,6 +97,9 @@ Pendapatan lanjutan dapat berasal dari premium analytics, API tier, enterprise/f
 - Lifecycle payout: eligibility → policy/risk check → balance reservation → batching → approval/signing → broadcast → confirmation → reconciliation.
 - Scheduler dan provider operation wajib idempotent; retry tidak boleh membuat double payout.
 - Perubahan payout address memerlukan step-up authentication, audit, dan cooldown yang sesuai risiko.
+- Step-up payout harus session-bound, scope-bound, berumur pendek, disimpan dalam bentuk hash, sekali pakai, dan tahan replay faktor.
+- Validasi checksum/network hanya membuktikan format alamat, bukan kepemilikan private key.
+- Route registration-only tidak boleh membuat payout; route dan address history harus immutable/versioned untuk audit.
 - Payout nyata tetap mati sampai treasury, ledger, risk/compliance, reconciliation, recovery, dan incident-response gate lulus.
 
 ### Event dan data

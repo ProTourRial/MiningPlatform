@@ -8,8 +8,10 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { prisma } from '@mining/database';
-import { hashOpaqueToken } from '@mining/security';
+import { hashOpaqueToken, totpCode } from '@mining/security';
+import type { AuthPrincipal } from './modules/auth/auth.decorators.js';
 import { AuthService } from './modules/auth/auth.service.js';
+import { StepUpService } from './modules/auth/step-up.service.js';
 import { PayoutsService } from './modules/payouts/payouts.service.js';
 
 process.env.AUTH_JWT_SECRET = 'integration-test-only-jwt-secret-at-least-32-bytes';
@@ -85,9 +87,17 @@ test('registration, verification, login, refresh rotation, and replay family rev
   assert.equal(personalReferralCode.program.minerFeePartsPerMillion, 3750);
   assert.equal(personalReferralCode.program.commissionPartsPerMillion, 1250);
 
-  const payouts = new PayoutsService();
+  const payouts = new PayoutsService(new StepUpService());
+  const preferencePrincipal: AuthPrincipal = {
+    userId: registration.user.id,
+    email,
+    role: 'USER',
+    sessionId: `preference-${suffix}`,
+    authenticationType: 'access-token',
+    scopes: ['*'],
+  };
   const enabledPreference = await payouts.updatePreference(
-    registration.user.id,
+    preferencePrincipal,
     miningAccount.id,
     true,
   );
@@ -96,11 +106,19 @@ test('registration, verification, login, refresh rotation, and replay family rev
   assert.ok(enabledPreference.blockers.includes('GLOBAL_PAYOUT_GATE_DISABLED'));
   assert.ok(enabledPreference.blockers.includes('NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS'));
   const disabledPreference = await payouts.updatePreference(
-    registration.user.id,
+    preferencePrincipal,
     miningAccount.id,
     false,
   );
   assert.equal(disabledPreference.autoWithdrawalEnabled, false);
+  await assert.rejects(
+    payouts.updatePreference(
+      { ...preferencePrincipal, authenticationType: 'api-key', scopes: ['profile:read'] },
+      miningAccount.id,
+      true,
+    ),
+    /interactive user session/,
+  );
 
   await service.verifyEmail(registration.verificationToken);
   const firstSession = await service.login({ email, password }, fingerprint);
@@ -141,5 +159,68 @@ test('registration, verification, login, refresh rotation, and replay family rev
   assert.ok(successfulParallelRefresh);
   await assert.rejects(() =>
     service.refresh(successfulParallelRefresh.value.refreshToken, fingerprint),
+  );
+
+  const enrollmentSession = await service.login({ email, password }, fingerprint);
+  const enrollmentSessionRecord = await prisma.authSession.findFirstOrThrow({
+    where: {
+      userId: registration.user.id,
+      refreshTokenHash: hashOpaqueToken(enrollmentSession.refreshToken),
+    },
+  });
+  const enrollmentPrincipal: AuthPrincipal = {
+    userId: registration.user.id,
+    email,
+    role: 'USER',
+    sessionId: enrollmentSessionRecord.id,
+    authenticationType: 'access-token',
+    scopes: ['*'],
+  };
+  const enrollmentApiKeyPrincipal: AuthPrincipal = {
+    ...enrollmentPrincipal,
+    authenticationType: 'api-key',
+    scopes: ['profile:read'],
+  };
+  await assert.rejects(
+    service.beginTotpSetup(enrollmentApiKeyPrincipal),
+    /interactive user session/,
+  );
+  const setup = await service.beginTotpSetup(enrollmentPrincipal);
+  await assert.rejects(
+    service.enableTotp(enrollmentApiKeyPrincipal, totpCode(setup.secret)),
+    /interactive user session/,
+  );
+  await service.enableTotp(enrollmentPrincipal, totpCode(setup.secret));
+  await assert.rejects(
+    service.disableTotp(enrollmentApiKeyPrincipal, { password, code: '000000' }),
+    /interactive user session/,
+  );
+  await assert.rejects(
+    service.beginTotpSetup(enrollmentPrincipal),
+    /already enabled; disable it before re-enrollment/,
+  );
+  const protectedFactor = await prisma.userSecurity.findUniqueOrThrow({
+    where: { userId: registration.user.id },
+  });
+  assert.equal(protectedFactor.totpPendingSecretEncrypted, null);
+
+  await prisma.userSecurity.update({
+    where: { userId: registration.user.id },
+    data: { lastTotpCounter: null },
+  });
+  const loginCode = totpCode(setup.secret);
+  const totpSession = await service.login({ email, password, totpCode: loginCode }, fingerprint);
+  const totpSessionRecord = await prisma.authSession.findFirstOrThrow({
+    where: {
+      userId: registration.user.id,
+      refreshTokenHash: hashOpaqueToken(totpSession.refreshToken),
+    },
+  });
+  await assert.rejects(
+    new StepUpService().issue(
+      { ...enrollmentPrincipal, sessionId: totpSessionRecord.id },
+      { scope: 'PAYOUT_ADDRESS_WRITE', password, code: loginCode },
+    ),
+    /already used for authentication/,
   );
 });

@@ -8,18 +8,18 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.3.0-alpha.6`
+Versi saat ini: `0.3.0-alpha.7`
 
-Rilis ini merupakan **financial-truth, reconciliation, referral, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Fee standar awal 0,5% disimpan sebagai policy terversi. Kode referral valid menurunkan fee miner menjadi tepat 0,375% dan mengalokasikan 0,125% dari gross reward sebagai komisi beneficiary menggunakan presisi PPM; kode default `MP05` mengarah ke liability donasi situs. Share yang diterima upstream kini dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection melalui accounting-worker. Auto withdrawal dapat dipilih pengguna per akun/aset dengan default OFF, tetapi tetap tidak efektif selama payout gate produksi belum lulus.
+Rilis ini merupakan **payout-control, financial-truth, reconciliation, referral, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Fee standar awal 0,5% disimpan sebagai policy terversi. Kode referral valid menurunkan fee miner menjadi tepat 0,375% dan mengalokasikan 0,125% dari gross reward sebagai komisi beneficiary menggunakan presisi PPM; kode default `MP05` mengarah ke liability donasi situs. Share yang diterima upstream dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection. Alpha.7 menambahkan katalog Asset/Network/PayoutRoute serta perubahan alamat Bitcoin yang membutuhkan password+TOTP step-up sekali pakai, checksum validation, cooldown, audit, dan tampilan ter-mask. Auto withdrawal dapat dipilih pengguna per akun/aset dengan default OFF, tetapi tetap tidak efektif selama payout gate produksi belum lulus.
 
 Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
 - pengiriman Telegram/Discord/webhook dan verifikasi kanal; email verifikasi/reset mendukung adapter Resend;
 - distributed API rate limiting, IP reputation, managed DDoS protection, dan otomatisasi sertifikat publik;
 - fixture serta soak/failover test terhadap upstream pool produksi yang dipilih;
-- migration fresh dan rehearsal upgrade alpha.3 serta integration test PostgreSQL lokal telah lulus; validasi penuh alpha.4, Docker E2E, dan workflow repository target tetap menjadi gate sebelum upload;
-- reconciliation exception approval/resolution dan selected-provider settlement evidence;
-- wallet signing, payout approval, dan payout nyata;
+- migration fresh dan rehearsal upgrade alpha.6 ke schema 13 telah lulus secara lokal; full monorepo, Docker E2E, security diff, dan workflow repository exact commit tetap menjadi gate sebelum upload;
+- selected-provider settlement evidence dan operasi reconciliation pada skala produksi;
+- payout eligibility/reservation, isolated wallet signing, approval, broadcast, confirmation, reconciliation, dan payout nyata;
 - load, stress, soak, dan chaos testing.
 
 Jangan menghubungkan perangkat mining produksi atau dana nyata ke rilis ini.

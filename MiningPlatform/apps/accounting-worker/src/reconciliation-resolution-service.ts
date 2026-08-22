@@ -138,15 +138,21 @@ export function validateCorrectedSettlementEvidence(
 async function requireResolutionOwner(tx: Prisma.TransactionClient, userId: string): Promise<void> {
   const owner = await tx.user.findUnique({
     where: { id: userId },
-    include: { security: true },
+    select: { role: true, status: true, emailVerifiedAt: true },
   });
+  const security = owner
+    ? await tx.userSecurity.findUnique({
+        where: { userId },
+        select: { totpEnabled: true, totpSecretEncrypted: true },
+      })
+    : null;
   if (
     !owner ||
     owner.role !== 'OWNER' ||
     owner.status !== 'ACTIVE' ||
     !owner.emailVerifiedAt ||
-    !owner.security?.totpEnabled ||
-    !owner.security.totpSecretEncrypted
+    !security?.totpEnabled ||
+    !security.totpSecretEncrypted
   ) {
     throw new Error('Reconciliation operator must be an ACTIVE, verified OWNER with TOTP enabled');
   }
@@ -215,28 +221,43 @@ export class ReconciliationResolutionService {
 
       const reconciliation = await tx.upstreamReconciliation.findUniqueOrThrow({
         where: { id: input.reconciliationId },
-        include: {
-          asset: true,
-          upstreamPool: true,
-          rewardPeriod: true,
-          resolutionRequest: true,
+      });
+      const asset = await tx.asset.findUniqueOrThrow({
+        where: { id: reconciliation.assetId },
+        select: { symbol: true },
+      });
+      const upstreamPool = await tx.upstreamPool.findUniqueOrThrow({
+        where: { id: reconciliation.upstreamPoolId },
+        select: { poolKey: true },
+      });
+      const rewardPeriod = await tx.rewardPeriod.findUniqueOrThrow({
+        where: { id: reconciliation.rewardPeriodId },
+        select: {
+          status: true,
+          reconciliationStatus: true,
+          periodStart: true,
+          periodEnd: true,
         },
       });
-      if (reconciliation.resolutionRequest) {
+      const resolutionRequest = await tx.reconciliationResolution.findUnique({
+        where: { reconciliationId: reconciliation.id },
+        select: { id: true },
+      });
+      if (resolutionRequest) {
         throw new Error(`Reconciliation already has a resolution request: ${reconciliation.id}`);
       }
       if (
         reconciliation.status !== 'EXCEPTION' ||
-        reconciliation.rewardPeriod.reconciliationStatus !== 'EXCEPTION' ||
-        reconciliation.rewardPeriod.status !== 'OPEN'
+        rewardPeriod.reconciliationStatus !== 'EXCEPTION' ||
+        rewardPeriod.status !== 'OPEN'
       ) {
         throw new Error('Only an open reconciliation exception can enter resolution review');
       }
       if (
-        evidence.assetSymbol !== reconciliation.asset.symbol ||
-        evidence.upstreamPoolKey !== reconciliation.upstreamPool.poolKey ||
-        evidence.periodStart !== reconciliation.rewardPeriod.periodStart.toISOString() ||
-        evidence.periodEnd !== reconciliation.rewardPeriod.periodEnd.toISOString()
+        evidence.assetSymbol !== asset.symbol ||
+        evidence.upstreamPoolKey !== upstreamPool.poolKey ||
+        evidence.periodStart !== rewardPeriod.periodStart.toISOString() ||
+        evidence.periodEnd !== rewardPeriod.periodEnd.toISOString()
       ) {
         throw new Error('Corrected evidence identity does not match the original reward period');
       }
@@ -321,7 +342,6 @@ export class ReconciliationResolutionService {
       await requireResolutionOwner(tx, input.decidedByUserId);
       const resolution = await tx.reconciliationResolution.findUniqueOrThrow({
         where: { id: input.resolutionId },
-        include: { reconciliation: { include: { rewardPeriod: true, asset: true } } },
       });
       if (resolution.requestedByUserId === input.decidedByUserId) {
         throw new Error('Resolution requester cannot approve or reject their own request');
@@ -339,6 +359,9 @@ export class ReconciliationResolutionService {
           replacementReconciliationId: resolution.replacementReconciliationId,
         };
       }
+      const original = await tx.upstreamReconciliation.findUniqueOrThrow({
+        where: { id: resolution.reconciliationId },
+      });
 
       const decidedAt = new Date();
       if (input.decision === 'REJECT') {
@@ -354,7 +377,7 @@ export class ReconciliationResolutionService {
         const payload: ReconciliationResolutionDecisionPayload = {
           resolutionId: resolution.id,
           reconciliationId: resolution.reconciliationId,
-          rewardPeriodId: resolution.reconciliation.rewardPeriodId,
+          rewardPeriodId: original.rewardPeriodId,
           decision: 'REJECTED',
           decidedByUserId: input.decidedByUserId,
           decidedAt: decidedAt.toISOString(),
@@ -369,11 +392,18 @@ export class ReconciliationResolutionService {
         };
       }
 
-      const original = resolution.reconciliation;
+      const originalRewardPeriod = await tx.rewardPeriod.findUniqueOrThrow({
+        where: { id: original.rewardPeriodId },
+        select: { status: true, reconciliationStatus: true },
+      });
+      const originalAsset = await tx.asset.findUniqueOrThrow({
+        where: { id: original.assetId },
+        select: { decimals: true },
+      });
       if (
         original.status !== 'EXCEPTION' ||
-        original.rewardPeriod.status !== 'OPEN' ||
-        original.rewardPeriod.reconciliationStatus !== 'EXCEPTION'
+        originalRewardPeriod.status !== 'OPEN' ||
+        originalRewardPeriod.reconciliationStatus !== 'EXCEPTION'
       ) {
         throw new Error('Resolution approval requires the original open exception state');
       }
@@ -381,7 +411,7 @@ export class ReconciliationResolutionService {
         where: { id: original.id },
         data: { status: 'RESOLVED', resolvedAt: decidedAt },
       });
-      const decimals = original.asset.decimals;
+      const decimals = originalAsset.decimals;
       const replacement = await tx.upstreamReconciliation.create({
         data: {
           assetId: original.assetId,

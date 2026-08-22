@@ -11,6 +11,7 @@ import {
   verifyAccessToken,
   verifyPassword,
   verifyTotpCode,
+  verifyTotpCodeWithCounter,
 } from './index.js';
 
 test('hashes and verifies website passwords', async () => {
@@ -21,17 +22,34 @@ test('hashes and verifies website passwords', async () => {
 
 test('signs and verifies bounded access tokens', () => {
   const secret = 'a-very-long-control-plane-jwt-secret-2026';
-  const token = signAccessToken({
-    sub: 'user-1',
-    sid: 'session-1',
-    role: 'USER',
-    email: 'user@example.test',
-    iss: 'mining-platform',
-    aud: 'control-plane',
-  }, secret, 900, 1_700_000_000);
-  const claims = verifyAccessToken(token, secret, { issuer: 'mining-platform', audience: 'control-plane' }, 1_700_000_100);
+  const token = signAccessToken(
+    {
+      sub: 'user-1',
+      sid: 'session-1',
+      role: 'USER',
+      email: 'user@example.test',
+      iss: 'mining-platform',
+      aud: 'control-plane',
+    },
+    secret,
+    900,
+    1_700_000_000,
+  );
+  const claims = verifyAccessToken(
+    token,
+    secret,
+    { issuer: 'mining-platform', audience: 'control-plane' },
+    1_700_000_100,
+  );
   assert.equal(claims.sub, 'user-1');
-  assert.throws(() => verifyAccessToken(token, secret, { issuer: 'mining-platform', audience: 'control-plane' }, 1_700_001_000));
+  assert.throws(() =>
+    verifyAccessToken(
+      token,
+      secret,
+      { issuer: 'mining-platform', audience: 'control-plane' },
+      1_700_001_000,
+    ),
+  );
 });
 
 test('generates and verifies RFC 6238 TOTP codes', () => {
@@ -40,6 +58,17 @@ test('generates and verifies RFC 6238 TOTP codes', () => {
   const code = totpCode(secret, now);
   assert.equal(verifyTotpCode(secret, code, now), true);
   assert.equal(verifyTotpCode(secret, '000000', now), code === '000000');
+});
+
+test('returns the matched TOTP counter so sensitive flows can reject factor replay', () => {
+  const secret = 'JBSWY3DPEHPK3PXP';
+  const timestamp = 1_700_000_000_000;
+  const code = totpCode(secret, timestamp);
+  assert.equal(
+    verifyTotpCodeWithCounter(secret, code, timestamp),
+    BigInt(Math.floor(timestamp / 1_000 / 30)),
+  );
+  assert.equal(verifyTotpCodeWithCounter(secret, '000000', timestamp), undefined);
 });
 
 test('encrypts and decrypts TOTP and delivery secrets', () => {
