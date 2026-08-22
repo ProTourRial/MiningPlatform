@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 533,
-  "managedFilesChecksum": "e5e84ce4fa354b221e50d7a565da32f66a053c1c6ec248fa96d4664ac6da4041",
+  "managedFilesChecksum": "81bb35b747c30a22c74700fd70e82b593d92e38208218a51ea247e32ddb0cabd",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -811,8 +811,8 @@
     },
     {
       "path": "apps/web/next.config.ts",
-      "sha256": "500a38e638128da67905d2dee2986ce252d57363b10edca4e3f93f8877b46a34",
-      "size": 744
+      "sha256": "0cc4074c02ae312050ccdf8bc736301d0752b2d7c562a668bc9364086b0ba5eb",
+      "size": 1018
     },
     {
       "path": "apps/web/package.json",
@@ -1126,8 +1126,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "b2b79eb500b02adfffc8f0c1646f7cf123cf846c895a9ddbe29a788ebb74123c",
-      "size": 34918
+      "sha256": "f4ea0c4ecde97235114664fd455f48010ff774de9c0825dcb140b3aec428a511",
+      "size": 34906
     },
     {
       "path": "DELETE_FILES.txt",
