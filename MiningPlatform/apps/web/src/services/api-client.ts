@@ -5,8 +5,8 @@
  */
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL
-  ?? (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:4000/api/v1');
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === 'production' ? '/api/v1' : 'http://localhost:4000/api/v1');
 
 export class ApiRequestError extends Error {
   constructor(
@@ -25,10 +25,7 @@ export class ApiRequestError extends Error {
  */
 export { ApiRequestError as ApiError };
 
-async function execute(
-  path: string,
-  init?: RequestInit,
-): Promise<Response> {
+async function execute(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     ...init,
@@ -48,15 +45,24 @@ const REFRESH_EXCLUDED = new Set([
   '/auth/reset-password',
 ]);
 
-function messageFromPayload(
-  payload: unknown,
-  status: number,
-): string {
-  if (
-    payload
-    && typeof payload === 'object'
-    && 'message' in payload
-  ) {
+let refreshRequest: Promise<boolean> | undefined;
+
+function refreshSession(): Promise<boolean> {
+  if (!refreshRequest) {
+    refreshRequest = execute('/auth/refresh', {
+      method: 'POST',
+      body: '{}',
+    })
+      .then((response) => response.ok)
+      .finally(() => {
+        refreshRequest = undefined;
+      });
+  }
+  return refreshRequest;
+}
+
+function messageFromPayload(payload: unknown, status: number): string {
+  if (payload && typeof payload === 'object' && 'message' in payload) {
     const message = (
       payload as {
         message?: unknown;
@@ -68,11 +74,8 @@ function messageFromPayload(
     }
 
     if (
-      Array.isArray(message)
-      && message.every(
-        (value): value is string =>
-          typeof value === 'string',
-      )
+      Array.isArray(message) &&
+      message.every((value): value is string => typeof value === 'string')
     ) {
       return message.join(', ');
     }
@@ -88,17 +91,8 @@ export async function apiRequest<T>(
 ): Promise<T> {
   let response = await execute(path, init);
 
-  if (
-    response.status === 401
-    && refreshOnUnauthorized
-    && !REFRESH_EXCLUDED.has(path)
-  ) {
-    const refreshed = await execute('/auth/refresh', {
-      method: 'POST',
-      body: '{}',
-    });
-
-    if (refreshed.ok) {
+  if (response.status === 401 && refreshOnUnauthorized && !REFRESH_EXCLUDED.has(path)) {
+    if (await refreshSession()) {
       response = await execute(path, init);
     }
   }
@@ -136,9 +130,5 @@ export async function apiFetch<T>(
   init?: RequestInit,
   refreshOnUnauthorized = true,
 ): Promise<T> {
-  return apiRequest<T>(
-    path,
-    init,
-    refreshOnUnauthorized,
-  );
+  return apiRequest<T>(path, init, refreshOnUnauthorized);
 }

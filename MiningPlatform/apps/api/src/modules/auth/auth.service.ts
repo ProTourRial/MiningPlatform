@@ -7,6 +7,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
@@ -23,7 +24,7 @@ import {
   hashPassword,
   signAccessToken,
   verifyPassword,
-  verifyTotpCode,
+  verifyTotpCodeWithCounter,
 } from '@mining/security';
 import { authRuntimeConfig } from './auth-config.js';
 import type { AuthPrincipal } from './auth.decorators.js';
@@ -247,31 +248,45 @@ export class AuthService {
       throw new UnauthorizedException('Account is not active');
     }
     if (user.security.totpEnabled) {
-      const totpValid = Boolean(
-        dto.totpCode &&
-          user.security.totpSecretEncrypted &&
-          verifyTotpCode(
-            decryptSecret(user.security.totpSecretEncrypted, authRuntimeConfig().encryptionKey),
-            dto.totpCode,
-          ),
-      );
+      const totpCounter =
+        dto.totpCode && user.security.totpSecretEncrypted
+          ? verifyTotpCodeWithCounter(
+              decryptSecret(user.security.totpSecretEncrypted, authRuntimeConfig().encryptionKey),
+              dto.totpCode,
+            )
+          : undefined;
       const recoveryHash = dto.recoveryCode ? hashOpaqueToken(dto.recoveryCode) : undefined;
       const recoveryValid = Boolean(
         recoveryHash && user.security.recoveryCodesHash.includes(recoveryHash),
       );
-      if (!totpValid && !recoveryValid) {
+      if (totpCounter === undefined && !recoveryValid) {
         await this.recordFailedLogin(user.id, user.security.failedLoginCount);
         throw new UnauthorizedException('Invalid email, password, or second factor');
       }
       if (recoveryValid && recoveryHash) {
-        await prisma.userSecurity.update({
-          where: { userId: user.id },
-          data: {
-            recoveryCodesHash: user.security.recoveryCodesHash.filter(
-              (hash) => hash !== recoveryHash,
-            ),
+        const consumed = await prisma.$executeRaw`
+          UPDATE "UserSecurity"
+          SET "recoveryCodesHash" = array_remove("recoveryCodesHash", ${recoveryHash}),
+              "updatedAt" = CURRENT_TIMESTAMP
+          WHERE "userId" = ${user.id}
+            AND ${recoveryHash} = ANY("recoveryCodesHash")
+        `;
+        if (consumed !== 1) {
+          await this.recordFailedLogin(user.id, user.security.failedLoginCount);
+          throw new UnauthorizedException('Invalid email, password, or second factor');
+        }
+      } else if (totpCounter !== undefined) {
+        const consumed = await prisma.userSecurity.updateMany({
+          where: {
+            userId: user.id,
+            OR: [{ lastTotpCounter: null }, { lastTotpCounter: { lt: totpCounter } }],
           },
+          data: { lastTotpCounter: totpCounter },
         });
+        if (consumed.count !== 1) {
+          await this.recordFailedLogin(user.id, user.security.failedLoginCount);
+          throw new UnauthorizedException('Invalid email, password, or second factor');
+        }
       }
     }
     return this.issueSession(user, fingerprint);
@@ -471,17 +486,26 @@ export class AuthService {
   }
 
   async beginTotpSetup(principal: AuthPrincipal) {
+    if (principal.authenticationType !== 'access-token') {
+      throw new ForbiddenException('TOTP management requires an interactive user session');
+    }
     const user = await prisma.user.findUnique({
       where: { id: principal.userId },
       include: { security: true },
     });
     if (!user?.security) throw new NotFoundException('User security profile not found');
+    if (user.security.totpEnabled) {
+      throw new ConflictException('TOTP is already enabled; disable it before re-enrollment');
+    }
     const secret = generateTotpSecret();
     const encrypted = encryptSecret(secret, authRuntimeConfig().encryptionKey);
-    await prisma.userSecurity.update({
-      where: { userId: user.id },
+    const pending = await prisma.userSecurity.updateMany({
+      where: { userId: user.id, totpEnabled: false },
       data: { totpPendingSecretEncrypted: encrypted },
     });
+    if (pending.count !== 1) {
+      throw new ConflictException('TOTP is already enabled; disable it before re-enrollment');
+    }
     return {
       secret,
       otpAuthUri: buildTotpUri({ secret, account: user.email, issuer: 'MiningPlatform' }),
@@ -489,22 +513,37 @@ export class AuthService {
   }
 
   async enableTotp(principal: AuthPrincipal, code: string) {
+    if (principal.authenticationType !== 'access-token') {
+      throw new ForbiddenException('TOTP management requires an interactive user session');
+    }
     const security = await prisma.userSecurity.findUnique({ where: { userId: principal.userId } });
     if (!security?.totpPendingSecretEncrypted) throw new NotFoundException('No pending TOTP setup');
+    if (security.totpEnabled) {
+      throw new ConflictException('TOTP is already enabled; disable it before re-enrollment');
+    }
     const config = authRuntimeConfig();
     const secret = decryptSecret(security.totpPendingSecretEncrypted, config.encryptionKey);
-    if (!verifyTotpCode(secret, code)) throw new UnauthorizedException('Invalid TOTP code');
+    const totpCounter = verifyTotpCodeWithCounter(secret, code);
+    if (totpCounter === undefined) throw new UnauthorizedException('Invalid TOTP code');
     const recoveryCodes = Array.from({ length: 8 }, () => generateOpaqueToken('mprc', 10));
     await prisma.$transaction(async (tx) => {
-      await tx.userSecurity.update({
-        where: { userId: principal.userId },
+      const enabled = await tx.userSecurity.updateMany({
+        where: {
+          userId: principal.userId,
+          totpEnabled: false,
+          totpPendingSecretEncrypted: security.totpPendingSecretEncrypted,
+        },
         data: {
           totpEnabled: true,
           totpSecretEncrypted: security.totpPendingSecretEncrypted,
           totpPendingSecretEncrypted: null,
           recoveryCodesHash: recoveryCodes.map(hashOpaqueToken),
+          lastTotpCounter: totpCounter,
         },
       });
+      if (enabled.count !== 1) {
+        throw new ConflictException('TOTP enrollment state changed; start setup again');
+      }
       await tx.auditLog.create({
         data: {
           actorUserId: principal.userId,
@@ -518,6 +557,9 @@ export class AuthService {
   }
 
   async disableTotp(principal: AuthPrincipal, dto: DisableTotpDto) {
+    if (principal.authenticationType !== 'access-token') {
+      throw new ForbiddenException('TOTP management requires an interactive user session');
+    }
     const user = await prisma.user.findUnique({
       where: { id: principal.userId },
       include: { security: true },
@@ -530,18 +572,26 @@ export class AuthService {
       user.security.totpSecretEncrypted,
       authRuntimeConfig().encryptionKey,
     );
-    if (!passwordValid || !verifyTotpCode(secret, dto.code))
+    const totpCounter = verifyTotpCodeWithCounter(secret, dto.code);
+    if (!passwordValid || totpCounter === undefined)
       throw new UnauthorizedException('Invalid credentials');
     await prisma.$transaction(async (tx) => {
-      await tx.userSecurity.update({
-        where: { userId: user.id },
+      const disabled = await tx.userSecurity.updateMany({
+        where: {
+          userId: user.id,
+          totpEnabled: true,
+          totpSecretEncrypted: user.security!.totpSecretEncrypted,
+          OR: [{ lastTotpCounter: null }, { lastTotpCounter: { lt: totpCounter } }],
+        },
         data: {
           totpEnabled: false,
           totpSecretEncrypted: null,
           totpPendingSecretEncrypted: null,
           recoveryCodesHash: [],
+          lastTotpCounter: totpCounter,
         },
       });
+      if (disabled.count !== 1) throw new UnauthorizedException('Invalid credentials');
       await tx.auditLog.create({
         data: {
           actorUserId: user.id,

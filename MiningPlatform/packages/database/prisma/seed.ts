@@ -77,6 +77,48 @@ async function main() {
     },
   });
 
+  const btcNetwork = await prisma.assetNetwork.upsert({
+    where: { assetId_networkKey: { assetId: btc.id, networkKey: 'bitcoin-mainnet' } },
+    update: { enabled: true },
+    create: {
+      id: `asset-network-${btc.id}`,
+      assetId: btc.id,
+      networkKey: 'bitcoin-mainnet',
+      displayName: 'Bitcoin Mainnet',
+      chainFamily: 'BITCOIN',
+      addressValidator: 'BITCOIN',
+      isTestnet: false,
+      enabled: true,
+    },
+  });
+  const payoutRouteKey = {
+    assetNetworkId_routeKey_version: {
+      assetNetworkId: btcNetwork.id,
+      routeKey: 'default',
+      version: 1,
+    },
+  } as const;
+  const existingPayoutRoute = await prisma.payoutRoute.findUnique({ where: payoutRouteKey });
+  if (!existingPayoutRoute) {
+    await prisma.payoutRoute.create({
+      data: {
+        id: `payout-route-${btc.id}`,
+        assetNetworkId: btcNetwork.id,
+        routeKey: 'default',
+        version: 1,
+        status: 'ADDRESS_REGISTRATION',
+        minimumPayoutAtomic: 100_000n,
+        fixedNetworkFeeAtomic: 0n,
+        addressCooldownSeconds: 86_400,
+        requiredConfirmations: 3,
+        manualApprovalRequired: true,
+        effectiveFrom: new Date('2026-08-22T00:00:00.000Z'),
+        changeReason:
+          'P0.4 address-registration foundation; signing and broadcast remain disabled.',
+      },
+    });
+  }
+
   await prisma.ledgerAccount.createMany({
     data: [
       {

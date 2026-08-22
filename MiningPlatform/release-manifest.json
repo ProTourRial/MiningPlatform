@@ -1,11 +1,12 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.6",
-  "releaseName": "Reconciliation and Referral Foundation",
+  "version": "0.3.0-alpha.7",
+  "releaseName": "Payout Control Foundation",
   "artifactType": "full-release",
-  "schemaVersion": 12,
-  "migration": "20260821020000_referral_fee_foundation",
+  "schemaVersion": 13,
+  "migration": "20260822010000_payout_control_foundation",
   "compatibleFrom": [
+    "0.3.0-alpha.6",
     "0.3.0-alpha.5",
     "0.3.0-alpha.4",
     "0.3.0-alpha.3",
@@ -13,10 +14,10 @@
     "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "f58645b090aed7bcf65e106d0d17ed882d862c31298ebfa44e4066f312a306d6",
+  "payloadChecksum": "97cc4a0ff63ef7d31332ea26dd00336787eef5703634fac391703ae248657917",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 521,
-  "buildDate": "2026-08-21T00:00:00+07:00",
+  "payloadFileCount": 534,
+  "buildDate": "2026-08-22T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }

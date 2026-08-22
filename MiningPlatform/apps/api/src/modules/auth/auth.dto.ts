@@ -4,7 +4,15 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -79,6 +87,16 @@ export class TotpCodeDto {
 
 export class DisableTotpDto extends TotpCodeDto {
   @IsString()
+  @MaxLength(128)
+  password!: string;
+}
+
+export class StepUpAuthorizationDto extends TotpCodeDto {
+  @IsIn(['PAYOUT_ADDRESS_WRITE'])
+  scope!: 'PAYOUT_ADDRESS_WRITE';
+
+  @IsString()
+  @MinLength(12)
   @MaxLength(128)
   password!: string;
 }

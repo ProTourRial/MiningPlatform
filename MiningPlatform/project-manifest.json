@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.6",
-  "generated_files": 520,
+  "version": "0.3.0-alpha.7",
+  "generated_files": 533,
   "primary_product_reference": "PROJECT_VISION.md",
   "product_constitution": "docs/product/PRODUCT_CONSTITUTION.md",
   "production_gap_register": "docs/product/PRODUCTION_GAP_REGISTER.md",
@@ -25,8 +25,8 @@
     "scheduler": "centralized"
   },
   "target_release": "0.3.0",
-  "architecture_baseline": "ADR-0001 through ADR-0012",
-  "release_status": "reconciliation-referral-alpha",
+  "architecture_baseline": "ADR-0001 through ADR-0013",
+  "release_status": "payout-control-foundation-alpha",
   "implemented": {
     "product_authority": [
       "project-vision-highest-documentation-layer",
@@ -102,7 +102,10 @@
       "upstream-resilience-migration",
       "control-plane-foundation-migration",
       "versioned-fee-policy-migration",
-      "financial-truth-foundation-migration"
+      "financial-truth-foundation-migration",
+      "reconciliation-exception-lifecycle-migration",
+      "referral-fee-foundation-migration",
+      "payout-control-foundation-migration"
     ],
     "operations": [
       "liveness-readiness",
@@ -173,6 +176,7 @@
       "equal-and-opposite-journal-reversal",
       "owner-totp-settlement-import",
       "zero-tolerance-reconciliation-exception",
+      "two-owner-reconciliation-resolution",
       "authenticated-reward-ledger-balance-api",
       "fresh-upgrade-and-end-to-end-financial-tests",
       "payouts-disabled"
@@ -190,10 +194,28 @@
       "production-dashboard-rest-and-websocket",
       "encrypted-notification-channel-registry-ui",
       "refresh-token-family-replay-detection",
+      "browser-refresh-single-flight",
       "postgres-authentication-integration-tests",
       "resend-identity-email-adapter",
       "api-key-request-authentication",
-      "disabled-by-default-support-payment-address-registry"
+      "disabled-by-default-support-payment-address-registry",
+      "single-use-session-bound-payout-step-up",
+      "global-totp-replay-counter",
+      "enabled-totp-reenrollment-guard"
+    ],
+    "controlled_funds": [
+      "versioned-asset-network-payout-route-catalog",
+      "bitcoin-mainnet-address-checksum-validation",
+      "masked-payout-address-read-model",
+      "verified-address-cooldown-and-one-active-route-address",
+      "immutable-address-identity-and-route-policy",
+      "payout-address-audit-trail",
+      "payout-address-dashboard-control",
+      "registration-only-route-gate",
+      "status-only-payout-route-gate",
+      "explicit-payout-api-key-read-scopes",
+      "interactive-only-auto-withdrawal-write",
+      "real-funds-disabled"
     ]
   },
   "release_blockers": [
@@ -205,7 +227,7 @@
     "shared-upstream-multiplexing",
     "production-vardiff-validation",
     "distributed-auth-rate-limiting-and-edge-ddos-controls",
-    "reconciliation-resolution-wallet-payout-production-gates",
+    "payout-eligibility-reservation-approval-signing-broadcast-and-reconciliation-gates",
     "ci-execution-must-be-confirmed-green-on-github",
     "resend-sender-domain-and-api-key-must-be-provisioned",
     "managed-secret-store-integration",
@@ -228,7 +250,7 @@
     "lockfile_version": "9.0",
     "install_command": "pnpm install --frozen-lockfile"
   },
-  "schema_version": 12,
+  "schema_version": 13,
   "release_manifest": "release-manifest.json",
   "build_metadata": {
     "api_endpoint": "GET /version",
@@ -237,8 +259,8 @@
   },
   "credential_cli": ["create", "rotate", "revoke", "list"],
   "database_summary": {
-    "models": 48,
-    "enums": 34,
-    "latest_migration": "20260821020000_referral_fee_foundation"
+    "models": 51,
+    "enums": 38,
+    "latest_migration": "20260822010000_payout_control_foundation"
   }
 }

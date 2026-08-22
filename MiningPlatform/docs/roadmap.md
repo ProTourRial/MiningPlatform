@@ -18,7 +18,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.6
+## Current Checkpoint: v0.3.0-alpha.7
 
 Implemented:
 
@@ -27,6 +27,9 @@ Implemented:
 - Redis distributed upstream health, single cross-replica half-open probe, fail-open local fallback, and ADR-0010 safe multiplexing boundary.
 - Immutable upstream-accepted contribution facts, atomic settlement import, deterministic 50 bps fee snapshots, balanced ledger posting, liability balance projection, and equal-and-opposite reversals under ADR-0011.
 - Authenticated reward/ledger/balance read APIs plus OWNER+TOTP settlement import and reversal commands.
+- Two-owner reconciliation correction lifecycle, exact referral fee accounting, and default `MP05` donation liability from alpha.6.
+- Versioned Asset/Network/PayoutRoute catalog and payout-address registration foundation with checksum validation, session-bound single-use password+TOTP step-up, cooldown, audit, masked reads, and database route gates.
+- Auto-withdrawal preference `OFF/ON` remains default OFF and cannot become effective on a registration-only route or while the global payout gate/executor is disabled.
 - v0.2.0-alpha.6 mining foundation, multi-upstream registry, circuit breaker, failover, provider-scoped jobs, bounded share queue, and VarDiff foundation.
 - Official domain architecture, bounded contexts, context map, data flow, event flow, event catalog, and canonical ADR set.
 - Registration, transactional email verification, login/logout, access token, atomic token-family refresh rotation/replay revocation, password reset, and TOTP 2FA.
@@ -39,11 +42,11 @@ Implemented:
 
 Release blockers:
 
-- Successful alpha.5 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, and repository CI validation on the exact commit.
+- Successful alpha.7 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, security-diff, and repository CI validation on the exact commit.
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.
-- Reconciliation exception approval/resolution, provider settlement evidence, wallet orchestration, and payouts.
+- Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation

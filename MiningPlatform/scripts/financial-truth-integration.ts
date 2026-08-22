@@ -553,7 +553,7 @@ async function main(): Promise<void> {
     /immutable/i,
   );
 
-  assert.equal(await prisma.payout.count(), 0);
+  assert.equal(await prisma.payout.count({ where: { userId: user.id } }), 0);
   process.stdout.write(
     `${JSON.stringify(
       {

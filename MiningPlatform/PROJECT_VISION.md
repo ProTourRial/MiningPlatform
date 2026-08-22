@@ -583,6 +583,12 @@ Setiap network dapat memiliki:
 
 Dengan demikian ticker bukan identitas jaringan.
 
+Payout route harus versioned dan immutable. Perubahan threshold, fee, cooldown, confirmation, approval, atau status funds dilakukan melalui versi baru agar payout historis dapat direproduksi. Status registration-only hanya mengizinkan enrollment alamat dan tidak boleh membuat payout.
+
+Perubahan payout address wajib menggunakan step-up authentication yang terikat pada user, sesi, dan scope; berumur pendek; disimpan hanya sebagai hash; sekali pakai; serta dikonsumsi atomically bersama perubahan alamat. Faktor TOTP yang sama tidak boleh digunakan ulang untuk tindakan payout sensitif.
+
+Validasi checksum dan network membuktikan format tujuan, bukan kepemilikan private key. Alamat baru wajib melewati cooldown, audit, dan aktivasi eksplisit. Identity, hasil validasi, route binding, serta history alamat tidak boleh ditulis ulang; penggantian menonaktifkan alamat lama. Read model pengguna harus meminimalkan paparan alamat lengkap.
+
 ---
 
 # 16. Payout Vision

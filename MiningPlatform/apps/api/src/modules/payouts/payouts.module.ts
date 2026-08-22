@@ -5,8 +5,9 @@
  */
 
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module.js';
 import { PayoutsController } from './payouts.controller';
 import { PayoutsService } from './payouts.service.js';
 
-@Module({ controllers: [PayoutsController], providers: [PayoutsService] })
+@Module({ imports: [AuthModule], controllers: [PayoutsController], providers: [PayoutsService] })
 export class PayoutsModule {}

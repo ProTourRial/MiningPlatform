@@ -3,7 +3,7 @@
 - Status: Active engineering register
 - Authority: [`../../PROJECT_VISION.md`](../../PROJECT_VISION.md)
 - Implementation policy: [`PRODUCT_CONSTITUTION.md`](PRODUCT_CONSTITUTION.md)
-  Baseline audited: 2026-08-21 (`0.3.0-alpha.6` workspace)
+  Baseline audited: 2026-08-22 (`0.3.0-alpha.7` workspace)
 
 ## Purpose
 
@@ -52,39 +52,54 @@ Pada validasi financial-truth alpha.5 tanggal 2026-08-16:
 - targeted typecheck untuk accounting-worker, mining-worker, API, dan operator scripts lulus;
 - local root gates pass for alpha.5: lint 27/27, typecheck 41/41, tests 41/41, production build 27/27, 21 Next.js routes, Compose/static checks, and managed/release manifest verification; repository CI remains mandatory after publication.
 
+Pada validasi reconciliation/referral alpha.6 tanggal 2026-08-21:
+
+- schema v11/v12 menambahkan imported reconciliation evidence yang immutable, correction request dua-owner, replacement version, referral program/code/attribution, exact 5.000/3.750/1.250 PPM allocation, dan auto-withdrawal preference default OFF;
+- accounting/reconciliation integration membuktikan journal balance, posted immutability, reversal entry baru, retry tanpa double-credit, allocation uniqueness, transactional rollback, serta source = user allocation + fee + clearing;
+- fresh dan alpha.5 upgrade rehearsal, full local gates, Docker E2E, manifest verification, security diff scan, dan Draft PR exact-commit CI lulus.
+
+Pada validasi payout-control alpha.7 tanggal 2026-08-22 yang sedang difinalkan:
+
+- schema v13 dan rehearsal alpha.6 upgrade lulus dengan backfill payout address/payout representatif;
+- 16 security tests, 4 Bitcoin address tests, targeted API/web typecheck, dan payout-control PostgreSQL integration lulus tanpa warning;
+- step-up tersimpan hanya sebagai hash, terikat session/scope, sekali pakai, dan menolak reuse TOTP counter lintas enrollment/login/disable/step-up;
+- enabled-factor re-enrollment ditolak, recovery code dikonsumsi atomik, API-key payout read memiliki scope eksplisit, preference write interactive-only, dan refresh browser single-flight;
+- address checksum/network, masked read, cooldown, replacement, one-active-address, immutability, audit, registration-only route gate, serta zero payout creation terbukti;
+- full monorepo, Docker E2E, manifest, security diff, dan exact-commit repository CI tetap wajib sebelum alpha.7 diterima.
+
 Validasi tersebut membuktikan baseline source dapat dibangun secara tipe dan fungsi yang diuji. Validasi tersebut **tidak** membuktikan provider compatibility, production load, custody, payout, conversion, legal compliance, atau kesiapan dana nyata.
 
 ## Current capability map
 
-| Domain                    | Status      | Evidence sekarang                                                                                                               | Gap penentu produksi                                                                     |
-| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Project authority         | COMPLETE    | Root `PROJECT_VISION.md`, Product Constitution, roadmap precedence                                                              | Jaga sinkron melalui change control                                                      |
-| Fee default 0,5%          | COMPLETE    | Versioned policy, 50 bps default, resolver/snapshot tests, fresh/upgrade migration, API binding, UI disclosure                  | Durable allocation persistence dilanjutkan sebagai bagian workflow settlement P0.3       |
-| Mining protocol           | FOUNDATION  | Configure/subscribe/authorize/notify/submit, SHA-256d, job registry, simulator tests                                            | Selected real-provider fixtures dan soak evidence                                        |
-| Multi-upstream            | FOUNDATION  | Priority/weight registry, failover, bounded queue, Redis distributed circuit/probe coordination, ADR-0010 multiplexing boundary | Provider-safe shared multiplexing implementation, regional routing, provider validation  |
-| VarDiff                   | FOUNDATION  | Conservative algorithm tersedia dan default off                                                                                 | Statistical/provider validation dan production policy                                    |
-| Worker identity           | FOUNDATION  | Worker CRUD, scrypt credential, rotation/revocation, PostgreSQL authenticator                                                   | Multi-replica Redis integration, tenant/load/security evidence                           |
-| Monitoring                | FOUNDATION  | Hashrate windows, projection, REST snapshot, authenticated WebSocket                                                            | Device ingestion depth, incident lifecycle, production scale/SLO                         |
-| Identity & sessions       | FOUNDATION  | Registration, email tokens, password reset, JWT, atomic refresh rotation, replay revocation, TOTP, API keys                     | Passkey/OAuth decision, general step-up framework, edge/distributed abuse controls       |
-| Internal RBAC             | FOUNDATION  | USER/ADMIN/OWNER dan TOTP untuk admin routes                                                                                    | SUPPORT/OPERATOR/FINANCE/TREASURY/SECURITY/COMPLIANCE serta separation of duties         |
-| Event Plane               | FOUNDATION  | PostgreSQL outbox, Redis Stream transport, retry/dead letter, idempotency contracts                                             | Docker multi-replica/partition/recovery/lag tests dan operational ownership              |
-| Reward Engine             | IN_PROGRESS | Durable accepted-share facts, deterministic atomic allocation, fee snapshot, settlement state transitions, concurrency evidence | Provider settlement fixtures, multi-replica recovery, operational scale evidence         |
-| Ledger                    | IN_PROGRESS | Transactional posting, decimal+atomic balance checks, immutable lifecycle, reversal, user projection/API, concurrency evidence  | Reconciliation resolution approval, reporting, load/partition evidence                   |
-| Reconciliation            | IN_PROGRESS | OWNER+TOTP import, checksum/source identity, zero-tolerance fail-closed exception detection, audit trace                        | Explicit approval/resolution workflow, provider adapter/reports, operational ownership   |
-| Payout address            | FOUNDATION  | Schema only                                                                                                                     | Asset/network route, validation, step-up, cooldown, allowlist, audit, UI/API             |
-| Payout                    | NOT_STARTED | Status schema and scaffold controller                                                                                           | Eligibility, reservation, batching, approval, signing, broadcast, confirmation, recovery |
-| Blockchain adapter        | NOT_STARTED | Interface exists                                                                                                                | `BitcoinRpcAdapter` methods currently throw `not implemented`                            |
-| Wallet worker             | NOT_STARTED | Process heartbeat only                                                                                                          | Isolated signer boundary, queue, approval verification, reconciliation, emergency stop   |
-| Conversion                | NOT_STARTED | Vision/schema direction only                                                                                                    | Catalog, quotes, batching, execution, slippage, provider adapters, reconciliation        |
-| Referral                  | NOT_STARTED | Vision only                                                                                                                     | Program, attribution, economic ledger entries, settlement, anti-abuse                    |
-| Simulator                 | NOT_STARTED | UI/vision only                                                                                                                  | Shared calculation engine, data snapshots, assumptions, API, disclaimers                 |
-| Transparency              | FOUNDATION  | Scaffold endpoint/page                                                                                                          | Fee/reward/payout/network/incident read models with privacy controls                     |
-| Notification              | FOUNDATION  | Inbox and encrypted channel registry                                                                                            | Verification and delivery for email/Telegram/Discord/webhook/push                        |
-| Owner operations          | FOUNDATION  | User/worker/session/upstream counts, status changes, audit                                                                      | Liability, treasury, payout/conversion queues, reconciliation, risk, incident controls   |
-| Public Developer API      | FOUNDATION  | Versioned REST and scoped API keys                                                                                              | Signed requests, IP allowlist, idempotency coverage, webhooks, SDK, developer portal     |
-| Observability             | FOUNDATION  | Health, Prometheus, Grafana provisioning, alert rules, structured logs                                                          | Traces, error tracking, SLOs, Alertmanager routing, on-call, incident timeline           |
-| Desktop/mobile/enterprise | NOT_STARTED | Product vision                                                                                                                  | Implement only after core financial and security gates                                   |
-| Own pool                  | NOT_STARTED | Pool Adapter direction                                                                                                          | Evaluate after production gateway, hashrate, capital, node ops, and economics            |
+| Domain                    | Status      | Evidence sekarang                                                                                                                                            | Gap penentu produksi                                                                     |
+| ------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Project authority         | COMPLETE    | Root `PROJECT_VISION.md`, Product Constitution, roadmap precedence                                                                                           | Jaga sinkron melalui change control                                                      |
+| Fee default 0,5%          | COMPLETE    | Versioned policy, 50 bps default, resolver/snapshot tests, fresh/upgrade migration, API binding, UI disclosure                                               | Durable allocation persistence dilanjutkan sebagai bagian workflow settlement P0.3       |
+| Mining protocol           | FOUNDATION  | Configure/subscribe/authorize/notify/submit, SHA-256d, job registry, simulator tests                                                                         | Selected real-provider fixtures dan soak evidence                                        |
+| Multi-upstream            | FOUNDATION  | Priority/weight registry, failover, bounded queue, Redis distributed circuit/probe coordination, ADR-0010 multiplexing boundary                              | Provider-safe shared multiplexing implementation, regional routing, provider validation  |
+| VarDiff                   | FOUNDATION  | Conservative algorithm tersedia dan default off                                                                                                              | Statistical/provider validation dan production policy                                    |
+| Worker identity           | FOUNDATION  | Worker CRUD, scrypt credential, rotation/revocation, PostgreSQL authenticator                                                                                | Multi-replica Redis integration, tenant/load/security evidence                           |
+| Monitoring                | FOUNDATION  | Hashrate windows, projection, REST snapshot, authenticated WebSocket                                                                                         | Device ingestion depth, incident lifecycle, production scale/SLO                         |
+| Identity & sessions       | FOUNDATION  | Registration, email tokens, password reset, JWT, atomic refresh rotation/single-flight, replay revocation, TOTP global counter/re-enrollment guard, API keys | Passkey/OAuth decision, general step-up framework, edge/distributed abuse controls       |
+| Internal RBAC             | FOUNDATION  | USER/ADMIN/OWNER dan TOTP untuk admin routes                                                                                                                 | SUPPORT/OPERATOR/FINANCE/TREASURY/SECURITY/COMPLIANCE serta separation of duties         |
+| Event Plane               | FOUNDATION  | PostgreSQL outbox, Redis Stream transport, retry/dead letter, idempotency contracts                                                                          | Docker multi-replica/partition/recovery/lag tests dan operational ownership              |
+| Reward Engine             | IN_PROGRESS | Durable accepted-share facts, deterministic atomic allocation, fee snapshot, settlement state transitions, concurrency evidence                              | Provider settlement fixtures, multi-replica recovery, operational scale evidence         |
+| Ledger                    | IN_PROGRESS | Transactional posting, decimal+atomic balance checks, immutable lifecycle, reversal, user projection/API, concurrency evidence                               | Operational reporting, provider evidence, load/partition evidence                        |
+| Reconciliation            | IN_PROGRESS | OWNER+TOTP import, checksum/source identity, zero-tolerance exceptions, two-owner correction/replacement, audit trace                                        | Provider adapters/reports, multi-replica recovery, load evidence, operational ownership  |
+| Payout address            | FOUNDATION  | Asset/network/route catalog, Bitcoin checksum validation, replay-safe step-up, scoped masked reads, cooldown, one-active rule, audit, UI/API                 | Ownership verification/allowlist policy, risk review, production operations evidence     |
+| Payout                    | FOUNDATION  | Versioned route gates and database address/route alignment; no creation executor                                                                             | Eligibility, reservation, batching, approval, signing, broadcast, confirmation, recovery |
+| Blockchain adapter        | FOUNDATION  | Offline Bitcoin address validation; funds methods fail closed                                                                                                | RPC/node health, balance, fee, signing boundary, broadcast, confirmation, reorg handling |
+| Wallet worker             | NOT_STARTED | Process heartbeat only                                                                                                                                       | Isolated signer boundary, queue, approval verification, reconciliation, emergency stop   |
+| Conversion                | NOT_STARTED | Vision/schema direction only                                                                                                                                 | Catalog, quotes, batching, execution, slippage, provider adapters, reconciliation        |
+| Referral                  | IN_PROGRESS | Versioned program/code, sticky attribution, exact PPM allocation/journal, MP05 donation liability                                                            | Abuse monitoring, beneficiary payout, reporting, provider/scale evidence                 |
+| Simulator                 | NOT_STARTED | UI/vision only                                                                                                                                               | Shared calculation engine, data snapshots, assumptions, API, disclaimers                 |
+| Transparency              | FOUNDATION  | Scaffold endpoint/page                                                                                                                                       | Fee/reward/payout/network/incident read models with privacy controls                     |
+| Notification              | FOUNDATION  | Inbox and encrypted channel registry                                                                                                                         | Verification and delivery for email/Telegram/Discord/webhook/push                        |
+| Owner operations          | FOUNDATION  | User/worker/session/upstream counts, status changes, audit                                                                                                   | Liability, treasury, payout/conversion queues, reconciliation, risk, incident controls   |
+| Public Developer API      | FOUNDATION  | Versioned REST and scoped API keys                                                                                                                           | Signed requests, IP allowlist, idempotency coverage, webhooks, SDK, developer portal     |
+| Observability             | FOUNDATION  | Health, Prometheus, Grafana provisioning, alert rules, structured logs                                                                                       | Traces, error tracking, SLOs, Alertmanager routing, on-call, incident timeline           |
+| Desktop/mobile/enterprise | NOT_STARTED | Product vision                                                                                                                                               | Implement only after core financial and security gates                                   |
+| Own pool                  | NOT_STARTED | Pool Adapter direction                                                                                                                                       | Evaluate after production gateway, hashrate, capital, node ops, and economics            |
 
 ## Critical path to first production milestone
 
@@ -144,16 +159,15 @@ Required:
 
 Exit evidence: concurrency, duplicate-delivery, rounding, reversal, partial failure, and end-to-end trace tests from share to reconciled balance.
 
-Alpha.5 progress:
+Alpha.6 progress:
 
-- items 1–6 and 8 are implemented for the internal `FOLLOW_UPSTREAM` path with schema v10, transactional outbox, atomic accounting, authenticated user reads, and local disposable-database evidence;
-- item 7 is fail-closed through exact reconciliation and explicit exception creation, but operator approval/resolution remains pending;
+- items 1–8 are implemented for the internal `FOLLOW_UPSTREAM` path through schema v12, including transactional outbox, atomic accounting, authenticated user reads, and two-owner correction/replacement evidence;
 - selected-provider evidence, multi-replica event recovery, load/soak, and operational reporting remain required before `COMPLETE`;
 - payout eligibility is not derived from this alpha and `PAYOUTS_ENABLED=false` remains mandatory.
 
 ### P0.4 — Controlled funds
 
-Status: `NOT_STARTED`
+Status: `IN_PROGRESS`
 
 Required sequence:
 
@@ -166,6 +180,13 @@ Required sequence:
 7. Auto payout only after manual controlled payout evidence is accepted.
 
 Hard rule: `PAYOUTS_ENABLED=false` remains the default until all P0.3 and P0.4 gates are explicitly approved.
+
+Alpha.7 progress:
+
+- items 1 and 2 have an auditable foundation: versioned Asset/Network/PayoutRoute, offline Bitcoin checksum/network validation, session/scope-bound password+TOTP step-up, TOTP replay rejection, cooldown, one active address per route, masked reads, audit, UI/API, and database immutability/gating;
+- checksum validation is explicitly not treated as proof of private-key ownership;
+- the default BTC route is registration-only and the database rejects payout creation through it;
+- items 3–7 remain unimplemented; alpha.7 contains no eligibility, reservation, signer, broadcast, confirmation, or real-funds path.
 
 ### P0.5 — Production operations
 

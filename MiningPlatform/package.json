@@ -1,6 +1,6 @@
 {
   "name": "mining-platform",
-  "version": "0.3.0-alpha.6",
+  "version": "0.3.0-alpha.7",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
@@ -67,6 +67,9 @@
     "verify:v030-alpha6:static": "node scripts/check-v030-alpha6.mjs",
     "verify:v030-alpha6": "node scripts/verify-v030-alpha6-release.mjs",
     "verify:v030-alpha6:fast": "node scripts/verify-v030-alpha6-release.mjs --static-only",
+    "verify:v030-alpha7:static": "node scripts/check-v030-alpha7.mjs",
+    "verify:v030-alpha7": "node scripts/verify-v030-alpha7-release.mjs",
+    "verify:v030-alpha7:fast": "node scripts/verify-v030-alpha7-release.mjs --static-only",
     "verify:migration:v030-alpha3:fresh": "node scripts/verify-v030-alpha3-migration.mjs fresh",
     "verify:migration:v030-alpha3:upgrade": "node scripts/verify-v030-alpha3-migration.mjs upgrade",
     "verify:migration:v030-alpha5:fresh": "node scripts/verify-v030-alpha5-migration.mjs fresh",
@@ -81,7 +84,10 @@
     "test:integration:accounting": "tsx --tsconfig scripts/tsconfig.json scripts/financial-truth-integration.ts",
     "reconciliation:resolution:request": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-request-cli.ts",
     "reconciliation:resolution:decide": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-decide-cli.ts",
-    "test:integration:reconciliation": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-integration.ts"
+    "test:integration:reconciliation": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-integration.ts",
+    "test:integration:payout-control": "pnpm --filter @mining/api exec node --import tsx --test src/payout-control.integration.test.ts",
+    "verify:migration:v030-alpha7:fresh": "node scripts/verify-v030-alpha7-migration.mjs fresh",
+    "verify:migration:v030-alpha7:upgrade": "node scripts/verify-v030-alpha7-migration.mjs upgrade"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

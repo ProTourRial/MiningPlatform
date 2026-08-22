@@ -30,10 +30,12 @@ import {
   RefreshDto,
   RegisterDto,
   ResetPasswordDto,
+  StepUpAuthorizationDto,
   TokenDto,
   TotpCodeDto,
 } from './auth.dto.js';
 import { AuthService, type RequestFingerprint } from './auth.service.js';
+import { StepUpService } from './step-up.service.js';
 
 const REFRESH_COOKIE = 'mp_refresh';
 const ACCESS_COOKIE = 'mp_access';
@@ -78,14 +80,25 @@ function writeAuthCookies(response: Response, accessToken: string, refreshToken:
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly stepUpService: StepUpService,
+  ) {}
 
   @Get('status')
   getStatus() {
     return {
       module: 'auth',
       status: 'control-plane-alpha',
-      capabilities: ['registration', 'jwt-access-token', 'rotating-refresh-token', 'email-verification', 'password-reset', 'totp-2fa'],
+      capabilities: [
+        'registration',
+        'jwt-access-token',
+        'rotating-refresh-token',
+        'email-verification',
+        'password-reset',
+        'totp-2fa',
+        'single-use-step-up',
+      ],
     };
   }
 
@@ -189,5 +202,13 @@ export class AuthController {
   @UseGuards(AuthGuard)
   disableTotp(@CurrentPrincipal() principal: AuthPrincipal, @Body() dto: DisableTotpDto) {
     return this.authService.disableTotp(principal, dto);
+  }
+
+  @Post('step-up')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, AuthRateLimitGuard)
+  stepUp(@CurrentPrincipal() principal: AuthPrincipal, @Body() dto: StepUpAuthorizationDto) {
+    return this.stepUpService.issue(principal, dto);
   }
 }

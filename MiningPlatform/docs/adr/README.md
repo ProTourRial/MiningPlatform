@@ -15,6 +15,8 @@ Owner: Abia Nugrahanto
 | 0009 | Control Plane Identity and Revocable Sessions              | Accepted |
 | 0010 | Distributed Upstream Health and Safe Multiplexing Boundary | Accepted |
 | 0011 | Atomic Financial Truth and Immutable Settlement Ledger     | Accepted |
+| 0012 | Exact Referral Fee Accounting                              | Accepted |
+| 0013 | Payout Address and Route Control Foundation                | Accepted |
 
 Nomor ADR tidak boleh digunakan ulang. Perubahan keputusan yang signifikan dibuat sebagai ADR baru yang menyatakan ADR lama superseded.
 
