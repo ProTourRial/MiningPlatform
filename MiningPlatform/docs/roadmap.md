@@ -66,9 +66,10 @@ Execution order:
 
 Current fixture evidence covers the fail-closed RPC/template boundary plus the offline deterministic
 coinbase, merkle, native-job, block-candidate, proposal, guarded `submitblock`, private Redis job
-retention, and Redis-time global extranonce boundaries. Live regtest, separate-client Redis
-restart/partition evidence, Stratum wiring, and durable proposal/submission evidence remain mandatory
-before steps 1-3 can be declared complete.
+retention, and Redis-time global extranonce boundaries. Two-client Redis 7 integration proves shared
+job visibility, 128 unique leases, and monotonic TTL extension. Live regtest, Redis
+restart/partition/failover evidence, Stratum wiring, and durable proposal/submission evidence remain
+mandatory before steps 1-3 can be declared complete.
 
 PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
 independent risk approval exist. Regtest success never authorizes mainnet custody or payout.

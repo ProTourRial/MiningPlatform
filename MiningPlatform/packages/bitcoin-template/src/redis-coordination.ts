@@ -63,10 +63,7 @@ return {1, tostring(counter), now}
 `;
 
 export interface RedisNativeCoordinationClient {
-  eval(
-    script: string,
-    options: { keys: readonly string[]; arguments: readonly string[] },
-  ): Promise<unknown>;
+  eval(script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown>;
   get(key: string): Promise<unknown>;
   hGet(key: string, field: string): Promise<unknown>;
 }

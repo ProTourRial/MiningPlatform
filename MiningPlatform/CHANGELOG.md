@@ -25,6 +25,7 @@
 - Explicit Bitcoin Core proposal and `submitblock` RPC boundary with bounded raw-block payloads, node-readiness checks, fresh digest-matching valid-proposal evidence required before submission, and distinct accepted, duplicate, inconclusive, and rejected result evidence.
 - Redis-time native mining coordination foundation with globally unique bounded extranonce leases per chain and template digest, monotonic lease expiry across identical template refreshes, Redis Cluster-compatible hash tags, and deterministic allocation evidence.
 - Private native-job serialization and Redis retention with bounded payloads, restored `BigInt`/`Date` evidence, complete bundle validation, idempotent writes, newest-observation active selection, expiry enforcement, and mutation detection.
+- Two-client Redis 7 integration coverage for native job visibility, idempotent retention, Redis-time allocation, 128-way cross-client extranonce uniqueness, and monotonic refresh expiry; CI already supplies the same `REDIS_INTEGRATION_URL` boundary.
 
 ### Changed
 
@@ -42,7 +43,7 @@
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
-- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, and submission boundaries have fixture-level evidence only and are not invoked by Stratum or Docker. Live Redis restart/partition evidence, durable submission records, and Bitcoin Core regtest remain mandatory; no block is automatically submitted and no reward can be created in this checkpoint.
+- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, and submission boundaries are not invoked by Stratum or Docker. Live Redis two-client evidence now exists, while restart/partition evidence, durable submission records, and Bitcoin Core regtest remain mandatory; no block is automatically submitted and no reward can be created in this checkpoint.
 
 ### Development assistance
 

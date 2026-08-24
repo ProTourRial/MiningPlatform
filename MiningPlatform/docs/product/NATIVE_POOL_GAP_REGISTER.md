@@ -57,10 +57,11 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
 - mengalokasikan extranonce global per chain/template digest melalui Lua atomik, dengan Redis Cluster
   hash tag, counter space 1-6 byte, serta TTL monotonic saat template identik diperbarui.
 
-Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, live Redis
-multi-client/restart/partition evidence, wiring Stratum, job broadcast, live proposal/`submitblock`
-trace, atau durable submission evidence; karena itu status P0 belum selesai dan native mining tetap
-nonaktif.
+Checkpoint ini memiliki unit/fixture evidence dan integration evidence dua client pada Redis 7
+disposable untuk job visibility, idempotency, 128 alokasi unik, Redis server time, dan TTL monotonic.
+Belum ada container Bitcoin Core regtest, Redis restart/partition/failover evidence, wiring Stratum,
+job broadcast, live proposal/`submitblock` trace, atau durable submission evidence; karena itu status
+P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

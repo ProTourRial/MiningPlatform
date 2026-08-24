@@ -81,10 +81,7 @@ class FakeRedisNativeCoordinationClient implements RedisNativeCoordinationClient
     entry[1].value = JSON.stringify(parsed);
   }
 
-  async eval(
-    _script: string,
-    options: { keys: readonly string[]; arguments: readonly string[] },
-  ): Promise<unknown> {
+  async eval(_script: string, options: { keys: string[]; arguments: string[] }): Promise<unknown> {
     this.expire();
     this.evaluatedKeySets.push([...options.keys]);
     if (options.keys.length === 2) return this.storeJob(options);
@@ -102,7 +99,7 @@ class FakeRedisNativeCoordinationClient implements RedisNativeCoordinationClient
     return this.hashes.get(key)?.values.get(field) ?? null;
   }
 
-  private storeJob(options: { keys: readonly string[]; arguments: readonly string[] }): unknown {
+  private storeJob(options: { keys: string[]; arguments: string[] }): unknown {
     const [jobKey, activeKey] = options.keys;
     const [expiresAtRaw, observedAtRaw, payload, jobId] = options.arguments;
     if (!jobKey || !activeKey || !payload || !jobId) throw new Error('Invalid fake store input');
@@ -136,10 +133,7 @@ class FakeRedisNativeCoordinationClient implements RedisNativeCoordinationClient
     return [1, existing ? 'IDEMPOTENT_OLDER' : 'STORED_OLDER', this.nowMilliseconds];
   }
 
-  private allocateExtranonce(options: {
-    keys: readonly string[];
-    arguments: readonly string[];
-  }): unknown {
+  private allocateExtranonce(options: { keys: string[]; arguments: string[] }): unknown {
     const key = options.keys[0];
     const expiresAt = Number(options.arguments[0]);
     const maximum = Number(options.arguments[1]);

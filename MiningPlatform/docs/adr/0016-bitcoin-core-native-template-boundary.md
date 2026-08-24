@@ -75,16 +75,18 @@ defaults.
 - Identical template refreshes retain a monotonic allocator expiry, multi-key writes use a common
   chain hash tag, and both job and allocator lifetimes are capped at five minutes.
 - Unit fixtures prove deterministic construction and fail-closed network, expiry, evidence-mutation,
-  size, target, proposal, submission, cross-replica allocation, and refresh-expiry behavior. No live
-  Redis or Bitcoin Core evidence is claimed yet.
+  size, target, proposal, submission, cross-replica allocation, and refresh-expiry behavior.
+- A two-client integration test against disposable Redis 7 proves private-job visibility,
+  idempotency, Redis-time allocation, 128 unique leases, and monotonic TTL extension without skips.
+  No Redis restart/partition or live Bitcoin Core evidence is claimed yet.
 
 ## Next acceptance gates
 
 - Pin a Bitcoin Core image/version and add a disposable regtest-only Compose profile.
 - Prove live `getblocktemplate` readiness, long-poll replacement, malformed/stale rejection, and node
   restart behavior.
-- Prove private template retention and global extranonce allocation using separate clients against a
-  live disposable Redis 7 instance, including restart, partition, counter exhaustion, and expiry.
+- Prove private template retention and global extranonce allocation through Redis restart, partition,
+  failover, counter exhaustion, and wall-clock expiry scenarios.
 - Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
   against Core proposal validation.
 - Wire the offline candidate to proposal and `submitblock` through a durable coordinator, then persist
