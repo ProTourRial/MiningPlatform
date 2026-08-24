@@ -4,7 +4,11 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import type { BitcoinBlockTemplate, BitcoinNetwork } from '@mining/blockchain-adapters';
+import {
+  bitcoinAddressToScriptPubKey,
+  type BitcoinBlockTemplate,
+  type BitcoinNetwork,
+} from '@mining/blockchain-adapters';
 import {
   buildBlockHeader,
   bytesToHex,
@@ -104,6 +108,121 @@ function displayTransactionHash(transaction: Uint8Array): string {
   return bytesToHex(reverseBytes(sha256d(transaction)));
 }
 
+function requireHex(value: string, bytes: number | undefined, field: string): void {
+  if (
+    value.length === 0 ||
+    value.length % 2 !== 0 ||
+    !/^[0-9a-f]+$/i.test(value) ||
+    (bytes !== undefined && value.length !== bytes * 2)
+  ) {
+    throw new Error(`${field} is invalid`);
+  }
+}
+
+export function assertNativeBitcoinJobBundle(bundle: NativeBitcoinJobBundle): void {
+  if (!/^native-[1-9]\d{0,9}-[0-9a-f]{24}$/.test(bundle.job.id)) {
+    throw new Error('Native mining job id is invalid');
+  }
+  requireHex(bundle.job.previousBlockHash, 32, 'Native job previous block hash');
+  requireHex(bundle.job.coinbase1, undefined, 'Native job coinbase1');
+  requireHex(bundle.job.coinbase2, undefined, 'Native job coinbase2');
+  requireHex(bundle.job.extranonce1, undefined, 'Native job extranonce1');
+  requireHex(bundle.job.version, 4, 'Native job version');
+  requireHex(bundle.job.networkBits, 4, 'Native job network bits');
+  requireHex(bundle.job.networkTime, 4, 'Native job network time');
+  if (
+    !Number.isInteger(bundle.job.extranonce2Size) ||
+    bundle.job.extranonce2Size < 1 ||
+    bundle.job.extranonce2Size > 16
+  ) {
+    throw new Error('Native job extranonce2 size is invalid');
+  }
+  if (bundle.job.merkleBranches.length > 32) {
+    throw new Error('Native job merkle branch count is invalid');
+  }
+  for (const branch of bundle.job.merkleBranches) {
+    requireHex(branch, 32, 'Native job merkle branch');
+  }
+  parsePositiveDecimal(bundle.job.assignedDifficulty);
+  if (
+    Number.isNaN(bundle.job.receivedAt.getTime()) ||
+    Number.isNaN(bundle.job.expiresAt.getTime()) ||
+    bundle.job.receivedAt.getTime() >= bundle.job.expiresAt.getTime() ||
+    bundle.job.expiresAt.getTime() - bundle.job.receivedAt.getTime() > 300_000
+  ) {
+    throw new Error('Native job lifetime is invalid');
+  }
+  if (bundle.job.versionRollingMask !== undefined) {
+    requireHex(bundle.job.versionRollingMask, 4, 'Native job version rolling mask');
+  }
+
+  requireHex(bundle.coinbase.coinbase1, undefined, 'Native coinbase1');
+  requireHex(bundle.coinbase.coinbase2, undefined, 'Native coinbase2');
+  requireHex(bundle.coinbase.fullCoinbase1, undefined, 'Native full coinbase1');
+  requireHex(bundle.coinbase.fullCoinbase2, undefined, 'Native full coinbase2');
+  requireHex(bundle.coinbase.extranonce1, undefined, 'Native coinbase extranonce1');
+  requireHex(bundle.coinbase.payoutScriptPubKey, undefined, 'Native payout script');
+  requireHex(bundle.coinbase.policyDigest, 32, 'Native coinbase policy digest');
+  if (bundle.coinbase.witnessReservedValue !== null) {
+    requireHex(bundle.coinbase.witnessReservedValue, 32, 'Native witness reserved value');
+  }
+  if (bundle.coinbase.witnessCommitment !== null) {
+    if (!/^6a24aa21a9ed[0-9a-f]{64}$/i.test(bundle.coinbase.witnessCommitment)) {
+      throw new Error('Native witness commitment is invalid');
+    }
+    if (bundle.coinbase.witnessReservedValue === null) {
+      throw new Error('Native witness commitment requires a reserved value');
+    }
+  }
+  if (
+    bundle.coinbase.coinbaseValueAtomic < 0n ||
+    bundle.coinbase.scriptSigBytes < 2 ||
+    bundle.coinbase.scriptSigBytes > 100 ||
+    bundle.coinbase.extranonce2Size !== bundle.job.extranonce2Size ||
+    bundle.coinbase.extranonce1 !== bundle.job.extranonce1 ||
+    bundle.coinbase.coinbase1 !== bundle.job.coinbase1 ||
+    bundle.coinbase.coinbase2 !== bundle.job.coinbase2 ||
+    bitcoinAddressToScriptPubKey(bundle.coinbase.payoutAddress, bundle.coinbase.payoutNetwork) !==
+      bundle.coinbase.payoutScriptPubKey
+  ) {
+    throw new Error('Native coinbase evidence is inconsistent');
+  }
+
+  requireHex(bundle.templateSourceDigest, 32, 'Native template source digest');
+  requireHex(bundle.transactionDataDigest, 32, 'Native transaction data digest');
+  requireHex(bundle.jobDigest, 32, 'Native job digest');
+  if (
+    bundle.target <= 0n ||
+    bundle.target >= 1n << 256n ||
+    !Number.isInteger(bundle.minimumNetworkTime) ||
+    bundle.minimumNetworkTime < 0 ||
+    !Number.isInteger(bundle.sizeLimit) ||
+    bundle.sizeLimit < 1 ||
+    (bundle.weightLimit !== null &&
+      (!Number.isInteger(bundle.weightLimit) || bundle.weightLimit < 1)) ||
+    !Number.isInteger(bundle.templateTransactionWeight) ||
+    bundle.templateTransactionWeight < 0 ||
+    bundle.transactionData.length > 100_000
+  ) {
+    throw new Error('Native template limits are invalid');
+  }
+  let transactionBytes = 0;
+  for (const transaction of bundle.transactionData) {
+    requireHex(transaction, undefined, 'Native template transaction');
+    transactionBytes += transaction.length / 2;
+  }
+  if (transactionBytes >= bundle.sizeLimit) {
+    throw new Error('Native template transactions exhaust the size limit');
+  }
+  if (transactionDigest(bundle.transactionData) !== bundle.transactionDataDigest) {
+    throw new Error('Native mining transaction evidence digest does not match');
+  }
+  const { jobDigest: _jobDigest, ...withoutDigest } = bundle;
+  if (calculateJobDigest(withoutDigest) !== bundle.jobDigest) {
+    throw new Error('Native mining job evidence digest does not match');
+  }
+}
+
 export function buildNativeBitcoinJob(input: NativeBitcoinJobInput): NativeBitcoinJobBundle {
   parsePositiveDecimal(input.assignedDifficulty);
   const coinbase = buildNativeCoinbaseTemplate(input);
@@ -151,7 +270,9 @@ export function buildNativeBitcoinJob(input: NativeBitcoinJobInput): NativeBitco
     ),
     transactionData,
   };
-  return { ...withoutDigest, jobDigest: calculateJobDigest(withoutDigest) };
+  const bundle = { ...withoutDigest, jobDigest: calculateJobDigest(withoutDigest) };
+  assertNativeBitcoinJobBundle(bundle);
+  return bundle;
 }
 
 export function reconstructNativeBitcoinBlockCandidate(
@@ -159,6 +280,7 @@ export function reconstructNativeBitcoinBlockCandidate(
   submission: BitcoinShareSubmission,
   reconstructedAt = new Date(),
 ): NativeBitcoinBlockCandidate {
+  assertNativeBitcoinJobBundle(bundle);
   if (submission.jobId !== bundle.job.id)
     throw new Error('Share does not belong to the native job');
   if (Number.isNaN(submission.submittedAt.getTime())) {
@@ -183,14 +305,6 @@ export function reconstructNativeBitcoinBlockCandidate(
   ) {
     throw new Error('Share network time is outside the block template range');
   }
-  const { jobDigest: _jobDigest, ...withoutDigest } = bundle;
-  if (calculateJobDigest(withoutDigest) !== bundle.jobDigest) {
-    throw new Error('Native mining job evidence digest does not match');
-  }
-  if (transactionDigest(bundle.transactionData) !== bundle.transactionDataDigest) {
-    throw new Error('Native mining transaction evidence digest does not match');
-  }
-
   const strippedCoinbase = buildStrippedNativeCoinbase(bundle.coinbase, submission.extranonce2);
   const fullCoinbase = buildFullNativeCoinbase(bundle.coinbase, submission.extranonce2);
   const header = buildBlockHeader(bundle.job, submission);

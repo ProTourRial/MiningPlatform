@@ -51,11 +51,16 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
   serta pemeriksaan expiry, mutation, nTime, network target, size, dan weight secara fail closed.
 - menjalankan proposal-mode dan `submitblock` hanya melalui method eksplisit, mewajibkan fresh valid
   proposal evidence yang raw-block digest-nya cocok, serta membedakan accepted, duplicate,
-  inconclusive, dan rejected response.
+  inconclusive, dan rejected response;
+- menyimpan private job secara bounded dan tervalidasi melalui Redis, dengan idempotent active-job
+  selection, expiry berbasis Redis server time, dan deteksi mutation saat dibaca;
+- mengalokasikan extranonce global per chain/template digest melalui Lua atomik, dengan Redis Cluster
+  hash tag, counter space 1-6 byte, serta TTL monotonic saat template identik diperbarui.
 
-Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, trusted template
-store runtime, global extranonce allocator, job broadcast, live proposal/`submitblock` trace, atau
-durable submission evidence; karena itu status P0 belum selesai dan native mining tetap nonaktif.
+Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, live Redis
+multi-client/restart/partition evidence, wiring Stratum, job broadcast, live proposal/`submitblock`
+trace, atau durable submission evidence; karena itu status P0 belum selesai dan native mining tetap
+nonaktif.
 
 ## Priority register
 

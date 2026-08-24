@@ -38,8 +38,12 @@ defaults.
 8. Coinbase construction and candidate reconstruction live in a separate offline package. Coinbase
    txid/merkle calculations use stripped serialization, while the raw candidate retains the complete
    witness serialization and Core-provided default witness commitment.
-9. This checkpoint does not activate a runtime, perform proposal validation, submit blocks, or create
-   rewards. Those steps require separate implementation and evidence.
+9. Redis server time controls bounded native-job retention and global extranonce allocation. All keys
+   touched by one Lua operation share a chain hash tag for Redis Cluster compatibility. An identical
+   template refresh may extend, but never shorten, the allocator TTL so its counter cannot reset while
+   refreshed work remains valid.
+10. This checkpoint does not activate a Stratum runtime, automatically submit blocks, persist durable
+    submission evidence, or create rewards. Those steps require separate implementation and evidence.
 
 ## Consequences
 
@@ -65,15 +69,22 @@ defaults.
 - Proposal mode returns explicit valid/rejected evidence. `submitblock` requires a fresh matching
   valid-proposal digest and normalizes accepted, duplicate, inconclusive, and rejected outcomes
   without treating a non-null response as success.
+- Canonical private-job serialization restores `BigInt` and `Date` values and revalidates complete
+  bundle evidence on every write/read. Redis Lua scripts provide idempotent active-job retention and
+  globally unique bounded extranonce leases using Redis server time.
+- Identical template refreshes retain a monotonic allocator expiry, multi-key writes use a common
+  chain hash tag, and both job and allocator lifetimes are capped at five minutes.
 - Unit fixtures prove deterministic construction and fail-closed network, expiry, evidence-mutation,
-  size, target, proposal, and submission behavior. No live Bitcoin Core evidence is claimed yet.
+  size, target, proposal, submission, cross-replica allocation, and refresh-expiry behavior. No live
+  Redis or Bitcoin Core evidence is claimed yet.
 
 ## Next acceptance gates
 
 - Pin a Bitcoin Core image/version and add a disposable regtest-only Compose profile.
 - Prove live `getblocktemplate` readiness, long-poll replacement, malformed/stale rejection, and node
   restart behavior.
-- Implement global extranonce allocation and private template retention across replicas.
+- Prove private template retention and global extranonce allocation using separate clients against a
+  live disposable Redis 7 instance, including restart, partition, counter exhaustion, and expiry.
 - Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
   against Core proposal validation.
 - Wire the offline candidate to proposal and `submitblock` through a durable coordinator, then persist
