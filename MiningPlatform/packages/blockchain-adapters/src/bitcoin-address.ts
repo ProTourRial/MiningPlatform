@@ -163,3 +163,36 @@ export function validateBitcoinAddress(
   if (/^(bc|tb|bcrt)1/i.test(address)) return validateSegwit(address, network);
   return validateBase58(address, network);
 }
+
+export function bitcoinAddressToScriptPubKey(
+  address: string,
+  network: BitcoinNetwork = 'mainnet',
+): string {
+  const validation = validateBitcoinAddress(address, network);
+  if (!validation.valid)
+    throw new Error(`Invalid ${network} Bitcoin address: ${validation.reason}`);
+
+  if (validation.encoding === 'base58-p2pkh' || validation.encoding === 'base58-p2sh') {
+    const decoded = decodeBase58(validation.normalized);
+    if (!decoded || decoded.length !== 25) throw new Error('Bitcoin Base58 payload is invalid');
+    const hash160 = decoded.subarray(1, 21).toString('hex');
+    return validation.encoding === 'base58-p2pkh' ? `76a914${hash160}88ac` : `a914${hash160}87`;
+  }
+
+  const separator = validation.normalized.lastIndexOf('1');
+  const data = [...validation.normalized.slice(separator + 1, -6)].map((character) =>
+    BECH32_ALPHABET.indexOf(character),
+  );
+  const witnessVersion = data[0];
+  const witnessProgram = convertBits(data.slice(1), 5, 8);
+  if (
+    witnessVersion === undefined ||
+    witnessProgram === undefined ||
+    witnessProgram.length < 2 ||
+    witnessProgram.length > 40
+  ) {
+    throw new Error('Bitcoin witness program is invalid');
+  }
+  const versionOpcode = witnessVersion === 0 ? 0 : 0x50 + witnessVersion;
+  return Buffer.from([versionOpcode, witnessProgram.length, ...witnessProgram]).toString('hex');
+}

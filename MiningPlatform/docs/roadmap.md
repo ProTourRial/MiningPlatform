@@ -64,6 +64,11 @@ Execution order:
 6. Coinbase UTXO, wallet, user-liability, fee, clearing, and reserve reconciliation.
 7. Production Stratum capacity, global extranonce, HA, DDoS, monitoring, security, and legal gates.
 
+Current fixture evidence covers the fail-closed RPC/template boundary plus the offline deterministic
+coinbase, merkle, native-job, and block-candidate builders. Live regtest, global extranonce, trusted
+runtime retention, proposal validation, and `submitblock` remain mandatory before steps 1-3 can be
+declared complete.
+
 PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
 independent risk approval exist. Regtest success never authorizes mainnet custody or payout.
 

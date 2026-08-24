@@ -35,8 +35,11 @@ defaults.
    notifications receive only coinbase fragments, merkle branches, header fields, and job identity.
 7. Wallet RPC keeps the 2 MiB default response limit. A mining-node client may explicitly raise the
    bound, with a hard maximum of 32 MiB; the initial laboratory uses 16 MiB.
-8. This checkpoint does not activate a runtime, construct coinbase transactions, submit blocks, or
-   create rewards. Those steps require separate implementation and evidence.
+8. Coinbase construction and candidate reconstruction live in a separate offline package. Coinbase
+   txid/merkle calculations use stripped serialization, while the raw candidate retains the complete
+   witness serialization and Core-provided default witness commitment.
+9. This checkpoint does not activate a runtime, perform proposal validation, submit blocks, or create
+   rewards. Those steps require separate implementation and evidence.
 
 ## Consequences
 
@@ -46,17 +49,31 @@ defaults.
   changes.
 - A block candidate must correlate to the exact private template digest and transaction set before
   proposal validation or `submitblock`.
+- Candidate reconstruction must re-check template/job/transaction digests, nTime, the network target,
+  and exact template size/weight bounds before any RPC submission is permitted.
 - Bitcoin Core version upgrades require fixture and live-regtest compatibility evidence.
+
+## Current implementation evidence
+
+- `@mining/bitcoin-template` deterministically builds BIP34 coinbase fragments, converts a validated
+  network-bound payout address to its output script, and commits the exact coinbase policy to a
+  digest.
+- Stripped coinbase serialization supplies the txid merkle root; full witness serialization supplies
+  the byte-for-byte transaction placed in a candidate block.
+- The offline builder emits a minimal `BitcoinMiningJob`, retains the complete transaction set in the
+  trusted bundle, and reconstructs only candidates that meet the template target and block limits.
+- Unit fixtures prove deterministic construction and fail-closed network, expiry, evidence-mutation,
+  size, and target behavior. No live Bitcoin Core evidence is claimed yet.
 
 ## Next acceptance gates
 
 - Pin a Bitcoin Core image/version and add a disposable regtest-only Compose profile.
 - Prove live `getblocktemplate` readiness, long-poll replacement, malformed/stale rejection, and node
   restart behavior.
-- Implement deterministic BIP34 coinbase and witness commitment construction with byte fixtures.
 - Implement global extranonce allocation and private template retention across replicas.
-- Reconstruct a complete block, run proposal validation, call `submitblock`, and persist correlated
-  accepted/rejected evidence.
+- Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
+  against Core proposal validation.
+- Call `submitblock` only after proposal validation and persist correlated accepted/rejected evidence.
 - Keep mainnet and every reward/payout side effect disabled until the remaining native-pool gates pass.
 
 ## References

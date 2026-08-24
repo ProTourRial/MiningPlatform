@@ -20,9 +20,12 @@
 - Owner-confirmed native Bitcoin mainnet coinbase default `1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA`, with the separate BEP20 deposit destination retained as non-Bitcoin receiving metadata and explicit network-mismatch safeguards documented.
 - Fail-closed native Bitcoin Core readiness and `getblocktemplate` adapter with exact-chain, sync, network, version, and warning gates; strict transaction/dependency, target/`bits`, block-limit, coinbase-value, and witness-commitment validation; bounded template expiry; and canonical source digests.
 - ADR-0016 defining the private full-template boundary, minimal miner-facing job projection, separately bounded mining RPC responses, and the remaining regtest-to-`submitblock` activation gates.
+- Offline native Bitcoin job foundation with checksum- and network-validated address-to-script conversion, deterministic BIP34 coinbase construction, exact owner-selected payout value, separate stripped/full witness serialization, display-order txid merkle branches, evidence-bound job identities, and full block-candidate reconstruction.
+- Candidate reconstruction now rejects stale or mutated evidence, invalid time rolling, hashes above the network target, and candidates exceeding the Bitcoin Core template size or weight limits; it produces correlated header, block, coinbase txid/wtxid, and raw-block digests without performing an RPC side effect.
 
 ### Changed
 
+- The alpha.7 static release checker now tracks all 32 exact-tree workspace package files and the current independently gated payout readiness controls introduced during Unreleased development.
 - Payout readiness now evaluates the selected account destination, active route window, minimum/maximum amount, current posted user liability, recent matched wallet reconciliation, signer configuration, wallet reserve, single-payout limit, and rolling daily limit.
 - Wallet liquidity checks lock the selected hot wallet and subtract all active reservations before admitting a new request, preventing concurrent accounts from committing the same node balance.
 - `PILOT` and `ACTIVE` payout routes now bind an explicit asset-matched hot wallet, eliminating nondeterministic wallet selection when an asset has multiple treasury wallets.
@@ -36,7 +39,7 @@
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
-- The native Bitcoin adapter has fixture-level evidence only and is not wired to Stratum or Docker; it cannot yet construct coinbase transactions, emit native jobs, submit blocks, or create rewards.
+- The native Bitcoin template and coinbase/job/candidate builders have fixture-level evidence only and are not wired to Stratum or Docker; they cannot request live work, perform proposal validation, call `submitblock`, or create rewards in this checkpoint.
 
 ### Development assistance
 

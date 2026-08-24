@@ -28,7 +28,7 @@ coinbase Bitcoin. Native mining masih dipaksa nonaktif; regtest memakai destinat
 dimiliki wallet regtest. Sebelum mainnet diaktifkan, startup harus memvalidasi network/checksum dan
 menolak mismatch antara policy, descriptor/output script, dan destination yang disetujui owner.
 
-## Current native-template checkpoint
+## Current native-template and candidate checkpoint
 
 `@mining/blockchain-adapters` sekarang memiliki boundary native Bitcoin Core yang:
 
@@ -40,9 +40,19 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
 - mempertahankan limit RPC wallet 2 MiB sambil mengizinkan client mining menaikkan limit secara
   eksplisit sampai hard ceiling 32 MiB.
 
+`@mining/bitcoin-template` sekarang menambahkan boundary offline yang:
+
+- mengubah address Bitcoin yang checksum/network-valid menjadi scriptPubKey tanpa RPC;
+- membangun coinbase BIP34 deterministik dengan exact template coinbase value dan destination yang
+  dipilih, serta memisahkan stripped txid serialization dari full witness serialization;
+- membangun merkle branch dari txid display-order, job identity yang terikat digest, dan minimal
+  miner-facing `BitcoinMiningJob`;
+- merekonstruksi raw block candidate dengan header, coinbase txid/wtxid, source/job/raw-block digest,
+  serta pemeriksaan expiry, mutation, nTime, network target, size, dan weight secara fail closed.
+
 Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, trusted template
-store runtime, coinbase builder, job broadcast, candidate reconstruction, atau `submitblock`; karena
-itu status P0 belum selesai dan native mining tetap nonaktif.
+store runtime, global extranonce allocator, job broadcast, proposal validation, atau `submitblock`;
+karena itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

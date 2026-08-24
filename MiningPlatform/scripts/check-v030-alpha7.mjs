@@ -59,8 +59,8 @@ const packageFiles = [
     .filter((entry) => entry.isDirectory())
     .map((entry) => `packages/${entry.name}/package.json`),
 ];
-if (packageFiles.length !== 28)
-  throw new Error(`Expected 28 workspace package files, found ${packageFiles.length}`);
+if (packageFiles.length !== 32)
+  throw new Error(`Expected 32 workspace package files, found ${packageFiles.length}`);
 for (const path of packageFiles) {
   const parsed = JSON.parse(await text(path));
   if (parsed.version !== expectedVersion) {
@@ -145,8 +145,11 @@ for (const expected of [
   'addressFingerprint',
   'serializableTransaction',
   'PAYOUT_ROUTE_NOT_ACTIVE',
-  'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED',
-  'GLOBAL_PAYOUT_GATE_DISABLED',
+  'PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_SIGNING_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_BROADCAST_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_CONTROL_NOT_CONFIGURED',
+  'AUTO_WITHDRAWAL_REQUIRES_ACTIVE_ROUTE',
 ])
   requireText(payoutService, expected, 'Payout service');
 requireText(
