@@ -246,8 +246,8 @@ for (const expected of [
   'pnpm typecheck',
   'pnpm test',
   'pnpm test:integration:payout-control',
-  'pnpm verify:migration:v030-alpha7:fresh',
-  'pnpm verify:migration:v030-alpha7:upgrade',
+  'pnpm verify:migration:v030-alpha8:fresh',
+  'pnpm verify:migration:v030-alpha8:upgrade',
   'pnpm build',
 ])
   requireText(workflow, expected, 'GitHub CI');

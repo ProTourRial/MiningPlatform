@@ -59,9 +59,12 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
 
 Checkpoint ini memiliki unit/fixture evidence dan integration evidence dua client pada Redis 7
 disposable untuk job visibility, idempotency, 128 alokasi unik, Redis server time, dan TTL monotonic.
-Belum ada container Bitcoin Core regtest, Redis restart/partition/failover evidence, wiring Stratum,
-job broadcast, live proposal/`submitblock` trace, atau durable submission evidence; karena itu status
-P0 belum selesai dan native mining tetap nonaktif.
+Schema v15 dan repository mining-worker sekarang menyimpan candidate, proposal, serta submission
+attempt secara append-only dan idempotent, dengan exact digest correlation dan proposal-freshness
+gate yang juga ditegakkan database. Fresh serta representative alpha.7 upgrade rehearsal telah lulus
+15 migration tanpa menulis ulang payout historis. Belum ada container Bitcoin Core regtest, Redis
+restart/partition/failover evidence, wiring Stratum, crash-recoverable broadcast coordinator, atau live
+proposal/`submitblock` trace; karena itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

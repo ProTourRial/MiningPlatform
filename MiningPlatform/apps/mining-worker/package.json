@@ -12,6 +12,8 @@
     "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
+    "@mining/bitcoin-template": "workspace:*",
+    "@mining/blockchain-adapters": "workspace:*",
     "@mining/build-info": "workspace:*",
     "@mining/database": "workspace:*",
     "@mining/event-bus": "workspace:*",

@@ -42,8 +42,10 @@ defaults.
    touched by one Lua operation share a chain hash tag for Redis Cluster compatibility. An identical
    template refresh may extend, but never shorten, the allocator TTL so its counter cannot reset while
    refreshed work remains valid.
-10. This checkpoint does not activate a Stratum runtime, automatically submit blocks, persist durable
-    submission evidence, or create rewards. Those steps require separate implementation and evidence.
+10. Candidate, proposal, and submission-attempt evidence is persisted append-only with exact digest
+    correlation and idempotency. Raw blocks remain ephemeral and are not stored in PostgreSQL.
+11. This checkpoint does not activate a Stratum runtime, automatically submit blocks, or create
+    rewards. A crash-recoverable live coordinator still requires separate implementation and evidence.
 
 ## Consequences
 
@@ -79,6 +81,12 @@ defaults.
 - A two-client integration test against disposable Redis 7 proves private-job visibility,
   idempotency, Redis-time allocation, 128 unique leases, and monotonic TTL extension without skips.
   No Redis restart/partition or live Bitcoin Core evidence is claimed yet.
+- Schema v15 retains append-only candidate, proposal, and submission-attempt records. Database
+  constraints and triggers bind proposal/submission digests to one candidate, reject expired or
+  rejected proposals, and prevent update/delete mutation.
+- Repository integration evidence proves exact sequential and concurrent idempotency, conflict
+  rejection, proposal freshness, and rejected-proposal denial. Fresh and representative alpha.7
+  upgrade rehearsals apply all 15 migrations without rewriting the historical payout fixture.
 
 ## Next acceptance gates
 
@@ -89,8 +97,8 @@ defaults.
   failover, counter exhaustion, and wall-clock expiry scenarios.
 - Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
   against Core proposal validation.
-- Wire the offline candidate to proposal and `submitblock` through a durable coordinator, then persist
-  correlated accepted, duplicate, inconclusive, and rejected evidence.
+- Wire the offline candidate to proposal and `submitblock` through a durable coordinator, including
+  recovery when the process stops after RPC submission but before its result is durably recorded.
 - Keep mainnet and every reward/payout side effect disabled until the remaining native-pool gates pass.
 
 ## References

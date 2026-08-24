@@ -99,7 +99,7 @@ jobs:
       - run: pnpm test:integration:payout-control
 
   migration:
-    name: Fresh and alpha.6 upgrade migration
+    name: Fresh and alpha.7 upgrade migration
     runs-on: ubuntu-latest
     env:
       CI: 'true'
@@ -133,12 +133,17 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y postgresql-client
       - name: Fresh migration
         env:
-          MIGRATION_TEST_ACK: v030-alpha7-fresh-empty-database
-        run: pnpm verify:migration:v030-alpha7:fresh
+          MIGRATION_TEST_ACK: v030-alpha8-fresh-empty-database
+        run: pnpm verify:migration:v030-alpha8:fresh
+      - name: Provision isolated upgrade database
+        env:
+          PGPASSWORD: migration-postgres
+        run: createdb --host 127.0.0.1 --username mining mining_platform_upgrade
       - name: Upgrade migration
         env:
-          MIGRATION_TEST_ACK: v030-alpha6-upgrade-copy
-        run: pnpm verify:migration:v030-alpha7:upgrade
+          DATABASE_URL: postgresql://mining:migration-postgres@127.0.0.1:5432/mining_platform_upgrade?schema=public
+          MIGRATION_TEST_ACK: v030-alpha7-upgrade-empty-database
+        run: pnpm verify:migration:v030-alpha8:upgrade
 
   docker-e2e:
     name: Docker E2E

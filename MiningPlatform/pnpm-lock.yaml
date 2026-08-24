@@ -163,6 +163,12 @@ importers:
 
   apps/mining-worker:
     dependencies:
+      '@mining/bitcoin-template':
+        specifier: workspace:*
+        version: link:../../packages/bitcoin-template
+      '@mining/blockchain-adapters':
+        specifier: workspace:*
+        version: link:../../packages/blockchain-adapters
       '@mining/build-info':
         specifier: workspace:*
         version: link:../../packages/build-info

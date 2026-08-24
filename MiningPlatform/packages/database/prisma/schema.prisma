@@ -260,6 +260,26 @@ enum ChainObservationStatus {
   DROPPED
 }
 
+enum NativeBitcoinChain {
+  MAIN
+  TEST
+  TESTNET4
+  SIGNET
+  REGTEST
+}
+
+enum NativeBitcoinProposalStatus {
+  VALID
+  REJECTED
+}
+
+enum NativeBitcoinSubmissionStatus {
+  ACCEPTED
+  DUPLICATE
+  INCONCLUSIVE
+  REJECTED
+}
+
 enum PayoutReconciliationStatus {
   PENDING
   MATCHED
@@ -1545,6 +1565,66 @@ model WalletTransaction {
 
   @@unique([assetId, transactionId, outputIndex])
   @@index([status, detectedAt])
+}
+
+model NativeBitcoinCandidate {
+  id                   String                           @id @default(cuid())
+  idempotencyKey       String                           @unique
+  chain                NativeBitcoinChain
+  jobId                String
+  templateSourceDigest String
+  coinbasePolicyDigest String
+  blockHash            String
+  headerHex            String
+  rawBlockDigest       String
+  reconstructedAt      DateTime
+  createdAt            DateTime                         @default(now())
+  proposals            NativeBitcoinProposalEvidence[]
+  submissions          NativeBitcoinSubmissionAttempt[]
+
+  @@unique([chain, blockHash])
+  @@unique([chain, rawBlockDigest])
+  @@index([chain, reconstructedAt])
+  @@index([jobId, reconstructedAt])
+}
+
+model NativeBitcoinProposalEvidence {
+  id             String                           @id @default(cuid())
+  idempotencyKey String                           @unique
+  candidateId    String
+  status         NativeBitcoinProposalStatus
+  reason         String?
+  rawBlockDigest String
+  sourceDigest   String
+  observedAt     DateTime
+  validUntil     DateTime
+  createdAt      DateTime                         @default(now())
+  candidate      NativeBitcoinCandidate           @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  submissions    NativeBitcoinSubmissionAttempt[]
+
+  @@unique([candidateId, sourceDigest])
+  @@index([candidateId, observedAt])
+  @@index([status, validUntil])
+}
+
+model NativeBitcoinSubmissionAttempt {
+  id                 String                        @id @default(cuid())
+  idempotencyKey     String                        @unique
+  candidateId        String
+  proposalEvidenceId String
+  status             NativeBitcoinSubmissionStatus
+  reason             String?
+  rawBlockDigest     String
+  workId             String?
+  sourceDigest       String
+  observedAt         DateTime
+  createdAt          DateTime                      @default(now())
+  candidate          NativeBitcoinCandidate        @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  proposalEvidence   NativeBitcoinProposalEvidence @relation(fields: [proposalEvidenceId], references: [id], onDelete: Restrict)
+
+  @@unique([candidateId, sourceDigest])
+  @@index([candidateId, observedAt])
+  @@index([status, observedAt])
 }
 
 model UpstreamPool {

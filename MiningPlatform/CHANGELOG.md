@@ -6,8 +6,9 @@
 
 - Controlled payout execution foundation with database-backed eligibility snapshots, exact journal balance reservation, append-only approval evidence, user-owned selected payout destinations, cancellation/rejection reversal journals, and fail-closed request/signing/broadcast controls.
 - Schema v14 evidence records for signing requests, broadcast attempts, chain observations, payout reconciliation, wallet reconciliation, and per-asset emergency payout controls; historical alpha.7 payouts remain preserved as execution version 1.
+- Schema v15 append-only native Bitcoin candidate, proposal, and submission-attempt evidence with exact template, coinbase-policy, raw-block, job, and source-digest correlation; only bounded hashes and the block header are retained, never raw block bytes.
 - Authenticated APIs for selecting an account payout destination, creating idempotent payout requests, listing payout history, cancelling pre-approval requests, and recording separated administrator approval or rejection.
-- Fresh and alpha.7-to-schema-14 migration rehearsal plus controlled-payout integration coverage for retry safety, balanced reservation, self-approval rejection, unique final decisions, cancellation boundaries, rejection reversal, and wallet-reservation oversubscription prevention.
+- Fresh and representative alpha.7-to-schema-15 migration rehearsal plus controlled-payout and native-evidence integration coverage for historical-data preservation, retry safety, balanced reservation, self-approval rejection, unique final decisions, append-only evidence, concurrent idempotency, proposal freshness, digest correlation, and wallet-reservation oversubscription prevention.
 - ADR-0014 defining the isolated signer boundary, payout evidence state machine, independent production gates, and reconciliation requirements.
 - Bitcoin Core watch-only RPC adapter with exact satoshi conversion, synchronized wallet snapshots, PSBT construction and output verification, reserved-fee enforcement, input unlock on preparation failure, finalization, mempool preflight, raw broadcast, and confirmation/reorg observations.
 - Versioned signer protocol with canonical manifest digests and replay-bound HMAC authentication, plus an isolated transaction-signer service that independently validates destination, amount, fee, owned change outputs, key allowlist, and manifest expiry before calling a signer-only Bitcoin Core wallet.
@@ -26,6 +27,7 @@
 - Redis-time native mining coordination foundation with globally unique bounded extranonce leases per chain and template digest, monotonic lease expiry across identical template refreshes, Redis Cluster-compatible hash tags, and deterministic allocation evidence.
 - Private native-job serialization and Redis retention with bounded payloads, restored `BigInt`/`Date` evidence, complete bundle validation, idempotent writes, newest-observation active selection, expiry enforcement, and mutation detection.
 - Two-client Redis 7 integration coverage for native job visibility, idempotent retention, Redis-time allocation, 128-way cross-client extranonce uniqueness, and monotonic refresh expiry; CI already supplies the same `REDIS_INTEGRATION_URL` boundary.
+- Database-backed native Bitcoin evidence repository with exact idempotent retries, conflict rejection, concurrency-safe candidate creation, proposal-to-candidate binding, and fresh valid-proposal enforcement before a submission attempt can be recorded.
 
 ### Changed
 
@@ -35,6 +37,8 @@
 - `PILOT` and `ACTIVE` payout routes now bind an explicit asset-matched hot wallet, eliminating nondeterministic wallet selection when an asset has multiple treasury wallets.
 - One payout may have only one append-only approval decision, enforced by both the service state machine and a database uniqueness constraint.
 - Payout preference reads expose explicit blockers for request, signing, and broadcast gates; auto withdrawal remains ineffective whenever any required gate or destination prerequisite is missing.
+- Active root CI and the packaged workflow now run isolated schema-v15 fresh and representative alpha.7 upgrade rehearsals instead of stopping at the released schema-v13 verifier.
+- Deployment HTTP readiness polling now drains responses and exits naturally instead of forcing process termination, avoiding a Windows libuv shutdown assertion while preserving the Linux CI behavior.
 
 ### Safety boundary
 
@@ -43,7 +47,7 @@
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
-- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, and submission boundaries are not invoked by Stratum or Docker. Live Redis two-client evidence now exists, while restart/partition evidence, durable submission records, and Bitcoin Core regtest remain mandatory; no block is automatically submitted and no reward can be created in this checkpoint.
+- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, and submission boundaries are not invoked by Stratum or Docker. Durable submission evidence and live Redis two-client evidence now exist, while a crash-recoverable coordinator, Redis restart/partition evidence, and Bitcoin Core regtest remain mandatory; no block is automatically submitted and no reward can be created in this checkpoint.
 
 ### Development assistance
 
