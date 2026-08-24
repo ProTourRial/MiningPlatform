@@ -12,6 +12,7 @@ import {
 } from './bitcoin-rpc.js';
 
 export * from './bitcoin-address.js';
+export * from './bitcoin-mining-rpc.js';
 export * from './bitcoin-rpc.js';
 
 export type PayoutRequest = {

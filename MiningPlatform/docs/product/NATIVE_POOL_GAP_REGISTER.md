@@ -1,10 +1,11 @@
 # MiningPlatform Native Pool Gap Register
 
 - **Status:** Active engineering register
-- **Date:** 2026-08-22
+- **Date:** 2026-08-24
 - **Authority:** [`../../PROJECT_VISION.md`](../../PROJECT_VISION.md)
 - **Related:** [`PRODUCTION_GAP_REGISTER.md`](PRODUCTION_GAP_REGISTER.md),
-  [`../adr/0015-randomx-validation-and-upstream-boundary.md`](../adr/0015-randomx-validation-and-upstream-boundary.md)
+  [`../adr/0015-randomx-validation-and-upstream-boundary.md`](../adr/0015-randomx-validation-and-upstream-boundary.md),
+  [`../adr/0016-bitcoin-core-native-template-boundary.md`](../adr/0016-bitcoin-core-native-template-boundary.md)
 
 ## Purpose
 
@@ -26,6 +27,22 @@ Keduanya merupakan alamat publik, bukan signing material. Alamat BEP20 tidak bol
 coinbase Bitcoin. Native mining masih dipaksa nonaktif; regtest memakai destination disposable yang
 dimiliki wallet regtest. Sebelum mainnet diaktifkan, startup harus memvalidasi network/checksum dan
 menolak mismatch antara policy, descriptor/output script, dan destination yang disetujui owner.
+
+## Current native-template checkpoint
+
+`@mining/blockchain-adapters` sekarang memiliki boundary native Bitcoin Core yang:
+
+- membuktikan expected chain, node version, IBD, header/block parity, network state, dan warnings;
+- meminta `getblocktemplate` dengan rule `segwit` dan capability mining yang eksplisit;
+- mempertahankan raw transaction set secara terikat digest dan memvalidasi dependency, fee, sigops,
+  weight, coinbase value, block limits, target/`bits`, time, nonce range, serta witness commitment;
+- memberi expiry eksplisit pada template dan menolak respons malformed secara fail closed;
+- mempertahankan limit RPC wallet 2 MiB sambil mengizinkan client mining menaikkan limit secara
+  eksplisit sampai hard ceiling 32 MiB.
+
+Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, trusted template
+store runtime, coinbase builder, job broadcast, candidate reconstruction, atau `submitblock`; karena
+itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

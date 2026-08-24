@@ -9,7 +9,8 @@ import { canonicalJson } from '@mining/signer-protocol';
 import { validateBitcoinAddress, type BitcoinNetwork } from './bitcoin-address.js';
 
 const SATOSHIS_PER_BITCOIN = 100_000_000n;
-const MAXIMUM_RPC_RESPONSE_BYTES = 2 * 1024 * 1024;
+const DEFAULT_MAXIMUM_RPC_RESPONSE_BYTES = 2 * 1024 * 1024;
+const MAXIMUM_ALLOWED_RPC_RESPONSE_BYTES = 32 * 1024 * 1024;
 
 export type BitcoinRpcClientOptions = {
   url: string;
@@ -17,6 +18,7 @@ export type BitcoinRpcClientOptions = {
   password: string;
   walletName?: string;
   timeoutMilliseconds?: number;
+  maximumResponseBytes?: number;
   allowInsecureHttp?: boolean;
   fetchImplementation?: typeof fetch;
 };
@@ -102,6 +104,7 @@ export function atomicToBitcoinNumber(value: bigint): number {
 export class BitcoinJsonRpcClient {
   private readonly endpoint: URL;
   private readonly timeoutMilliseconds: number;
+  private readonly maximumResponseBytes: number;
   private readonly fetchImplementation: typeof fetch;
   private requestSequence = 0;
 
@@ -129,6 +132,14 @@ export class BitcoinJsonRpcClient {
     if (!Number.isInteger(this.timeoutMilliseconds) || this.timeoutMilliseconds < 100) {
       throw new Error('Bitcoin RPC timeout must be at least 100 milliseconds');
     }
+    this.maximumResponseBytes = options.maximumResponseBytes ?? DEFAULT_MAXIMUM_RPC_RESPONSE_BYTES;
+    if (
+      !Number.isInteger(this.maximumResponseBytes) ||
+      this.maximumResponseBytes < 1024 ||
+      this.maximumResponseBytes > MAXIMUM_ALLOWED_RPC_RESPONSE_BYTES
+    ) {
+      throw new Error('Bitcoin RPC response limit must be between 1 KiB and 32 MiB');
+    }
     this.fetchImplementation = options.fetchImplementation ?? fetch;
   }
 
@@ -149,7 +160,7 @@ export class BitcoinJsonRpcClient {
         signal: controller.signal,
       });
       const declaredLength = Number(response.headers.get('content-length') ?? 0);
-      if (declaredLength > MAXIMUM_RPC_RESPONSE_BYTES) {
+      if (declaredLength > this.maximumResponseBytes) {
         throw new BitcoinRpcError(
           'Bitcoin RPC response exceeds the configured limit',
           null,
@@ -157,7 +168,7 @@ export class BitcoinJsonRpcClient {
         );
       }
       const body = await response.text();
-      if (Buffer.byteLength(body) > MAXIMUM_RPC_RESPONSE_BYTES) {
+      if (Buffer.byteLength(body) > this.maximumResponseBytes) {
         throw new BitcoinRpcError(
           'Bitcoin RPC response exceeds the configured limit',
           null,
