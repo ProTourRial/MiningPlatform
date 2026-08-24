@@ -143,7 +143,7 @@ export class BitcoinJsonRpcClient {
     this.fetchImplementation = options.fetchImplementation ?? fetch;
   }
 
-  async call<T>(method: string, params: readonly unknown[] = []): Promise<T> {
+  private async request<T>(method: string, params: readonly unknown[]): Promise<T | null> {
     if (!/^[a-z][a-z0-9]*$/i.test(method)) throw new Error('Bitcoin RPC method is invalid');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMilliseconds);
@@ -187,9 +187,6 @@ export class BitcoinJsonRpcClient {
       if (envelope.error) {
         throw new BitcoinRpcError(envelope.error.message, envelope.error.code, method);
       }
-      if (envelope.result === null) {
-        throw new BitcoinRpcError('Bitcoin RPC returned a null result', null, method);
-      }
       return envelope.result;
     } catch (error) {
       if (error instanceof BitcoinRpcError) throw error;
@@ -204,6 +201,18 @@ export class BitcoinJsonRpcClient {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  async call<T>(method: string, params: readonly unknown[] = []): Promise<T> {
+    const result = await this.request<T>(method, params);
+    if (result === null) {
+      throw new BitcoinRpcError('Bitcoin RPC returned a null result', null, method);
+    }
+    return result;
+  }
+
+  async callNullable<T>(method: string, params: readonly unknown[] = []): Promise<T | null> {
+    return this.request<T>(method, params);
   }
 }
 

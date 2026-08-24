@@ -49,10 +49,13 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
   miner-facing `BitcoinMiningJob`;
 - merekonstruksi raw block candidate dengan header, coinbase txid/wtxid, source/job/raw-block digest,
   serta pemeriksaan expiry, mutation, nTime, network target, size, dan weight secara fail closed.
+- menjalankan proposal-mode dan `submitblock` hanya melalui method eksplisit, mewajibkan fresh valid
+  proposal evidence yang raw-block digest-nya cocok, serta membedakan accepted, duplicate,
+  inconclusive, dan rejected response.
 
 Checkpoint ini baru unit/fixture evidence. Belum ada container Bitcoin Core regtest, trusted template
-store runtime, global extranonce allocator, job broadcast, proposal validation, atau `submitblock`;
-karena itu status P0 belum selesai dan native mining tetap nonaktif.
+store runtime, global extranonce allocator, job broadcast, live proposal/`submitblock` trace, atau
+durable submission evidence; karena itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

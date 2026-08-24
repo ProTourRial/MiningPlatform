@@ -4,6 +4,7 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
+import { createHash } from 'node:crypto';
 import { canonicalJson, sha256Hex } from '@mining/signer-protocol';
 import { BitcoinRpcError } from './bitcoin-rpc.js';
 import type { BitcoinJsonRpcClient } from './bitcoin-rpc.js';
@@ -16,6 +17,7 @@ const MAXIMUM_TEMPLATE_TRANSACTIONS = 100_000;
 const MAXIMUM_TRANSACTION_BYTES = 4_000_000;
 const MAXIMUM_BLOCK_LIMIT = 16_000_000;
 const MAXIMUM_BITCOIN_ATOMIC = 2_100_000_000_000_000n;
+const MAXIMUM_RAW_BLOCK_BYTES = 4_000_000;
 
 export type BitcoinCoreChain = 'main' | 'test' | 'testnet4' | 'signet' | 'regtest';
 
@@ -89,7 +91,25 @@ export type BitcoinNativeMiningRpcAdapterOptions = {
   expectedChain: BitcoinCoreChain;
   minimumNodeVersion?: number;
   templateMaximumAgeMilliseconds?: number;
+  proposalMaximumAgeMilliseconds?: number;
   now?: () => Date;
+};
+
+export type BitcoinBlockProposalResult = {
+  status: 'VALID' | 'REJECTED';
+  reason: string | null;
+  rawBlockDigest: string;
+  observedAt: Date;
+  sourceDigest: string;
+};
+
+export type BitcoinBlockSubmissionResult = {
+  status: 'ACCEPTED' | 'DUPLICATE' | 'REJECTED' | 'INCONCLUSIVE';
+  reason: string | null;
+  rawBlockDigest: string;
+  workId: string | null;
+  observedAt: Date;
+  sourceDigest: string;
 };
 
 type CoreChainInfo = {
@@ -111,6 +131,33 @@ type CoreNetworkInfo = {
 
 function invalid(method: string, message: string): never {
   throw new BitcoinRpcError(`Bitcoin Core ${message}`, null, method);
+}
+
+function normalizeRawBlock(rawBlock: string, method: string): string {
+  if (
+    rawBlock.length < 162 ||
+    rawBlock.length > MAXIMUM_RAW_BLOCK_BYTES * 2 ||
+    rawBlock.length % 2 !== 0 ||
+    !/^[0-9a-f]+$/i.test(rawBlock)
+  ) {
+    invalid(method, 'raw block must be bounded canonical hex');
+  }
+  return rawBlock.toLowerCase();
+}
+
+function rawBlockDigest(rawBlock: string): string {
+  return createHash('sha256').update(Buffer.from(rawBlock, 'hex')).digest('hex');
+}
+
+function normalizeMiningRpcResult(
+  value: unknown,
+  method: 'getblocktemplate' | 'submitblock',
+): string | null {
+  if (value === null) return null;
+  if (typeof value !== 'string' || value.length === 0 || value.length > 1024) {
+    invalid(method, 'returned an invalid mining result');
+  }
+  return value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -459,6 +506,7 @@ export function normalizeBitcoinBlockTemplate(
 export class BitcoinNativeMiningRpcAdapter {
   private readonly minimumNodeVersion: number;
   private readonly templateMaximumAgeMilliseconds: number;
+  private readonly proposalMaximumAgeMilliseconds: number;
   private readonly now: () => Date;
 
   constructor(
@@ -467,6 +515,7 @@ export class BitcoinNativeMiningRpcAdapter {
   ) {
     this.minimumNodeVersion = options.minimumNodeVersion ?? 300_000;
     this.templateMaximumAgeMilliseconds = options.templateMaximumAgeMilliseconds ?? 120_000;
+    this.proposalMaximumAgeMilliseconds = options.proposalMaximumAgeMilliseconds ?? 30_000;
     this.now = options.now ?? (() => new Date());
     if (!Number.isInteger(this.minimumNodeVersion) || this.minimumNodeVersion < 0) {
       throw new Error('Bitcoin Core minimum version is invalid');
@@ -476,6 +525,13 @@ export class BitcoinNativeMiningRpcAdapter {
       this.templateMaximumAgeMilliseconds < 1000
     ) {
       throw new Error('Bitcoin template maximum age must be at least one second');
+    }
+    if (
+      !Number.isInteger(this.proposalMaximumAgeMilliseconds) ||
+      this.proposalMaximumAgeMilliseconds < 1000 ||
+      this.proposalMaximumAgeMilliseconds > 300_000
+    ) {
+      throw new Error('Bitcoin proposal maximum age must be between one second and five minutes');
     }
   }
 
@@ -560,5 +616,104 @@ export class BitcoinNativeMiningRpcAdapter {
     if (longPollId !== undefined) request.longpollid = longPollId;
     const raw = await this.rpc.call<unknown>('getblocktemplate', [request]);
     return normalizeBitcoinBlockTemplate(raw, this.now(), this.templateMaximumAgeMilliseconds);
+  }
+
+  async validateBlockProposal(rawBlock: string): Promise<BitcoinBlockProposalResult> {
+    const normalizedBlock = normalizeRawBlock(rawBlock, 'getblocktemplate');
+    const readiness = await this.getMiningReadiness();
+    if (!readiness.ready) {
+      throw new BitcoinRpcError(
+        `Bitcoin Core is not ready to validate a block proposal: ${readiness.blockers.join(', ')}`,
+        null,
+        'getblocktemplate',
+      );
+    }
+    const rawResult = await this.rpc.callNullable<unknown>('getblocktemplate', [
+      { mode: 'proposal', data: normalizedBlock },
+    ]);
+    const reason = normalizeMiningRpcResult(rawResult, 'getblocktemplate');
+    const observedAt = this.now();
+    if (Number.isNaN(observedAt.getTime())) {
+      throw new Error('Bitcoin proposal observation time is invalid');
+    }
+    const digest = rawBlockDigest(normalizedBlock);
+    return {
+      status: reason === null ? 'VALID' : 'REJECTED',
+      reason,
+      rawBlockDigest: digest,
+      observedAt,
+      sourceDigest: sha256Hex(
+        canonicalJson({ method: 'getblocktemplate', mode: 'proposal', digest, result: rawResult }),
+      ),
+    };
+  }
+
+  async submitBlock(
+    rawBlock: string,
+    proposal: BitcoinBlockProposalResult,
+    workId?: string,
+  ): Promise<BitcoinBlockSubmissionResult> {
+    const normalizedBlock = normalizeRawBlock(rawBlock, 'submitblock');
+    if (workId !== undefined) requireString(workId, 'workid', 'submitblock', 1024);
+    const digest = rawBlockDigest(normalizedBlock);
+    const now = this.now();
+    if (Number.isNaN(now.getTime())) throw new Error('Bitcoin submission time is invalid');
+    const proposalSourceDigest = sha256Hex(
+      canonicalJson({
+        method: 'getblocktemplate',
+        mode: 'proposal',
+        digest,
+        result: null,
+      }),
+    );
+    if (
+      proposal.status !== 'VALID' ||
+      proposal.reason !== null ||
+      proposal.rawBlockDigest !== digest ||
+      proposal.sourceDigest !== proposalSourceDigest ||
+      Number.isNaN(proposal.observedAt.getTime()) ||
+      proposal.observedAt.getTime() > now.getTime() ||
+      now.getTime() - proposal.observedAt.getTime() > this.proposalMaximumAgeMilliseconds
+    ) {
+      throw new BitcoinRpcError(
+        'Bitcoin block submission requires fresh matching valid proposal evidence',
+        null,
+        'submitblock',
+      );
+    }
+    const readiness = await this.getMiningReadiness();
+    if (!readiness.ready) {
+      throw new BitcoinRpcError(
+        `Bitcoin Core is not ready to submit a block: ${readiness.blockers.join(', ')}`,
+        null,
+        'submitblock',
+      );
+    }
+    const params: unknown[] = [normalizedBlock];
+    if (workId !== undefined) params.push(workId);
+    const rawResult = await this.rpc.callNullable<unknown>('submitblock', params);
+    const reason = normalizeMiningRpcResult(rawResult, 'submitblock');
+    const status =
+      reason === null
+        ? 'ACCEPTED'
+        : reason === 'duplicate'
+        ? 'DUPLICATE'
+        : reason === 'inconclusive' || reason === 'duplicate-inconclusive'
+        ? 'INCONCLUSIVE'
+        : 'REJECTED';
+    const observedAt = this.now();
+    if (Number.isNaN(observedAt.getTime())) {
+      throw new Error('Bitcoin submission observation time is invalid');
+    }
+    return {
+      status,
+      reason,
+      rawBlockDigest: digest,
+      workId: workId ?? null,
+      observedAt,
+      sourceDigest: sha256Hex(
+        canonicalJson({ method: 'submitblock', digest, workId: workId ?? null, result: rawResult }),
+      ),
+    };
   }
 }

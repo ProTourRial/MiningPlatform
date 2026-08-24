@@ -22,6 +22,7 @@
 - ADR-0016 defining the private full-template boundary, minimal miner-facing job projection, separately bounded mining RPC responses, and the remaining regtest-to-`submitblock` activation gates.
 - Offline native Bitcoin job foundation with checksum- and network-validated address-to-script conversion, deterministic BIP34 coinbase construction, exact owner-selected payout value, separate stripped/full witness serialization, display-order txid merkle branches, evidence-bound job identities, and full block-candidate reconstruction.
 - Candidate reconstruction now rejects stale or mutated evidence, invalid time rolling, hashes above the network target, and candidates exceeding the Bitcoin Core template size or weight limits; it produces correlated header, block, coinbase txid/wtxid, and raw-block digests without performing an RPC side effect.
+- Explicit Bitcoin Core proposal and `submitblock` RPC boundary with bounded raw-block payloads, node-readiness checks, fresh digest-matching valid-proposal evidence required before submission, and distinct accepted, duplicate, inconclusive, and rejected result evidence.
 
 ### Changed
 
@@ -39,7 +40,7 @@
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
-- The native Bitcoin template and coinbase/job/candidate builders have fixture-level evidence only and are not wired to Stratum or Docker; they cannot request live work, perform proposal validation, call `submitblock`, or create rewards in this checkpoint.
+- The native Bitcoin template, coinbase/job/candidate, proposal, and submission boundaries have fixture-level evidence only and are not invoked by Stratum, a durable coordinator, or Docker; no block is automatically submitted and no reward can be created in this checkpoint.
 
 ### Development assistance
 

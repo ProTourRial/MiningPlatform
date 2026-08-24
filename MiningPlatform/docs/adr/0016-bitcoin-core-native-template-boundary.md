@@ -62,8 +62,11 @@ defaults.
   the byte-for-byte transaction placed in a candidate block.
 - The offline builder emits a minimal `BitcoinMiningJob`, retains the complete transaction set in the
   trusted bundle, and reconstructs only candidates that meet the template target and block limits.
+- Proposal mode returns explicit valid/rejected evidence. `submitblock` requires a fresh matching
+  valid-proposal digest and normalizes accepted, duplicate, inconclusive, and rejected outcomes
+  without treating a non-null response as success.
 - Unit fixtures prove deterministic construction and fail-closed network, expiry, evidence-mutation,
-  size, and target behavior. No live Bitcoin Core evidence is claimed yet.
+  size, target, proposal, and submission behavior. No live Bitcoin Core evidence is claimed yet.
 
 ## Next acceptance gates
 
@@ -73,7 +76,8 @@ defaults.
 - Implement global extranonce allocation and private template retention across replicas.
 - Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
   against Core proposal validation.
-- Call `submitblock` only after proposal validation and persist correlated accepted/rejected evidence.
+- Wire the offline candidate to proposal and `submitblock` through a durable coordinator, then persist
+  correlated accepted, duplicate, inconclusive, and rejected evidence.
 - Keep mainnet and every reward/payout side effect disabled until the remaining native-pool gates pass.
 
 ## References

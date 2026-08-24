@@ -18,6 +18,7 @@ type RpcRequest = { method: string; params: unknown[] };
 const REGTEST_TARGET = `7fffff${'00'.repeat(29)}`;
 const WITNESS_COMMITMENT = `6a24aa21a9ed${'11'.repeat(32)}`;
 const OBSERVED_AT = new Date('2026-08-24T01:00:00.000Z');
+const RAW_BLOCK = '00'.repeat(81);
 
 function rpcResponse(result: unknown): Response {
   return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result, error: null }), {
@@ -57,6 +58,8 @@ function createNativeClient(input?: {
   chain?: Record<string, unknown>;
   network?: Record<string, unknown>;
   template?: Record<string, unknown>;
+  proposalResult?: unknown;
+  submissionResult?: unknown;
 }) {
   const calls: RpcRequest[] = [];
   const chain = {
@@ -82,8 +85,11 @@ function createNativeClient(input?: {
     if (request.method === 'getblockchaininfo') return rpcResponse(chain);
     if (request.method === 'getnetworkinfo') return rpcResponse(network);
     if (request.method === 'getblocktemplate') {
+      const proposal = request.params[0] as { mode?: unknown } | undefined;
+      if (proposal?.mode === 'proposal') return rpcResponse(input?.proposalResult ?? null);
       return rpcResponse(input?.template ?? fixtureTemplate());
     }
+    if (request.method === 'submitblock') return rpcResponse(input?.submissionResult ?? null);
     throw new Error(`Unexpected method ${request.method}`);
   }) as typeof fetch;
   const rpc = new BitcoinJsonRpcClient({
@@ -160,6 +166,95 @@ test('native mining adapter fails closed before requesting work from an unready 
   );
 });
 
+test('proposal validation must produce fresh matching evidence before submitblock', async () => {
+  const { rpc, calls } = createNativeClient();
+  const adapter = new BitcoinNativeMiningRpcAdapter(rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  const proposal = await adapter.validateBlockProposal(RAW_BLOCK.toUpperCase());
+  assert.equal(proposal.status, 'VALID');
+  assert.equal(proposal.reason, null);
+  assert.match(proposal.rawBlockDigest, /^[0-9a-f]{64}$/);
+
+  const submitted = await adapter.submitBlock(RAW_BLOCK, proposal, 'work-101');
+  assert.equal(submitted.status, 'ACCEPTED');
+  assert.equal(submitted.reason, null);
+  assert.equal(submitted.rawBlockDigest, proposal.rawBlockDigest);
+  assert.equal(submitted.workId, 'work-101');
+  assert.match(submitted.sourceDigest, /^[0-9a-f]{64}$/);
+
+  const proposalCall = calls.find(
+    (call) =>
+      call.method === 'getblocktemplate' &&
+      (call.params[0] as { mode?: unknown } | undefined)?.mode === 'proposal',
+  );
+  assert.deepEqual(proposalCall?.params, [{ mode: 'proposal', data: RAW_BLOCK }]);
+  assert.deepEqual(calls.find((call) => call.method === 'submitblock')?.params, [
+    RAW_BLOCK,
+    'work-101',
+  ]);
+});
+
+test('submitblock preserves duplicate, inconclusive, and rejected outcomes', async () => {
+  for (const [result, expected] of [
+    ['duplicate', 'DUPLICATE'],
+    ['duplicate-inconclusive', 'INCONCLUSIVE'],
+    ['inconclusive', 'INCONCLUSIVE'],
+    ['bad-cb-amount', 'REJECTED'],
+    ['duplicate-invalid', 'REJECTED'],
+  ] as const) {
+    const { rpc } = createNativeClient({ submissionResult: result });
+    const adapter = new BitcoinNativeMiningRpcAdapter(rpc, {
+      expectedChain: 'regtest',
+      now: () => new Date(OBSERVED_AT),
+    });
+    const proposal = await adapter.validateBlockProposal(RAW_BLOCK);
+    const submitted = await adapter.submitBlock(RAW_BLOCK, proposal);
+    assert.equal(submitted.status, expected);
+    assert.equal(submitted.reason, result);
+  }
+});
+
+test('proposal and submission boundary rejects stale, mismatched, rejected, and malformed evidence', async () => {
+  const { rpc } = createNativeClient();
+  const adapter = new BitcoinNativeMiningRpcAdapter(rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  const proposal = await adapter.validateBlockProposal(RAW_BLOCK);
+  await assert.rejects(
+    adapter.submitBlock(`01${RAW_BLOCK.slice(2)}`, proposal),
+    /requires fresh matching valid proposal evidence/,
+  );
+  await assert.rejects(
+    adapter.submitBlock(RAW_BLOCK, {
+      ...proposal,
+      observedAt: new Date(OBSERVED_AT.getTime() - 30_001),
+    }),
+    /requires fresh matching valid proposal evidence/,
+  );
+
+  const rejectedClient = createNativeClient({ proposalResult: 'bad-txnmrklroot' });
+  const rejectedAdapter = new BitcoinNativeMiningRpcAdapter(rejectedClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  const rejected = await rejectedAdapter.validateBlockProposal(RAW_BLOCK);
+  assert.equal(rejected.status, 'REJECTED');
+  await assert.rejects(
+    rejectedAdapter.submitBlock(RAW_BLOCK, rejected),
+    /requires fresh matching valid proposal evidence/,
+  );
+
+  const malformedClient = createNativeClient({ proposalResult: true });
+  const malformedAdapter = new BitcoinNativeMiningRpcAdapter(malformedClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  await assert.rejects(malformedAdapter.validateBlockProposal(RAW_BLOCK), /invalid mining result/);
+});
+
 test('template normalization preserves transaction evidence and validates dependency ordering', () => {
   const transaction = {
     data: '02000000000100',
@@ -213,6 +308,17 @@ test('Bitcoin RPC response limit is configurable but strictly bounded', () => {
       }),
     /between 1 KiB and 32 MiB/,
   );
+});
+
+test('Bitcoin RPC null results require the explicit nullable call boundary', async () => {
+  const rpc = new BitcoinJsonRpcClient({
+    url: 'http://127.0.0.1:18443',
+    username: 'user',
+    password: 'password',
+    fetchImplementation: (async () => rpcResponse(null)) as typeof fetch,
+  });
+  await assert.rejects(rpc.call('submitblock'), /returned a null result/);
+  assert.equal(await rpc.callNullable('submitblock'), null);
 });
 
 test('Bitcoin RPC rejects an undeclared oversized response body', async () => {
