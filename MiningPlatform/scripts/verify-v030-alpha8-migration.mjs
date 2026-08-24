@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260824010000_native_bitcoin_submission_evidence';
+const latestMigration = '20260824020000_native_bitcoin_submission_intent';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -95,6 +95,7 @@ psql(`
 `);
 
 let temporaryPrismaRoot;
+let temporaryMigrations;
 try {
   if (mode === 'upgrade') {
     mkdirSync(verifierTempRoot, { recursive: true });
@@ -102,7 +103,7 @@ try {
       verifierTempRoot,
       `miningplatform-alpha8-migrations-${process.pid}-${Date.now()}`,
     );
-    const temporaryMigrations = join(temporaryPrismaRoot, 'migrations');
+    temporaryMigrations = join(temporaryPrismaRoot, 'migrations');
     mkdirSync(temporaryMigrations, { recursive: true });
     for (const migration of [
       '20260730000100_baseline_core_mining',
@@ -197,6 +198,51 @@ try {
         asset."id", 'alpha8-upgrade-address', 'alpha8-upgrade-route', 0.001, 0, 'REVIEW', NOW(), NOW()
       FROM "Asset" asset WHERE asset."symbol" = 'BTC';
     `);
+
+    for (const migration of [
+      '20260823010000_controlled_payout_execution',
+      '20260824010000_native_bitcoin_submission_evidence',
+    ]) {
+      cpSync(join(migrationsRoot, migration), join(temporaryMigrations, migration), {
+        recursive: true,
+      });
+    }
+    run('pnpm', [
+      '--filter',
+      '@mining/database',
+      'exec',
+      'prisma',
+      'migrate',
+      'deploy',
+      '--config',
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+    ]);
+    psql(`
+      INSERT INTO "NativeBitcoinCandidate" (
+        "id", "idempotencyKey", "chain", "jobId", "templateSourceDigest",
+        "coinbasePolicyDigest", "blockHash", "headerHex", "rawBlockDigest", "reconstructedAt"
+      ) VALUES (
+        'alpha8-upgrade-native-candidate', 'alpha8-upgrade-native-candidate-key', 'REGTEST',
+        'native-404-aaaaaaaaaaaaaaaaaaaaaaaa', repeat('a', 64), repeat('b', 64),
+        repeat('c', 64), repeat('d', 160), repeat('e', 64), NOW()
+      );
+      INSERT INTO "NativeBitcoinProposalEvidence" (
+        "id", "idempotencyKey", "candidateId", "status", "reason",
+        "rawBlockDigest", "sourceDigest", "observedAt", "validUntil"
+      ) VALUES (
+        'alpha8-upgrade-native-proposal', 'alpha8-upgrade-native-proposal-key',
+        'alpha8-upgrade-native-candidate', 'VALID', NULL, repeat('e', 64), repeat('f', 64),
+        NOW(), NOW() + INTERVAL '30 seconds'
+      );
+      INSERT INTO "NativeBitcoinSubmissionAttempt" (
+        "id", "idempotencyKey", "candidateId", "proposalEvidenceId", "status", "reason",
+        "rawBlockDigest", "workId", "sourceDigest", "observedAt"
+      ) VALUES (
+        'alpha8-upgrade-native-submission', 'alpha8-upgrade-native-submission-key',
+        'alpha8-upgrade-native-candidate', 'alpha8-upgrade-native-proposal', 'ACCEPTED', NULL,
+        repeat('e', 64), 'alpha8-upgrade-work', repeat('1', 64), NOW()
+      );
+    `);
   }
 
   run('pnpm', ['db:migrate:deploy']);
@@ -219,6 +265,7 @@ try {
         OR to_regclass('public."PayoutControl"') IS NULL
         OR to_regclass('public."NativeBitcoinCandidate"') IS NULL
         OR to_regclass('public."NativeBitcoinProposalEvidence"') IS NULL
+        OR to_regclass('public."NativeBitcoinSubmissionIntent"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionAttempt"') IS NULL
       THEN RAISE EXCEPTION 'controlled payout execution tables are missing'; END IF;
       IF NOT EXISTS (
@@ -257,6 +304,14 @@ try {
           AND t.tgname = 'NativeBitcoinProposalEvidence_correlation_trigger' AND NOT t.tgisinternal
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'NativeBitcoinSubmissionIntent'
+          AND t.tgname = 'NativeBitcoinSubmissionIntent_immutable_trigger' AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'NativeBitcoinSubmissionIntent'
+          AND t.tgname = 'NativeBitcoinSubmissionIntent_correlation_trigger' AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
         WHERE c.relname = 'NativeBitcoinSubmissionAttempt'
           AND t.tgname = 'NativeBitcoinSubmissionAttempt_correlation_trigger' AND NOT t.tgisinternal
       ) THEN RAISE EXCEPTION 'native Bitcoin evidence triggers are missing'; END IF;
@@ -268,6 +323,18 @@ try {
         SELECT 1 FROM "Payout" WHERE "id" = 'alpha8-upgrade-payout' AND "status" = 'REVIEW'
           AND "executionVersion" = 1 AND "miningAccountId" IS NULL AND "amountAtomic" IS NULL
       ) THEN RAISE EXCEPTION 'alpha.7 payout history was rewritten during upgrade'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1
+        FROM "NativeBitcoinSubmissionAttempt" submission
+        JOIN "NativeBitcoinSubmissionIntent" intent ON intent."id" = submission."submissionIntentId"
+        WHERE submission."id" = 'alpha8-upgrade-native-submission'
+          AND submission."status" = 'ACCEPTED'
+          AND intent."candidateId" = submission."candidateId"
+          AND intent."proposalEvidenceId" = submission."proposalEvidenceId"
+          AND intent."rawBlockDigest" = submission."rawBlockDigest"
+          AND intent."workId" = submission."workId"
+          AND intent."idempotencyKey" LIKE 'migration:v16:%'
+      ) THEN RAISE EXCEPTION 'schema-v15 submission history was not linked to a v16 intent'; END IF;
     END $$;
   `);
 
@@ -285,7 +352,7 @@ try {
     'src/payout-execution.integration.test.ts',
   ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
-  process.stdout.write(`\nSchema-15 payout and native-evidence ${mode} verification passed.\n`);
+  process.stdout.write(`\nSchema-16 payout and native-intent ${mode} verification passed.\n`);
 } finally {
   if (
     temporaryPrismaRoot &&

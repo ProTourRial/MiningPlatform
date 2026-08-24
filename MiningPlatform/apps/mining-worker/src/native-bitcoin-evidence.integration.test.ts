@@ -106,6 +106,28 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
   );
 
   const submissionKey = `native-submission:${randomUUID()}`;
+  const intentKey = `native-intent:${randomUUID()}`;
+  const storedIntent = await repository.recordSubmissionIntent({
+    idempotencyKey: intentKey,
+    candidateId: storedCandidate.id,
+    proposalEvidenceId: storedProposal.id,
+    rawBlockDigest: blockCandidate.rawBlockDigest,
+    workId: 'regtest-work-202',
+    sourceDigest: hex(32),
+  });
+  assert.equal(
+    (
+      await repository.recordSubmissionIntent({
+        idempotencyKey: intentKey,
+        candidateId: storedCandidate.id,
+        proposalEvidenceId: storedProposal.id,
+        rawBlockDigest: blockCandidate.rawBlockDigest,
+        workId: 'regtest-work-202',
+        sourceDigest: storedIntent.sourceDigest,
+      })
+    ).id,
+    storedIntent.id,
+  );
   const submission = {
     status: 'ACCEPTED' as const,
     reason: null,
@@ -118,6 +140,7 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
     idempotencyKey: submissionKey,
     candidateId: storedCandidate.id,
     proposalEvidenceId: storedProposal.id,
+    submissionIntentId: storedIntent.id,
     submission,
   });
   assert.equal(
@@ -126,6 +149,7 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
         idempotencyKey: submissionKey,
         candidateId: storedCandidate.id,
         proposalEvidenceId: storedProposal.id,
+        submissionIntentId: storedIntent.id,
         submission,
       })
     ).id,
@@ -137,6 +161,17 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
     }),
     1,
   );
+  await assert.rejects(
+    repository.recordSubmission({
+      idempotencyKey: `native-submission:${randomUUID()}`,
+      candidateId: storedCandidate.id,
+      proposalEvidenceId: storedProposal.id,
+      submissionIntentId: storedIntent.id,
+      submission: { ...submission, sourceDigest: hex(32) },
+    }),
+    /uniqueness conflict/,
+    'one durable intent must not record more than one submission outcome',
+  );
 
   await assert.rejects(
     prisma.nativeBitcoinCandidate.update({
@@ -147,6 +182,10 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
   );
   await assert.rejects(
     prisma.nativeBitcoinProposalEvidence.delete({ where: { id: storedProposal.id } }),
+    /append-only/,
+  );
+  await assert.rejects(
+    prisma.nativeBitcoinSubmissionIntent.delete({ where: { id: storedIntent.id } }),
     /append-only/,
   );
   await assert.rejects(
@@ -177,15 +216,16 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
         idempotencyKey: `native-submission:${randomUUID()}`,
         candidateId: storedCandidate.id,
         proposalEvidenceId: storedProposal.id,
+        submissionIntentId: storedIntent.id,
         status: 'DUPLICATE',
         reason: 'duplicate',
         rawBlockDigest: blockCandidate.rawBlockDigest,
-        workId: null,
+        workId: 'regtest-work-202',
         sourceDigest: hex(32),
         observedAt: new Date(storedProposal.validUntil.getTime() + 1),
       },
     }),
-    /fresh matching valid proposal evidence/,
+    /matching intent and fresh valid proposal evidence/,
   );
 
   const rejectedCandidate = candidate(new Date());
@@ -206,19 +246,14 @@ test('native Bitcoin evidence is idempotent, append-only, and proposal-gated', a
     },
   });
   await assert.rejects(
-    repository.recordSubmission({
-      idempotencyKey: `native-submission:${randomUUID()}`,
+    repository.recordSubmissionIntent({
+      idempotencyKey: `native-intent:${randomUUID()}`,
       candidateId: storedRejectedCandidate.id,
       proposalEvidenceId: rejectedProposal.id,
-      submission: {
-        status: 'REJECTED',
-        reason: 'bad-cb-height',
-        rawBlockDigest: rejectedCandidate.rawBlockDigest,
-        workId: null,
-        observedAt: new Date(rejectedCandidate.reconstructedAt.getTime() + 1_000),
-        sourceDigest: hex(32),
-      },
+      rawBlockDigest: rejectedCandidate.rawBlockDigest,
+      workId: null,
+      sourceDigest: hex(32),
     }),
-    /fresh matching valid proposal/,
+    /matching valid proposal/,
   );
 });

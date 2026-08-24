@@ -13,6 +13,7 @@ import {
   prisma,
   type NativeBitcoinCandidate as StoredNativeBitcoinCandidate,
   type NativeBitcoinProposalEvidence as StoredNativeBitcoinProposalEvidence,
+  type NativeBitcoinSubmissionIntent as StoredNativeBitcoinSubmissionIntent,
   type NativeBitcoinSubmissionAttempt as StoredNativeBitcoinSubmissionAttempt,
 } from '@mining/database';
 import type { NativeBitcoinBlockCandidate } from '@mining/bitcoin-template';
@@ -53,6 +54,26 @@ function isUniqueViolation(error: unknown): boolean {
 function sameDate(left: Date, right: Date): boolean {
   return left.getTime() === right.getTime();
 }
+
+function workId(value: string | null): string | null {
+  if (value !== null && (value.length === 0 || value.length > 1024)) {
+    throw new Error('Native Bitcoin work id is invalid');
+  }
+  return value;
+}
+
+async function databaseNow(): Promise<Date> {
+  const [clock] = await prisma.$queryRaw<Array<{ now: Date }>>`
+    SELECT CURRENT_TIMESTAMP AS "now"
+  `;
+  if (!clock) throw new Error('Database did not return its current time');
+  return clock.now;
+}
+
+export type UnresolvedNativeBitcoinSubmissionIntent = StoredNativeBitcoinSubmissionIntent & {
+  candidate: StoredNativeBitcoinCandidate;
+  proposalEvidence: StoredNativeBitcoinProposalEvidence;
+};
 
 export class NativeBitcoinEvidenceRepository {
   constructor(private readonly proposalFreshnessMilliseconds = 30_000) {
@@ -115,6 +136,30 @@ export class NativeBitcoinEvidenceRepository {
       if (!raced) throw new Error('Native Bitcoin candidate uniqueness conflict');
       return this.recordCandidate(input);
     }
+  }
+
+  async findProposalByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<StoredNativeBitcoinProposalEvidence | null> {
+    return prisma.nativeBitcoinProposalEvidence.findUnique({
+      where: { idempotencyKey: boundedIdempotencyKey(idempotencyKey) },
+    });
+  }
+
+  async findSubmissionIntentByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<StoredNativeBitcoinSubmissionIntent | null> {
+    return prisma.nativeBitcoinSubmissionIntent.findUnique({
+      where: { idempotencyKey: boundedIdempotencyKey(idempotencyKey) },
+    });
+  }
+
+  async findSubmissionByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<StoredNativeBitcoinSubmissionAttempt | null> {
+    return prisma.nativeBitcoinSubmissionAttempt.findUnique({
+      where: { idempotencyKey: boundedIdempotencyKey(idempotencyKey) },
+    });
   }
 
   async recordProposal(input: {
@@ -181,16 +226,20 @@ export class NativeBitcoinEvidenceRepository {
     idempotencyKey: string;
     candidateId: string;
     proposalEvidenceId: string;
+    submissionIntentId: string;
     submission: BitcoinBlockSubmissionResult;
   }): Promise<StoredNativeBitcoinSubmissionAttempt> {
     const idempotencyKey = boundedIdempotencyKey(input.idempotencyKey);
-    const [candidate, proposal] = await Promise.all([
+    const [candidate, proposal, intent] = await Promise.all([
       prisma.nativeBitcoinCandidate.findUnique({ where: { id: input.candidateId } }),
       prisma.nativeBitcoinProposalEvidence.findUnique({
         where: { id: input.proposalEvidenceId },
       }),
+      prisma.nativeBitcoinSubmissionIntent.findUnique({
+        where: { id: input.submissionIntentId },
+      }),
     ]);
-    if (!candidate || !proposal) {
+    if (!candidate || !proposal || !intent) {
       throw new Error('Native Bitcoin submission correlation evidence does not exist');
     }
     const submission = input.submission;
@@ -198,18 +247,23 @@ export class NativeBitcoinEvidenceRepository {
       idempotencyKey,
       candidateId: candidate.id,
       proposalEvidenceId: proposal.id,
+      submissionIntentId: intent.id,
       status: submission.status,
       reason: submission.reason,
       rawBlockDigest: hash(submission.rawBlockDigest, 'Submission raw block digest'),
-      workId: submission.workId,
+      workId: workId(submission.workId),
       sourceDigest: hash(submission.sourceDigest, 'Submission source digest'),
       observedAt: date(submission.observedAt, 'Submission observation time'),
     } as const;
     if (
       proposal.candidateId !== candidate.id ||
       proposal.status !== 'VALID' ||
+      intent.candidateId !== candidate.id ||
+      intent.proposalEvidenceId !== proposal.id ||
       proposal.rawBlockDigest !== data.rawBlockDigest ||
       candidate.rawBlockDigest !== data.rawBlockDigest ||
+      intent.rawBlockDigest !== data.rawBlockDigest ||
+      intent.workId !== data.workId ||
       data.observedAt < proposal.observedAt ||
       data.observedAt > proposal.validUntil
     ) {
@@ -229,6 +283,7 @@ export class NativeBitcoinEvidenceRepository {
       if (
         existing.candidateId !== data.candidateId ||
         existing.proposalEvidenceId !== data.proposalEvidenceId ||
+        existing.submissionIntentId !== data.submissionIntentId ||
         existing.status !== data.status ||
         existing.reason !== data.reason ||
         existing.rawBlockDigest !== data.rawBlockDigest ||
@@ -250,5 +305,94 @@ export class NativeBitcoinEvidenceRepository {
       if (!raced) throw new Error('Native Bitcoin submission uniqueness conflict');
       return this.recordSubmission(input);
     }
+  }
+
+  async recordSubmissionIntent(input: {
+    idempotencyKey: string;
+    candidateId: string;
+    proposalEvidenceId: string;
+    rawBlockDigest: string;
+    workId: string | null;
+    sourceDigest: string;
+  }): Promise<StoredNativeBitcoinSubmissionIntent> {
+    const idempotencyKey = boundedIdempotencyKey(input.idempotencyKey);
+    const [candidate, proposal] = await Promise.all([
+      prisma.nativeBitcoinCandidate.findUnique({ where: { id: input.candidateId } }),
+      prisma.nativeBitcoinProposalEvidence.findUnique({
+        where: { id: input.proposalEvidenceId },
+      }),
+    ]);
+    if (!candidate || !proposal) {
+      throw new Error('Native Bitcoin intent correlation evidence does not exist');
+    }
+    const data = {
+      idempotencyKey,
+      candidateId: candidate.id,
+      proposalEvidenceId: proposal.id,
+      rawBlockDigest: hash(input.rawBlockDigest, 'Intent raw block digest'),
+      workId: workId(input.workId),
+      sourceDigest: hash(input.sourceDigest, 'Intent source digest'),
+    } as const;
+    if (
+      proposal.candidateId !== candidate.id ||
+      proposal.status !== 'VALID' ||
+      proposal.rawBlockDigest !== data.rawBlockDigest ||
+      candidate.rawBlockDigest !== data.rawBlockDigest
+    ) {
+      throw new Error('Native Bitcoin submission intent requires matching valid proposal evidence');
+    }
+    const existing = await prisma.nativeBitcoinSubmissionIntent.findUnique({
+      where: { idempotencyKey },
+    });
+    if (existing) {
+      if (
+        existing.candidateId !== data.candidateId ||
+        existing.proposalEvidenceId !== data.proposalEvidenceId ||
+        existing.rawBlockDigest !== data.rawBlockDigest ||
+        existing.workId !== data.workId ||
+        existing.sourceDigest !== data.sourceDigest
+      ) {
+        throw new Error('Native Bitcoin submission intent idempotency conflict');
+      }
+      return existing;
+    }
+    try {
+      return await prisma.nativeBitcoinSubmissionIntent.create({ data });
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      const raced = await prisma.nativeBitcoinSubmissionIntent.findUnique({
+        where: { idempotencyKey },
+      });
+      if (!raced) throw new Error('Native Bitcoin submission intent uniqueness conflict');
+      return this.recordSubmissionIntent(input);
+    }
+  }
+
+  async listUnresolvedSubmissionIntents(input?: {
+    minimumAgeMilliseconds?: number;
+    limit?: number;
+  }): Promise<UnresolvedNativeBitcoinSubmissionIntent[]> {
+    const minimumAgeMilliseconds = input?.minimumAgeMilliseconds ?? 0;
+    const limit = input?.limit ?? 100;
+    if (
+      !Number.isInteger(minimumAgeMilliseconds) ||
+      minimumAgeMilliseconds < 0 ||
+      minimumAgeMilliseconds > 86_400_000
+    ) {
+      throw new Error('Native Bitcoin unresolved-intent age is invalid');
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1_000) {
+      throw new Error('Native Bitcoin unresolved-intent limit is invalid');
+    }
+    const now = await databaseNow();
+    return prisma.nativeBitcoinSubmissionIntent.findMany({
+      where: {
+        createdAt: { lte: new Date(now.getTime() - minimumAgeMilliseconds) },
+        submission: null,
+      },
+      include: { candidate: true, proposalEvidence: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: limit,
+    });
   }
 }

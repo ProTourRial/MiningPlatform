@@ -47,6 +47,11 @@ const requiredFiles = [
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
   'scripts/verify-v030-alpha7-migration.mjs',
+  'scripts/verify-v030-alpha8-migration.mjs',
+  'apps/mining-worker/src/native-bitcoin-evidence.ts',
+  'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
+  'packages/database/prisma/migrations/20260824010000_native_bitcoin_submission_evidence/migration.sql',
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
 ];
 await Promise.all(requiredFiles.map((path) => readFile(resolve(root, path))));
 
@@ -83,6 +88,8 @@ for (const expected of [
   'addressHash',
   'cooldownUntil',
   'payoutRouteId',
+  'model NativeBitcoinSubmissionIntent',
+  'submissionIntentId',
 ])
   requireText(schema, expected, 'Prisma schema');
 
@@ -103,6 +110,30 @@ for (const expected of [
   'Pilot payout cannot leave manual review without an approval control',
 ])
   requireText(migration, expected, 'Payout-control migration');
+
+const nativeIntentMigration = await text(
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+);
+for (const expected of [
+  'NativeBitcoinSubmissionIntent_immutable_trigger',
+  'NativeBitcoinSubmissionIntent_correlation_trigger',
+  'NativeBitcoinSubmissionAttempt_submissionIntentId_key',
+  'submissionIntentId',
+  'migration:v16:',
+  'requires matching intent and fresh valid proposal evidence',
+])
+  requireText(nativeIntentMigration, expected, 'Native Bitcoin submission-intent migration');
+
+const nativeCoordinator = await text(
+  'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
+);
+for (const expected of [
+  'recordSubmissionIntent',
+  'findSubmissionByIdempotencyKey',
+  'NativeBitcoinSubmissionUncertainError',
+  'A prior execution stopped after durable intent and before durable outcome',
+])
+  requireText(nativeCoordinator, expected, 'Native Bitcoin submission coordinator');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [
