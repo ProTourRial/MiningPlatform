@@ -73,10 +73,12 @@ coinbase ke wallet regtest, transaksi witness nyata dengan txid/wtxid berbeda, n
 candidate, proposal valid, `submitblock` accepted, exact transaction inclusion, dan dua confirmation.
 Trace yang sama membuktikan long-poll tetap menunggu sebelum tip berubah lalu mengembalikan replacement
 height, previous-block hash, long-poll identity, dan source digest yang baru. Restart process dengan
-volume yang sama juga mempertahankan height dan tip hash secara exact. Belum ada in-flight
-restart/fork/version-upgrade evidence, Redis restart/partition/failover evidence, wiring Stratum, atau
-durable raw-block retrieval/approved operator resubmission untuk unresolved intent; karena itu status
-P0 belum selesai dan native mining tetap nonaktif.
+volume yang sama juga mempertahankan height dan tip hash secara exact. Node kedua yang terisolasi kini
+membentuk chain lebih panjang; primary menerima bloknya hanya melalui memory, berpindah ke tip baru,
+dan mengklasifikasikan blok native semula sebagai `STALE_CHAIN` dengan confirmation `-1`. Belum ada
+in-flight restart, deeper/partitioned fork, version-upgrade, Redis restart/partition/failover evidence,
+wiring Stratum, atau durable raw-block retrieval/approved operator resubmission untuk unresolved intent;
+karena itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 
@@ -194,8 +196,10 @@ getblocktemplate
 Prefix kanonis melalui transaction-bearing `getblocktemplate`, coinbase/job, solved network-target
 candidate, `submitblock`, exact witness-transaction inclusion, dan dua confirmation kini lulus terhadap
 Bitcoin Core 31.0 nyata; replacement `getblocktemplate` melalui long-poll juga lulus setelah perubahan
-tip terkontrol. Tahap miner-facing, maturity, reward allocation, fee, ledger, dan reconciliation di
-bawahnya belum lulus dan tidak boleh dianggap tersirat dari acceptance blok regtest tersebut.
+tip terkontrol. Reorg deterministik ke chain node kedua yang lebih panjang juga mengubah observation
+blok native menjadi `STALE_CHAIN`; belum ada efek accounting/reward yang diizinkan dari evidence ini.
+Tahap miner-facing, maturity, reward allocation, fee, ledger, dan reconciliation di bawahnya belum
+lulus dan tidak boleh dianggap tersirat dari acceptance blok regtest tersebut.
 
 Acceptance invariants:
 

@@ -187,6 +187,8 @@ const regtestCompose = await text('docker-compose.regtest.yml');
 for (const expected of [
   "profiles: ['native-regtest']",
   "'127.0.0.1:${BITCOIN_REGTEST_RPC_PORT:-18443}:18443'",
+  'bitcoin-core-fork-regtest:',
+  "'127.0.0.1:${BITCOIN_FORK_REGTEST_RPC_PORT:-18444}:18443'",
   '- -listen=0',
   'no-new-privileges:true',
 ])
@@ -202,6 +204,8 @@ for (const expected of [
   'templateTransactionId',
   'adapter.getBlockTemplate(longPollBaseline.longPollId)',
   'longPollReplacement.previousBlockHash',
+  "assert.equal(staleObservation.status, 'STALE_CHAIN')",
+  "forkNodeRpc.call<string>('getblock'",
   'validateBlockProposal',
   'submitBlock',
   'observeSubmittedBlock',
@@ -389,7 +393,7 @@ if (activeRegtestWorkflow) {
 }
 for (const expected of [
   'pnpm --filter @mining/bitcoin-template... build',
-  'up -d --build --wait bitcoin-core-regtest',
+  'up -d --build --wait bitcoin-core-regtest bitcoin-core-fork-regtest',
   'pnpm test:integration:native-bitcoin-regtest',
   'restart bitcoin-core-regtest',
   'before_tip=',

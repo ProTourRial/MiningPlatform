@@ -52,9 +52,9 @@ defaults.
     `getblockheader` and `getblockstats` calls. Active-chain and stale-chain observations stop automatic
     recovery polling; not-found is retained as evidence but never authorizes `submitblock` replay.
 13. The disposable laboratory builds Bitcoin Core 31.0 from official release tarballs whose amd64 and
-    arm64 SHA-256 values are pinned. It runs as a non-root user, disables P2P listening, publishes RPC
-    only to host loopback, requires an explicit destructive-regtest acknowledgement, and is never a
-    production Compose dependency.
+    arm64 SHA-256 values are pinned. Both isolated nodes run as a non-root user, disable P2P listening,
+    publish RPC only to distinct host-loopback ports, require an explicit destructive-regtest
+    acknowledgement, and are never a production Compose dependency.
 
 ## Consequences
 
@@ -96,10 +96,12 @@ defaults.
   submits the block, verifies the exact transaction and coinbase destination through Core, and
   observes one then two active-chain confirmations. It also proves a long-poll request remains pending
   until a controlled tip change and then returns the exact replacement height, previous-block hash,
-  long-poll identity, and normalized source digest. CI then restarts the node process without deleting
-  its volume, waits for health, and proves the canonical height and tip hash are unchanged. The trace
-  emits bounded identities and digests, never raw block bytes, and CI destroys its disposable image and
-  volume on every outcome.
+  long-poll identity, and normalized source digest. A second isolated node then produces a valid longer
+  chain; its blocks are transferred only in memory, the primary selects the new tip, and the original
+  native block is observed as `STALE_CHAIN` with `-1` confirmations. CI restarts the primary process
+  without deleting its volume, waits for health, and proves the reorg-selected height and tip hash are
+  unchanged. The trace emits bounded identities and digests, never raw block bytes, and CI destroys its
+  disposable images and volumes on every outcome.
 - Schemas v15-v17 retain append-only candidate, proposal, pre-RPC intent, submission-attempt, and
   submitted-block recovery records. Database constraints and triggers bind every intent/outcome and
   observation to one candidate, reject expired or rejected proposals, enforce exact active-chain
@@ -114,8 +116,9 @@ defaults.
 
 ## Next acceptance gates
 
-- Expand live Core evidence to stale-tip/fork rejection and version-upgrade behavior; repeat restart
-  validation under in-flight templates, submissions, and recovery polling.
+- Expand live Core evidence to deeper/partitioned forks and version-upgrade behavior; repeat restart
+  validation under in-flight templates, submissions, and recovery polling, then bind reorg observations
+  to maturity, reward reversal, and reconciliation state transitions.
 - Prove private template retention and global extranonce allocation through Redis restart, partition,
   failover, counter exhaustion, and wall-clock expiry scenarios.
 - Retain canonical live template/candidate digests as versioned compatibility fixtures without

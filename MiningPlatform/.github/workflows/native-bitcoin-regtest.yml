@@ -36,7 +36,7 @@ jobs:
         run: >-
           docker compose -p miningplatform_native_regtest
           -f docker-compose.regtest.yml --profile native-regtest
-          up -d --build --wait bitcoin-core-regtest
+          up -d --build --wait bitcoin-core-regtest bitcoin-core-fork-regtest
       - name: Prove template, proposal, submitblock, and confirmation
         env:
           NATIVE_BITCOIN_REGTEST_ACK: disposable-bitcoin-core-31-regtest-only

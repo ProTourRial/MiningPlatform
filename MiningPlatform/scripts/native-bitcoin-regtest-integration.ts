@@ -17,7 +17,8 @@ import {
 import { calculateHeaderHash, type BitcoinShareSubmission } from '@mining/mining-core';
 
 const EXPECTED_ACK = 'disposable-bitcoin-core-31-regtest-only';
-const WALLET_NAME = 'miningplatform-native-regtest';
+const PRIMARY_WALLET_NAME = 'miningplatform-native-regtest';
+const FORK_WALLET_NAME = 'miningplatform-native-fork-regtest';
 
 type VerboseBlock = {
   hash: string;
@@ -33,8 +34,8 @@ type WalletBalances = {
   mine?: { trusted?: number };
 };
 
-function requireRegtestUrl(): string {
-  const value = process.env.BITCOIN_REGTEST_RPC_URL ?? 'http://127.0.0.1:18443';
+function requireRegtestUrl(environmentName: string, fallback: string): string {
+  const value = process.env[environmentName] ?? fallback;
   const url = new URL(value);
   if (
     url.protocol !== 'http:' ||
@@ -72,21 +73,25 @@ async function delay(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function ensureWallet(nodeRpc: BitcoinJsonRpcClient): Promise<BitcoinJsonRpcClient> {
+async function ensureWallet(
+  nodeRpc: BitcoinJsonRpcClient,
+  rpcUrl: string,
+  walletName: string,
+): Promise<BitcoinJsonRpcClient> {
   const loadedWallets = await nodeRpc.call<string[]>('listwallets');
-  if (!loadedWallets.includes(WALLET_NAME)) {
+  if (!loadedWallets.includes(walletName)) {
     try {
-      await nodeRpc.call('loadwallet', [WALLET_NAME]);
+      await nodeRpc.call('loadwallet', [walletName]);
     } catch (error) {
       if (!(error instanceof BitcoinRpcError) || error.code !== -18) throw error;
-      await nodeRpc.call('createwallet', [WALLET_NAME, false, false, '', false, true, true]);
+      await nodeRpc.call('createwallet', [walletName, false, false, '', false, true, true]);
     }
   }
   return new BitcoinJsonRpcClient({
-    url: requireRegtestUrl(),
+    url: rpcUrl,
     username: process.env.BITCOIN_REGTEST_RPC_USER ?? 'miningplatform-regtest',
     password: process.env.BITCOIN_REGTEST_RPC_PASSWORD ?? 'miningplatform-regtest-disposable-only',
-    walletName: WALLET_NAME,
+    walletName,
     timeoutMilliseconds: 15_000,
     maximumResponseBytes: 16 * 1024 * 1024,
   });
@@ -99,15 +104,18 @@ async function main(): Promise<void> {
     );
   }
 
+  const primaryRpcUrl = requireRegtestUrl('BITCOIN_REGTEST_RPC_URL', 'http://127.0.0.1:18443');
+  const forkRpcUrl = requireRegtestUrl('BITCOIN_FORK_REGTEST_RPC_URL', 'http://127.0.0.1:18444');
+  assert.notEqual(primaryRpcUrl, forkRpcUrl, 'primary and fork RPC origins must be isolated');
   const rpcOptions = {
-    url: requireRegtestUrl(),
+    url: primaryRpcUrl,
     username: process.env.BITCOIN_REGTEST_RPC_USER ?? 'miningplatform-regtest',
     password: process.env.BITCOIN_REGTEST_RPC_PASSWORD ?? 'miningplatform-regtest-disposable-only',
     timeoutMilliseconds: 15_000,
     maximumResponseBytes: 16 * 1024 * 1024,
   } as const;
   const nodeRpc = new BitcoinJsonRpcClient(rpcOptions);
-  const walletRpc = await ensureWallet(nodeRpc);
+  const walletRpc = await ensureWallet(nodeRpc, primaryRpcUrl, PRIMARY_WALLET_NAME);
   const payoutAddress = await walletRpc.call<string>('getnewaddress', [
     'native-regtest-payout',
     'bech32',
@@ -232,6 +240,48 @@ async function main(): Promise<void> {
   assert.equal(longPollReplacement.height, longPollBaseline.height + 1);
   assert.notEqual(longPollReplacement.longPollId, longPollBaseline.longPollId);
 
+  const forkNodeRpc = new BitcoinJsonRpcClient({ ...rpcOptions, url: forkRpcUrl });
+  const forkChain = await forkNodeRpc.call<{ chain: string; blocks: number }>('getblockchaininfo');
+  assert.equal(forkChain.chain, 'regtest');
+  assert.equal(forkChain.blocks, 0, 'fork node must start from an isolated fresh regtest chain');
+  const forkWalletRpc = await ensureWallet(forkNodeRpc, forkRpcUrl, FORK_WALLET_NAME);
+  const forkAddress = await forkWalletRpc.call<string>('getnewaddress', [
+    'native-regtest-fork',
+    'bech32',
+  ]);
+  const forkTargetHeight = longPollReplacement.height;
+  const forkBlocks = await forkNodeRpc.call<string[]>('generatetoaddress', [
+    forkTargetHeight,
+    forkAddress,
+  ]);
+  assert.equal(forkBlocks.length, forkTargetHeight);
+  const forkTipHash = forkBlocks.at(-1);
+  assert.match(forkTipHash ?? '', /^[0-9a-f]{64}$/);
+
+  for (let height = 1; height <= forkTargetHeight; height += 1) {
+    const forkBlockHash = await forkNodeRpc.call<string>('getblockhash', [height]);
+    const rawForkBlock = await forkNodeRpc.call<string>('getblock', [forkBlockHash, 0]);
+    assert.match(rawForkBlock, /^[0-9a-f]+$/);
+    const importResult = await nodeRpc.callNullable<string>('submitblock', [rawForkBlock]);
+    assert.equal(
+      importResult === null || importResult === 'inconclusive',
+      true,
+      `fork block ${height} must be accepted or retained as an inconclusive side-chain block`,
+    );
+    const retainedHeader = await nodeRpc.call<{ hash: string }>('getblockheader', [
+      forkBlockHash,
+      true,
+    ]);
+    assert.equal(retainedHeader.hash, forkBlockHash);
+  }
+
+  const primaryTipAfterReorg = await nodeRpc.call<string>('getbestblockhash');
+  assert.equal(primaryTipAfterReorg, forkTipHash);
+  const staleObservation = await adapter.observeSubmittedBlock(candidate.blockHash);
+  assert.equal(staleObservation.status, 'STALE_CHAIN');
+  assert.equal(staleObservation.confirmations, -1);
+  assert.equal(staleObservation.chainTipHash, forkTipHash);
+
   process.stdout.write(
     `${JSON.stringify(
       {
@@ -243,13 +293,16 @@ async function main(): Promise<void> {
         templateTransactionId,
         proposalStatus: proposal.status,
         submissionStatus: submitted.status,
-        confirmations: finalObservation.confirmations,
+        confirmationsBeforeReorg: finalObservation.confirmations,
         transactionCount: finalObservation.transactionCount,
         longPollBaselineHeight: longPollBaseline.height,
         longPollReplacementHeight: longPollReplacement.height,
         longPollTriggerHash: longPollTrigger[0],
+        forkTipHash,
+        statusAfterReorg: staleObservation.status,
         templateSourceDigest: template.sourceDigest,
         longPollSourceDigest: longPollReplacement.sourceDigest,
+        reorgSourceDigest: staleObservation.sourceDigest,
         rawBlockDigest: candidate.rawBlockDigest,
         proposalSourceDigest: proposal.sourceDigest,
         submissionSourceDigest: submitted.sourceDigest,

@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 594,
-  "managedFilesChecksum": "f83e2266b2116ac230fbf76c582f20f61812f8163aeb5dc015fadbea77d23c94",
+  "managedFilesChecksum": "ec757b70227279da5b50f95e34ceeceaefed4aa2dd549a2acbcb83e7b3730081",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -36,8 +36,8 @@
     },
     {
       "path": ".github/workflows/native-bitcoin-regtest.yml",
-      "sha256": "fed8523113ab8a708c272128ce9edb3f2de954f1dc2712070211d17cdc813ebb",
-      "size": 2753
+      "sha256": "8fdd7a66757025bae0e8696330d003cfa9729524e7a38561914db148a8b39f8c",
+      "size": 2779
     },
     {
       "path": ".gitignore",
@@ -1211,8 +1211,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "d42e860e0b24717bd22f8fa8de04ce044d99c6f6747601e095b4894a2facaa7e",
-      "size": 47160
+      "sha256": "7d89c07862977e32570d36c2e73399c9312c29eb57b7f269cca2f8182a6e4749",
+      "size": 47274
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1231,8 +1231,8 @@
     },
     {
       "path": "docker-compose.regtest.yml",
-      "sha256": "d855ec99b0226ffff67675251c02ddcc5d11899b4ffb60d3c94cc3cce2ebf0b6",
-      "size": 1261
+      "sha256": "41ff412de12178fefba2ba608c20bba33dc7a1e5960b7fa35b606ecfd7c30f8e",
+      "size": 2389
     },
     {
       "path": "docker-compose.yml",
@@ -1321,8 +1321,8 @@
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
-      "sha256": "cf011b6c9a0322ef6d3d58d3a46b701fd6ad798bc897a62253c8a83193e01f46",
-      "size": 9865
+      "sha256": "0cbcd734f5f6507a905a3f24ac68d8a5b0aea32689f43f689edbde71f8512a2d",
+      "size": 10220
     },
     {
       "path": "docs/adr/README.md",
@@ -1506,8 +1506,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "d2cda5ae12ca3bb953119d04f5d23baa2b9c5f566fa844380195fe96ac56cbc5",
-      "size": 15838
+      "sha256": "bcc0c75571790ab683d595241c0368b4382c274a65e4210cdb451ba314985eb6",
+      "size": 16260
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1716,8 +1716,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "78bfc128bca46985b73af459c0ec6e0cde8ea582cb3f1436f31ccc080b513342",
-      "size": 9699
+      "sha256": "ef2e8ef1eee4ee4b15d3d3b2a21301cf9a9cab5581942956a407225a717e6d2d",
+      "size": 9818
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2796,8 +2796,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "2bd2ccb93bb26afd7406c26369065d63549081117205df36825fb5e2dbb25994",
-      "size": 15333
+      "sha256": "052975fbae6826ba055df8302233a577a5064e4ee36b3a60c733922f9dc1fba4",
+      "size": 15553
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2836,8 +2836,8 @@
     },
     {
       "path": "scripts/native-bitcoin-regtest-integration.ts",
-      "sha256": "8564666f45cd82d5603ffe74b9bdcb77515b40c6c058754c1bd371bb0f14c788",
-      "size": 9981
+      "sha256": "3b1c8401df13005ca8d6e6517deb0d772dd4c11c065153346b1707e41cbc1339",
+      "size": 12547
     },
     {
       "path": "scripts/reconciliation-resolution-decide-cli.ts",
