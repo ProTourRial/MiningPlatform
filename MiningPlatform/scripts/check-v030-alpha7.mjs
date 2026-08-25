@@ -391,6 +391,9 @@ for (const expected of [
   'pnpm --filter @mining/bitcoin-template... build',
   'up -d --build --wait bitcoin-core-regtest',
   'pnpm test:integration:native-bitcoin-regtest',
+  'restart bitcoin-core-regtest',
+  'before_tip=',
+  'after_tip=',
   'down -v --rmi local --remove-orphans',
 ]) {
   requireText(regtestWorkflow, expected, 'Active native Bitcoin regtest workflow');

@@ -72,10 +72,11 @@ dan arm64 yang dipin. Compose profile disposable serta trace live membuktikan te
 coinbase ke wallet regtest, transaksi witness nyata dengan txid/wtxid berbeda, network-target
 candidate, proposal valid, `submitblock` accepted, exact transaction inclusion, dan dua confirmation.
 Trace yang sama membuktikan long-poll tetap menunggu sebelum tip berubah lalu mengembalikan replacement
-height, previous-block hash, long-poll identity, dan source digest yang baru. Belum ada restart/fork
-evidence, Redis restart/partition/failover evidence, wiring Stratum, atau durable raw-block
-retrieval/approved operator resubmission untuk unresolved intent; karena itu status P0 belum selesai
-dan native mining tetap nonaktif.
+height, previous-block hash, long-poll identity, dan source digest yang baru. Restart process dengan
+volume yang sama juga mempertahankan height dan tip hash secara exact. Belum ada in-flight
+restart/fork/version-upgrade evidence, Redis restart/partition/failover evidence, wiring Stratum, atau
+durable raw-block retrieval/approved operator resubmission untuk unresolved intent; karena itu status
+P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

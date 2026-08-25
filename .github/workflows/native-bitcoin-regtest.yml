@@ -46,6 +46,19 @@ jobs:
         env:
           NATIVE_BITCOIN_REGTEST_ACK: disposable-bitcoin-core-31-regtest-only
         run: pnpm test:integration:native-bitcoin-regtest
+      - name: Prove node restart preserves the canonical tip
+        shell: bash
+        run: |
+          compose=(docker compose -p miningplatform_native_regtest -f docker-compose.regtest.yml --profile native-regtest)
+          cli=(bitcoin-cli -regtest -rpcuser=miningplatform-regtest -rpcpassword=miningplatform-regtest-disposable-only)
+          before_height="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getblockcount)"
+          before_tip="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getbestblockhash)"
+          "${compose[@]}" restart bitcoin-core-regtest
+          "${compose[@]}" up -d --no-build --wait bitcoin-core-regtest
+          after_height="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getblockcount)"
+          after_tip="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getbestblockhash)"
+          test "$before_height" = "$after_height"
+          test "$before_tip" = "$after_tip"
       - name: Capture Bitcoin Core logs on failure
         if: failure()
         run: >-
