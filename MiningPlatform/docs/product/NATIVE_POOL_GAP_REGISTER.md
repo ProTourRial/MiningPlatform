@@ -71,9 +71,11 @@ historis. Image non-root Bitcoin Core 31.0 sekarang dibangun dari tarball resmi 
 dan arm64 yang dipin. Compose profile disposable serta trace live membuktikan template dari node,
 coinbase ke wallet regtest, transaksi witness nyata dengan txid/wtxid berbeda, network-target
 candidate, proposal valid, `submitblock` accepted, exact transaction inclusion, dan dua confirmation.
-Belum ada long-poll/restart/fork evidence, Redis restart/partition/failover evidence, wiring Stratum,
-atau durable raw-block retrieval/approved operator resubmission untuk unresolved intent; karena itu
-status P0 belum selesai dan native mining tetap nonaktif.
+Trace yang sama membuktikan long-poll tetap menunggu sebelum tip berubah lalu mengembalikan replacement
+height, previous-block hash, long-poll identity, dan source digest yang baru. Belum ada restart/fork
+evidence, Redis restart/partition/failover evidence, wiring Stratum, atau durable raw-block
+retrieval/approved operator resubmission untuk unresolved intent; karena itu status P0 belum selesai
+dan native mining tetap nonaktif.
 
 ## Priority register
 
@@ -190,9 +192,9 @@ getblocktemplate
 
 Prefix kanonis melalui transaction-bearing `getblocktemplate`, coinbase/job, solved network-target
 candidate, `submitblock`, exact witness-transaction inclusion, dan dua confirmation kini lulus terhadap
-Bitcoin Core 31.0 nyata. Tahap miner-facing, maturity, reward allocation, fee, ledger, dan
-reconciliation di bawahnya belum lulus dan tidak boleh dianggap tersirat dari acceptance blok regtest
-tersebut.
+Bitcoin Core 31.0 nyata; replacement `getblocktemplate` melalui long-poll juga lulus setelah perubahan
+tip terkontrol. Tahap miner-facing, maturity, reward allocation, fee, ledger, dan reconciliation di
+bawahnya belum lulus dan tidak boleh dianggap tersirat dari acceptance blok regtest tersebut.
 
 Acceptance invariants:
 

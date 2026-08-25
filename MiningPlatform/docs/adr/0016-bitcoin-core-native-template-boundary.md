@@ -94,7 +94,9 @@ defaults.
   coinbase, creates a real witness transaction, proves its distinct txid/wtxid is present in the
   authoritative template, builds and solves the native candidate, receives a valid proposal result,
   submits the block, verifies the exact transaction and coinbase destination through Core, and
-  observes one then two active-chain confirmations. The trace emits bounded identities and digests,
+  observes one then two active-chain confirmations. It also proves a long-poll request remains pending
+  until a controlled tip change and then returns the exact replacement height, previous-block hash,
+  long-poll identity, and normalized source digest. The trace emits bounded identities and digests,
   never raw block bytes, and CI destroys its disposable image and volume on every outcome.
 - Schemas v15-v17 retain append-only candidate, proposal, pre-RPC intent, submission-attempt, and
   submitted-block recovery records. Database constraints and triggers bind every intent/outcome and
@@ -110,8 +112,7 @@ defaults.
 
 ## Next acceptance gates
 
-- Expand live Core evidence to long-poll replacement, stale-tip/fork rejection, node restart, and
-  version-upgrade behavior.
+- Expand live Core evidence to stale-tip/fork rejection, node restart, and version-upgrade behavior.
 - Prove private template retention and global extranonce allocation through Redis restart, partition,
   failover, counter exhaustion, and wall-clock expiry scenarios.
 - Retain canonical live template/candidate digests as versioned compatibility fixtures without

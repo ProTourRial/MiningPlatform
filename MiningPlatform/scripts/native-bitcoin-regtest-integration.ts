@@ -68,6 +68,10 @@ function solveNetworkTarget(
   throw new Error('Unable to solve the disposable regtest network target');
 }
 
+async function delay(milliseconds: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 async function ensureWallet(nodeRpc: BitcoinJsonRpcClient): Promise<BitcoinJsonRpcClient> {
   const loadedWallets = await nodeRpc.call<string[]>('listwallets');
   if (!loadedWallets.includes(WALLET_NAME)) {
@@ -207,6 +211,27 @@ async function main(): Promise<void> {
     'Bitcoin Core must confirm the native coinbase pays the disposable wallet address',
   );
 
+  const longPollBaseline = await adapter.getBlockTemplate();
+  let longPollSettled = false;
+  const longPollPromise = adapter.getBlockTemplate(longPollBaseline.longPollId);
+  void longPollPromise.then(
+    () => {
+      longPollSettled = true;
+    },
+    () => {
+      longPollSettled = true;
+    },
+  );
+  await delay(250);
+  assert.equal(longPollSettled, false, 'GBT long-poll must remain pending before the tip changes');
+  const longPollTrigger = await nodeRpc.call<string[]>('generatetoaddress', [1, payoutAddress]);
+  assert.equal(longPollTrigger.length, 1);
+  const longPollReplacement = await longPollPromise;
+  assert.equal(longPollSettled, true);
+  assert.equal(longPollReplacement.previousBlockHash, longPollTrigger[0]);
+  assert.equal(longPollReplacement.height, longPollBaseline.height + 1);
+  assert.notEqual(longPollReplacement.longPollId, longPollBaseline.longPollId);
+
   process.stdout.write(
     `${JSON.stringify(
       {
@@ -220,7 +245,11 @@ async function main(): Promise<void> {
         submissionStatus: submitted.status,
         confirmations: finalObservation.confirmations,
         transactionCount: finalObservation.transactionCount,
+        longPollBaselineHeight: longPollBaseline.height,
+        longPollReplacementHeight: longPollReplacement.height,
+        longPollTriggerHash: longPollTrigger[0],
         templateSourceDigest: template.sourceDigest,
+        longPollSourceDigest: longPollReplacement.sourceDigest,
         rawBlockDigest: candidate.rawBlockDigest,
         proposalSourceDigest: proposal.sourceDigest,
         submissionSourceDigest: submitted.sourceDigest,

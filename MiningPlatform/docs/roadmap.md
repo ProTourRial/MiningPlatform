@@ -74,9 +74,10 @@ detection, and read-only active/stale/not-found block observation, with fresh an
 migration evidence. A checksum-pinned Bitcoin Core 31.0 single-node regtest trace now proves a live
 witness transaction in the authoritative template, wallet-owned coinbase, network-target candidate,
 valid proposal, accepted `submitblock`, exact transaction inclusion, and two confirmations.
-Long-poll/restart/fork evidence, Redis restart/partition/failover evidence, Stratum wiring, durable
-raw-block retrieval, and an explicitly approved operator resubmission policy for still-not-found
-intents remain mandatory before steps 1-3 can be declared complete.
+The trace also proves long-poll replacement after a controlled chain-tip change. Restart/fork evidence,
+Redis restart/partition/failover evidence, Stratum wiring, durable raw-block retrieval, and an
+explicitly approved operator resubmission policy for still-not-found intents remain mandatory before
+steps 1-3 can be declared complete.
 
 PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
 independent risk approval exist. Regtest success never authorizes mainnet custody or payout.

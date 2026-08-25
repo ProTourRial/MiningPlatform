@@ -200,6 +200,8 @@ for (const expected of [
   "walletRpc.call<string>('sendtoaddress'",
   "nodeRpc.call<string[]>('getrawmempool')",
   'templateTransactionId',
+  'adapter.getBlockTemplate(longPollBaseline.longPollId)',
+  'longPollReplacement.previousBlockHash',
   'validateBlockProposal',
   'submitBlock',
   'observeSubmittedBlock',

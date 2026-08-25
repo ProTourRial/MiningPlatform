@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 594,
-  "managedFilesChecksum": "1d1edae4ae7fc8f466da8fc008cdded5d3445896b6342e7744874e9b40a0a7b0",
+  "managedFilesChecksum": "6345fc25ea166783e1c7ac724c4583d10251924075ac5dace6677137d34f5e0b",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1211,8 +1211,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "ba957548ce9540c50b7ee8b10c9aee7f50be55757ed08bb39cb5fcde4c5e86d4",
-      "size": 46973
+      "sha256": "a2f9255656969c9c3e10df36eaed318d0e3bc3c0f1ebae90777e8c0e65cba724",
+      "size": 47056
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1321,8 +1321,8 @@
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
-      "sha256": "98284acd85b68212962eb0460bc8a924cdc8dfd2bc260ecaaecce91919c22fc1",
-      "size": 9467
+      "sha256": "9e3fc0d450a625ea69c0ba20bb5902c1e0d5c50997dfad6828cdfc873476642a",
+      "size": 9645
     },
     {
       "path": "docs/adr/README.md",
@@ -1506,8 +1506,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "7b3ddca5219c6a6dc0947c71888fab869d7ae13858e2575929ccc79918ebe09d",
-      "size": 15452
+      "sha256": "ddfe12976a8b81f42f2364575b64152e21852d6f1d0ae81a447ac2cebedbff63",
+      "size": 15718
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1716,8 +1716,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "d94bae56b386f5513de28b30ae09e8800ea7810a36c975d83c157d2b1ccd522c",
-      "size": 9543
+      "sha256": "8a5ea7200fc93262e35d2431dbea5f8443991e1b730f75f62c900604e5f70886",
+      "size": 9614
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2796,8 +2796,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "386b03d1d719d39eb3df98a33726231b52b3fb410145953c2c0e7faf9e52a92b",
-      "size": 15164
+      "sha256": "c3d530f8bc8ef189f52ee3cd4e79291ffabecdd8031c76917ac13fc3fcb1335a",
+      "size": 15266
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2836,8 +2836,8 @@
     },
     {
       "path": "scripts/native-bitcoin-regtest-integration.ts",
-      "sha256": "9dbf475d17c6da532ffc173837a8398d038e65f009b8fa2fc6f9dc751c175830",
-      "size": 8730
+      "sha256": "8564666f45cd82d5603ffe74b9bdcb77515b40c6c058754c1bd371bb0f14c788",
+      "size": 9981
     },
     {
       "path": "scripts/reconciliation-resolution-decide-cli.ts",
