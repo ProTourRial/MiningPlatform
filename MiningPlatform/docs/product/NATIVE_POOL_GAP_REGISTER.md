@@ -59,15 +59,17 @@ menolak mismatch antara policy, descriptor/output script, dan destination yang d
 
 Checkpoint ini memiliki unit/fixture evidence dan integration evidence dua client pada Redis 7
 disposable untuk job visibility, idempotency, 128 alokasi unik, Redis server time, dan TTL monotonic.
-Schema v15-v16 dan repository mining-worker sekarang menyimpan candidate, proposal, pre-RPC intent,
-serta submission outcome secara append-only dan idempotent, dengan exact digest correlation dan
-proposal-freshness gate yang juga ditegakkan database. Coordinator offline menulis intent sebelum RPC,
-menolak submit untuk proposal rejected, tidak mengulang RPC setelah outcome durable, dan mengekspos
-intent tanpa outcome sebagai recovery exception. Fresh serta representative alpha.7 upgrade rehearsal
-telah lulus 16 migration, termasuk backfill outcome v15, tanpa menulis ulang payout historis. Belum ada
-container Bitcoin Core regtest, Redis restart/partition/failover evidence, wiring Stratum, durable
-raw-block retrieval/operator recovery untuk unresolved intent, atau live proposal/`submitblock` trace;
-karena itu status P0 belum selesai dan native mining tetap nonaktif.
+Schema v15-v17 dan repository mining-worker sekarang menyimpan candidate, proposal, pre-RPC intent,
+submission outcome, serta recovery observation secara append-only dan idempotent, dengan exact digest
+correlation dan proposal-freshness gate yang juga ditegakkan database. Coordinator offline menulis
+intent sebelum RPC, menolak submit untuk proposal rejected, tidak mengulang RPC setelah outcome
+durable, dan mengekspos intent tanpa outcome sebagai recovery exception. Recovery coordinator hanya
+membaca `getblockheader` plus `getblockstats`: active/stale menjadi terminal evidence, sedangkan
+not-found tetap unresolved dan tidak pernah memicu resubmit. Fresh serta representative alpha.7
+upgrade rehearsal telah lulus 17 migration, termasuk backfill outcome v15, tanpa menulis ulang payout
+historis. Belum ada container Bitcoin Core regtest, Redis restart/partition/failover evidence, wiring
+Stratum, durable raw-block retrieval/approved operator resubmission untuk unresolved intent, atau live
+proposal/`submitblock` trace; karena itu status P0 belum selesai dan native mining tetap nonaktif.
 
 ## Priority register
 

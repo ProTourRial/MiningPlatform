@@ -27,6 +27,13 @@ function rpcResponse(result: unknown): Response {
   });
 }
 
+function rpcError(code: number, message: string): Response {
+  return new Response(
+    JSON.stringify({ jsonrpc: '2.0', id: 1, result: null, error: { code, message } }),
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  );
+}
+
 function fixtureTemplate(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     version: 0x20000000,
@@ -60,6 +67,9 @@ function createNativeClient(input?: {
   template?: Record<string, unknown>;
   proposalResult?: unknown;
   submissionResult?: unknown;
+  blockHeader?: Record<string, unknown>;
+  blockStats?: Record<string, unknown>;
+  blockNotFound?: boolean;
 }) {
   const calls: RpcRequest[] = [];
   const chain = {
@@ -90,6 +100,15 @@ function createNativeClient(input?: {
       return rpcResponse(input?.template ?? fixtureTemplate());
     }
     if (request.method === 'submitblock') return rpcResponse(input?.submissionResult ?? null);
+    if (request.method === 'getblockheader') {
+      if (input?.blockNotFound) return rpcError(-5, 'Block not found');
+      const blockHash = String(request.params[0]);
+      return rpcResponse(input?.blockHeader ?? { hash: blockHash, confirmations: 2, height: 99 });
+    }
+    if (request.method === 'getblockstats') {
+      const blockHash = String(request.params[0]);
+      return rpcResponse(input?.blockStats ?? { blockhash: blockHash, height: 99, txs: 1 });
+    }
     throw new Error(`Unexpected method ${request.method}`);
   }) as typeof fetch;
   const rpc = new BitcoinJsonRpcClient({
@@ -253,6 +272,75 @@ test('proposal and submission boundary rejects stale, mismatched, rejected, and 
     now: () => new Date(OBSERVED_AT),
   });
   await assert.rejects(malformedAdapter.validateBlockProposal(RAW_BLOCK), /invalid mining result/);
+});
+
+test('submitted-block recovery is read-only, chain-aware, and never treats not-found as success', async () => {
+  const blockHash = 'b'.repeat(64);
+  const activeClient = createNativeClient();
+  const activeAdapter = new BitcoinNativeMiningRpcAdapter(activeClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  const active = await activeAdapter.observeSubmittedBlock(blockHash.toUpperCase());
+  assert.equal(active.status, 'ACTIVE_CHAIN');
+  assert.equal(active.blockHash, blockHash);
+  assert.equal(active.confirmations, 2);
+  assert.equal(active.blockHeight, 99);
+  assert.equal(active.transactionCount, 1);
+  assert.equal(active.chainHeight, 100);
+  assert.deepEqual(activeClient.calls.find((call) => call.method === 'getblockheader')?.params, [
+    blockHash,
+    true,
+  ]);
+  assert.deepEqual(activeClient.calls.find((call) => call.method === 'getblockstats')?.params, [
+    blockHash,
+    ['blockhash', 'height', 'txs'],
+  ]);
+  assert.equal(
+    activeClient.calls.some((call) => call.method === 'submitblock'),
+    false,
+  );
+
+  const staleClient = createNativeClient({
+    blockHeader: { hash: blockHash, confirmations: -1, height: 99 },
+    blockStats: { blockhash: blockHash, height: 99, txs: 3 },
+  });
+  const staleAdapter = new BitcoinNativeMiningRpcAdapter(staleClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  assert.equal((await staleAdapter.observeSubmittedBlock(blockHash)).status, 'STALE_CHAIN');
+
+  const missingClient = createNativeClient({ blockNotFound: true });
+  const missingAdapter = new BitcoinNativeMiningRpcAdapter(missingClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  const missing = await missingAdapter.observeSubmittedBlock(blockHash);
+  assert.equal(missing.status, 'NOT_FOUND');
+  assert.equal(missing.confirmations, 0);
+  assert.equal(missing.blockHeight, null);
+  assert.equal(missing.transactionCount, null);
+  assert.equal(
+    missingClient.calls.some((call) => call.method === 'getblockstats'),
+    false,
+  );
+  assert.equal(
+    missingClient.calls.some((call) => call.method === 'submitblock'),
+    false,
+  );
+
+  const inconsistentClient = createNativeClient({
+    blockStats: { blockhash: 'c'.repeat(64), height: 101, txs: 1 },
+  });
+  const inconsistentAdapter = new BitcoinNativeMiningRpcAdapter(inconsistentClient.rpc, {
+    expectedChain: 'regtest',
+    now: () => new Date(OBSERVED_AT),
+  });
+  await assert.rejects(
+    inconsistentAdapter.observeSubmittedBlock(blockHash),
+    /inconsistent submitted-block evidence/,
+  );
 });
 
 test('template normalization preserves transaction evidence and validates dependency ordering', () => {

@@ -18,6 +18,7 @@ import {
   NativeBitcoinSubmissionCoordinator,
   NativeBitcoinSubmissionUncertainError,
 } from './native-bitcoin-submission-coordinator.js';
+import { NativeBitcoinSubmissionRecoveryCoordinator } from './native-bitcoin-submission-recovery.js';
 
 function hex(bytes: number): string {
   return randomBytes(bytes).toString('hex');
@@ -181,5 +182,137 @@ test('coordinator records intent before RPC, replays outcomes, and exposes ambig
     uncertainSubmitCalls,
     1,
     'an unresolved durable intent must stop automatic submitblock replay',
+  );
+
+  let missingObservationCalls = 0;
+  const missingObservation = {
+    status: 'NOT_FOUND' as const,
+    blockHash: uncertainCandidate.blockHash,
+    confirmations: 0,
+    blockHeight: null,
+    transactionCount: null,
+    chainTipHash: hex(32),
+    chainHeight: 400,
+    sourceDigest: hex(32),
+    observedAt: new Date(),
+  };
+  const missingRecovery = new NativeBitcoinSubmissionRecoveryCoordinator(
+    {
+      async observeSubmittedBlock() {
+        missingObservationCalls += 1;
+        return missingObservation;
+      },
+    },
+    repository,
+  );
+  const missing = await missingRecovery.observe(uncertainIntentId);
+  assert.equal(missing.status, 'STILL_UNRESOLVED');
+  assert.equal(missing.replayed, false);
+  assert.equal(missingObservationCalls, 1);
+  const missingReplay = await missingRecovery.observe(uncertainIntentId);
+  assert.equal(missingReplay.status, 'STILL_UNRESOLVED');
+  assert.equal(missingReplay.replayed, true);
+  assert.equal(missingObservationCalls, 2, 'not-found recovery may be observed again read-only');
+  assert.equal(
+    await prisma.nativeBitcoinSubmissionRecoveryObservation.count({
+      where: { submissionIntentId: uncertainIntentId, status: 'NOT_FOUND' },
+    }),
+    1,
+    'the same node-tip observation must remain idempotent',
+  );
+  assert.ok(
+    (await repository.listUnresolvedSubmissionIntents({ limit: 1_000 })).some(
+      (intent) => intent.id === uncertainIntentId,
+    ),
+    'not-found is evidence but must not authorize an automatic resubmission',
+  );
+
+  let activeObservationCalls = 0;
+  const activeRecovery = new NativeBitcoinSubmissionRecoveryCoordinator(
+    {
+      async observeSubmittedBlock() {
+        activeObservationCalls += 1;
+        return {
+          status: 'ACTIVE_CHAIN' as const,
+          blockHash: uncertainCandidate.blockHash,
+          confirmations: 2,
+          blockHeight: 399,
+          transactionCount: 1,
+          chainTipHash: hex(32),
+          chainHeight: 400,
+          sourceDigest: hex(32),
+          observedAt: new Date(),
+        };
+      },
+    },
+    repository,
+  );
+  const observed = await activeRecovery.observe(uncertainIntentId);
+  assert.equal(observed.status, 'BLOCK_OBSERVED');
+  assert.equal(observed.chainStatus, 'ACTIVE_CHAIN');
+  assert.equal(activeObservationCalls, 1);
+  assert.equal(
+    (await repository.listUnresolvedSubmissionIntents({ limit: 1_000 })).some(
+      (intent) => intent.id === uncertainIntentId,
+    ),
+    false,
+  );
+  const observedReplay = await activeRecovery.observe(uncertainIntentId);
+  assert.equal(observedReplay.status, 'BLOCK_OBSERVED');
+  assert.equal(observedReplay.replayed, true);
+  assert.equal(activeObservationCalls, 1, 'terminal chain evidence must suppress repeat RPC calls');
+  assert.equal(
+    await prisma.nativeBitcoinSubmissionAttempt.count({
+      where: { submissionIntentId: uncertainIntentId },
+    }),
+    0,
+    'read-only recovery must not synthesize a submitblock outcome',
+  );
+
+  await assert.rejects(
+    prisma.nativeBitcoinSubmissionRecoveryObservation.create({
+      data: {
+        idempotencyKey: `native-recovery-invalid:${randomUUID()}`,
+        submissionIntentId: uncertainIntentId,
+        status: 'ACTIVE_CHAIN',
+        blockHash: uncertainCandidate.blockHash,
+        confirmations: 3,
+        blockHeight: 399,
+        transactionCount: 1,
+        chainTipHash: hex(32),
+        chainHeight: 400,
+        sourceDigest: hex(32),
+        observedAt: new Date(),
+      },
+    }),
+    /values_check/,
+    'database confirmation arithmetic must reject forged active-chain evidence',
+  );
+
+  let outcomeRecoveryCalls = 0;
+  const outcomeRecovery = new NativeBitcoinSubmissionRecoveryCoordinator(
+    {
+      async observeSubmittedBlock() {
+        outcomeRecoveryCalls += 1;
+        throw new Error('chain observation must not run after a durable submitblock outcome');
+      },
+    },
+    repository,
+  );
+  if (accepted.status !== 'SUBMISSION_RECORDED') {
+    throw new Error('accepted fixture did not produce durable submission evidence');
+  }
+  const outcome = await outcomeRecovery.observe(accepted.submissionIntentId);
+  assert.equal(outcome.status, 'SUBMISSION_OUTCOME_RECORDED');
+  assert.equal(outcomeRecoveryCalls, 0);
+
+  if (observed.status !== 'BLOCK_OBSERVED') {
+    throw new Error('active recovery fixture did not persist terminal evidence');
+  }
+  await assert.rejects(
+    prisma.nativeBitcoinSubmissionRecoveryObservation.delete({
+      where: { id: observed.observationEvidenceId },
+    }),
+    /append-only/,
   );
 });

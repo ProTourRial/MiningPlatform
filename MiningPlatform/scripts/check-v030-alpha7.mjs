@@ -50,8 +50,10 @@ const requiredFiles = [
   'scripts/verify-v030-alpha8-migration.mjs',
   'apps/mining-worker/src/native-bitcoin-evidence.ts',
   'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
+  'apps/mining-worker/src/native-bitcoin-submission-recovery.ts',
   'packages/database/prisma/migrations/20260824010000_native_bitcoin_submission_evidence/migration.sql',
   'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+  'packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql',
 ];
 await Promise.all(requiredFiles.map((path) => readFile(resolve(root, path))));
 
@@ -89,6 +91,7 @@ for (const expected of [
   'cooldownUntil',
   'payoutRouteId',
   'model NativeBitcoinSubmissionIntent',
+  'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
 ])
   requireText(schema, expected, 'Prisma schema');
@@ -134,6 +137,36 @@ for (const expected of [
   'A prior execution stopped after durable intent and before durable outcome',
 ])
   requireText(nativeCoordinator, expected, 'Native Bitcoin submission coordinator');
+
+const nativeRecoveryMigration = await text(
+  'packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql',
+);
+for (const expected of [
+  'NativeBitcoinRecoveryObservationStatus',
+  'NativeBitcoinSubmissionRecoveryObservation_immutable_trigger',
+  'NativeBitcoinSubmissionRecoveryObservation_correlation_trigger',
+  'confirmations" = "chainHeight" - "blockHeight" + 1',
+  'does not match its submission intent',
+])
+  requireText(nativeRecoveryMigration, expected, 'Native Bitcoin recovery-observation migration');
+
+const nativeRecovery = await text('apps/mining-worker/src/native-bitcoin-submission-recovery.ts');
+for (const expected of [
+  'observeSubmittedBlock',
+  'SUBMISSION_OUTCOME_RECORDED',
+  'STILL_UNRESOLVED',
+  'terminalObservation',
+])
+  requireText(nativeRecovery, expected, 'Native Bitcoin submission recovery coordinator');
+
+const nativeMiningRpc = await text('packages/blockchain-adapters/src/bitcoin-mining-rpc.ts');
+for (const expected of [
+  'observeSubmittedBlock',
+  "'getblockheader'",
+  "'getblockstats'",
+  "status: 'NOT_FOUND'",
+])
+  requireText(nativeMiningRpc, expected, 'Native Bitcoin mining RPC adapter');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

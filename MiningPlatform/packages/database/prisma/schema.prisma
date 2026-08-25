@@ -280,6 +280,12 @@ enum NativeBitcoinSubmissionStatus {
   REJECTED
 }
 
+enum NativeBitcoinRecoveryObservationStatus {
+  ACTIVE_CHAIN
+  STALE_CHAIN
+  NOT_FOUND
+}
+
 enum PayoutReconciliationStatus {
   PENDING
   MATCHED
@@ -1610,21 +1616,43 @@ model NativeBitcoinProposalEvidence {
 }
 
 model NativeBitcoinSubmissionIntent {
-  id                 String                          @id @default(cuid())
-  idempotencyKey     String                          @unique
-  candidateId        String
-  proposalEvidenceId String
-  rawBlockDigest     String
-  workId             String?
-  sourceDigest       String
-  createdAt          DateTime                        @default(now())
-  candidate          NativeBitcoinCandidate          @relation(fields: [candidateId], references: [id], onDelete: Restrict)
-  proposalEvidence   NativeBitcoinProposalEvidence   @relation(fields: [proposalEvidenceId], references: [id], onDelete: Restrict)
-  submission         NativeBitcoinSubmissionAttempt?
+  id                   String                                       @id @default(cuid())
+  idempotencyKey       String                                       @unique
+  candidateId          String
+  proposalEvidenceId   String
+  rawBlockDigest       String
+  workId               String?
+  sourceDigest         String
+  createdAt            DateTime                                     @default(now())
+  candidate            NativeBitcoinCandidate                       @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  proposalEvidence     NativeBitcoinProposalEvidence                @relation(fields: [proposalEvidenceId], references: [id], onDelete: Restrict)
+  submission           NativeBitcoinSubmissionAttempt?
+  recoveryObservations NativeBitcoinSubmissionRecoveryObservation[]
 
   @@unique([candidateId, sourceDigest])
   @@index([candidateId, createdAt])
   @@index([proposalEvidenceId, createdAt])
+}
+
+model NativeBitcoinSubmissionRecoveryObservation {
+  id                 String                                 @id @default(cuid())
+  idempotencyKey     String                                 @unique
+  submissionIntentId String
+  status             NativeBitcoinRecoveryObservationStatus
+  blockHash          String
+  confirmations      Int
+  blockHeight        Int?
+  transactionCount   Int?
+  chainTipHash       String
+  chainHeight        Int
+  sourceDigest       String
+  observedAt         DateTime
+  createdAt          DateTime                               @default(now())
+  submissionIntent   NativeBitcoinSubmissionIntent          @relation(fields: [submissionIntentId], references: [id], onDelete: Restrict)
+
+  @@unique([submissionIntentId, sourceDigest])
+  @@index([submissionIntentId, observedAt])
+  @@index([status, observedAt])
 }
 
 model NativeBitcoinSubmissionAttempt {

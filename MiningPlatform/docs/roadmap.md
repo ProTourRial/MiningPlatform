@@ -67,12 +67,13 @@ Execution order:
 Current fixture evidence covers the fail-closed RPC/template boundary plus the offline deterministic
 coinbase, merkle, native-job, block-candidate, proposal, guarded `submitblock`, private Redis job
 retention, and Redis-time global extranonce boundaries. Two-client Redis 7 integration proves shared
-job visibility, 128 unique leases, and monotonic TTL extension. Schemas v15-v16 add append-only,
-idempotent, digest-correlated candidate/proposal/pre-RPC-intent/submission records. The offline
-coordinator proves intent-before-RPC, durable-outcome replay, and fail-closed unresolved-intent
-detection, with fresh and alpha.7 upgrade migration evidence. Live regtest, Redis
-restart/partition/failover evidence, Stratum wiring, durable raw-block retrieval, and operator recovery
-for unresolved submission intents remain mandatory before steps 1-3 can be declared complete.
+job visibility, 128 unique leases, and monotonic TTL extension. Schemas v15-v17 add append-only,
+idempotent, digest-correlated candidate/proposal/pre-RPC-intent/submission/recovery records. The
+offline coordinators prove intent-before-RPC, durable-outcome replay, fail-closed unresolved-intent
+detection, and read-only active/stale/not-found block observation, with fresh and alpha.7 upgrade
+migration evidence. Live regtest, Redis restart/partition/failover evidence, Stratum wiring, durable
+raw-block retrieval, and an explicitly approved operator resubmission policy for still-not-found
+intents remain mandatory before steps 1-3 can be declared complete.
 
 PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
 independent risk approval exist. Regtest success never authorizes mainnet custody or payout.

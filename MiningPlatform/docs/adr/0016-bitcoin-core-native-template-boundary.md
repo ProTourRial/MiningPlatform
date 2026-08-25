@@ -48,6 +48,9 @@ defaults.
 11. The offline coordinator writes intent before RPC, suppresses automatic retry when an intent has no
     durable outcome, and returns an already-recorded outcome without a second RPC. This checkpoint does
     not activate a Stratum runtime, automatically submit blocks, or create rewards.
+12. Recovery for an unresolved intent is read-only. A ready, chain-bound node is queried with bounded
+    `getblockheader` and `getblockstats` calls. Active-chain and stale-chain observations stop automatic
+    recovery polling; not-found is retained as evidence but never authorizes `submitblock` replay.
 
 ## Consequences
 
@@ -83,14 +86,17 @@ defaults.
 - A two-client integration test against disposable Redis 7 proves private-job visibility,
   idempotency, Redis-time allocation, 128 unique leases, and monotonic TTL extension without skips.
   No Redis restart/partition or live Bitcoin Core evidence is claimed yet.
-- Schemas v15-v16 retain append-only candidate, proposal, pre-RPC intent, and submission-attempt
-  records. Database constraints and triggers bind every intent/outcome to one candidate and proposal,
-  reject expired or rejected proposals, and prevent update/delete mutation.
+- Schemas v15-v17 retain append-only candidate, proposal, pre-RPC intent, submission-attempt, and
+  submitted-block recovery records. Database constraints and triggers bind every intent/outcome and
+  observation to one candidate, reject expired or rejected proposals, enforce exact active-chain
+  confirmation arithmetic, and prevent update/delete mutation.
 - Repository/coordinator integration evidence proves exact sequential and concurrent idempotency,
   conflict rejection, proposal freshness, intent-before-RPC ordering, rejected-proposal denial,
-  durable-outcome replay without another RPC, and explicit unresolved-intent discovery. Fresh and
-  representative alpha.7 upgrade rehearsals apply all 16 migrations; the upgrade also backfills a
-  representative v15 outcome with a correlated synthetic intent without rewriting payout history.
+  durable-outcome replay without another RPC, explicit unresolved-intent discovery, read-only
+  active/stale/not-found recovery, and terminal-observation replay without another RPC.
+  Fresh and representative alpha.7 upgrade rehearsals apply all 17 migrations; the upgrade also
+  backfills a representative v15 outcome with a correlated synthetic intent without rewriting payout
+  history.
 
 ## Next acceptance gates
 
@@ -101,14 +107,17 @@ defaults.
   failover, counter exhaustion, and wall-clock expiry scenarios.
 - Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
   against Core proposal validation.
-- Wire the offline coordinator to a regtest-only runtime and add durable raw-block retrieval plus an
-  operator resolution/resubmission workflow for an intent left without outcome after dispatch.
+- Wire the offline coordinators to a regtest-only runtime and add durable raw-block retrieval plus an
+  explicitly approved operator resubmission workflow for an intent that remains not-found after
+  dispatch.
 - Keep mainnet and every reward/payout side effect disabled until the remaining native-pool gates pass.
 
 ## References
 
 - <https://bitcoincore.org/en/doc/31.0.0/rpc/mining/getblocktemplate/>
 - <https://bitcoincore.org/en/doc/31.0.0/rpc/mining/submitblock/>
+- <https://bitcoincore.org/en/doc/31.0.0/rpc/blockchain/getblockheader/>
+- <https://bitcoincore.org/en/doc/31.0.0/rpc/blockchain/getblockstats/>
 - <https://github.com/bitcoin/bips/blob/master/bip-0022.mediawiki>
 - <https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki>
 - <https://github.com/bitcoin/bips/blob/master/bip-0145.mediawiki>

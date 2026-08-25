@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260824020000_native_bitcoin_submission_intent';
+const latestMigration = '20260824030000_native_bitcoin_submission_recovery_observation';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -266,6 +266,7 @@ try {
         OR to_regclass('public."NativeBitcoinCandidate"') IS NULL
         OR to_regclass('public."NativeBitcoinProposalEvidence"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionIntent"') IS NULL
+        OR to_regclass('public."NativeBitcoinSubmissionRecoveryObservation"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionAttempt"') IS NULL
       THEN RAISE EXCEPTION 'controlled payout execution tables are missing'; END IF;
       IF NOT EXISTS (
@@ -312,6 +313,16 @@ try {
           AND t.tgname = 'NativeBitcoinSubmissionIntent_correlation_trigger' AND NOT t.tgisinternal
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'NativeBitcoinSubmissionRecoveryObservation'
+          AND t.tgname = 'NativeBitcoinSubmissionRecoveryObservation_immutable_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'NativeBitcoinSubmissionRecoveryObservation'
+          AND t.tgname = 'NativeBitcoinSubmissionRecoveryObservation_correlation_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
         WHERE c.relname = 'NativeBitcoinSubmissionAttempt'
           AND t.tgname = 'NativeBitcoinSubmissionAttempt_correlation_trigger' AND NOT t.tgisinternal
       ) THEN RAISE EXCEPTION 'native Bitcoin evidence triggers are missing'; END IF;
@@ -352,7 +363,7 @@ try {
     'src/payout-execution.integration.test.ts',
   ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
-  process.stdout.write(`\nSchema-16 payout and native-intent ${mode} verification passed.\n`);
+  process.stdout.write(`\nSchema-17 payout and native-recovery ${mode} verification passed.\n`);
 } finally {
   if (
     temporaryPrismaRoot &&

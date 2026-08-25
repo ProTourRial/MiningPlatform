@@ -112,6 +112,18 @@ export type BitcoinBlockSubmissionResult = {
   sourceDigest: string;
 };
 
+export type BitcoinSubmittedBlockObservation = {
+  status: 'ACTIVE_CHAIN' | 'STALE_CHAIN' | 'NOT_FOUND';
+  blockHash: string;
+  confirmations: number;
+  blockHeight: number | null;
+  transactionCount: number | null;
+  chainTipHash: string;
+  chainHeight: number;
+  observedAt: Date;
+  sourceDigest: string;
+};
+
 type CoreChainInfo = {
   chain: unknown;
   blocks: unknown;
@@ -713,6 +725,99 @@ export class BitcoinNativeMiningRpcAdapter {
       observedAt,
       sourceDigest: sha256Hex(
         canonicalJson({ method: 'submitblock', digest, workId: workId ?? null, result: rawResult }),
+      ),
+    };
+  }
+
+  async observeSubmittedBlock(blockHash: string): Promise<BitcoinSubmittedBlockObservation> {
+    const method = 'getblockheader';
+    const normalizedBlockHash = requireHex(blockHash, 'blockhash', method, 32);
+    const readiness = await this.getMiningReadiness();
+    if (!readiness.ready) {
+      throw new BitcoinRpcError(
+        `Bitcoin Core is not ready to observe a submitted block: ${readiness.blockers.join(', ')}`,
+        null,
+        method,
+      );
+    }
+
+    let rawHeader: unknown;
+    try {
+      rawHeader = await this.rpc.call<unknown>('getblockheader', [normalizedBlockHash, true]);
+    } catch (error) {
+      if (!(error instanceof BitcoinRpcError) || error.code !== -5) throw error;
+      const observedAt = this.now();
+      if (Number.isNaN(observedAt.getTime())) {
+        throw new Error('Bitcoin block recovery observation time is invalid');
+      }
+      return {
+        status: 'NOT_FOUND',
+        blockHash: normalizedBlockHash,
+        confirmations: 0,
+        blockHeight: null,
+        transactionCount: null,
+        chainTipHash: readiness.bestBlockHash,
+        chainHeight: readiness.blocks,
+        observedAt,
+        sourceDigest: sha256Hex(
+          canonicalJson({
+            method: 'getblockheader',
+            blockHash: normalizedBlockHash,
+            result: 'NOT_FOUND',
+            readinessSourceDigest: readiness.sourceDigest,
+          }),
+        ),
+      };
+    }
+
+    const rawStats = await this.rpc.call<unknown>('getblockstats', [
+      normalizedBlockHash,
+      ['blockhash', 'height', 'txs'],
+    ]);
+    const header = requireRecord(rawHeader, 'getblockheader response', method);
+    const stats = requireRecord(rawStats, 'getblockstats response', 'getblockstats');
+    const observedHash = requireHex(header.hash, 'hash', method, 32);
+    const statsHash = requireHex(stats.blockhash, 'blockhash', 'getblockstats', 32);
+    const confirmations = requireInteger(header.confirmations, 'confirmations', method, -1);
+    const blockHeight = requireInteger(header.height, 'height', method);
+    const statsHeight = requireInteger(stats.height, 'height', 'getblockstats');
+    const transactionCount = requireInteger(
+      stats.txs,
+      'txs',
+      'getblockstats',
+      1,
+      MAXIMUM_TEMPLATE_TRANSACTIONS + 1,
+    );
+    if (
+      observedHash !== normalizedBlockHash ||
+      statsHash !== normalizedBlockHash ||
+      statsHeight !== blockHeight ||
+      confirmations === 0 ||
+      (confirmations > 0 && confirmations !== readiness.blocks - blockHeight + 1)
+    ) {
+      invalid(method, 'returned inconsistent submitted-block evidence');
+    }
+    const observedAt = this.now();
+    if (Number.isNaN(observedAt.getTime())) {
+      throw new Error('Bitcoin block recovery observation time is invalid');
+    }
+    return {
+      status: confirmations === -1 ? 'STALE_CHAIN' : 'ACTIVE_CHAIN',
+      blockHash: normalizedBlockHash,
+      confirmations,
+      blockHeight,
+      transactionCount,
+      chainTipHash: readiness.bestBlockHash,
+      chainHeight: readiness.blocks,
+      observedAt,
+      sourceDigest: sha256Hex(
+        canonicalJson({
+          method: 'observeSubmittedBlock',
+          blockHash: normalizedBlockHash,
+          header,
+          stats,
+          readinessSourceDigest: readiness.sourceDigest,
+        }),
       ),
     };
   }

@@ -8,11 +8,13 @@ import type {
   BitcoinBlockProposalResult,
   BitcoinBlockSubmissionResult,
   BitcoinCoreChain,
+  BitcoinSubmittedBlockObservation,
 } from '@mining/blockchain-adapters';
 import {
   prisma,
   type NativeBitcoinCandidate as StoredNativeBitcoinCandidate,
   type NativeBitcoinProposalEvidence as StoredNativeBitcoinProposalEvidence,
+  type NativeBitcoinSubmissionRecoveryObservation as StoredNativeBitcoinSubmissionRecoveryObservation,
   type NativeBitcoinSubmissionIntent as StoredNativeBitcoinSubmissionIntent,
   type NativeBitcoinSubmissionAttempt as StoredNativeBitcoinSubmissionAttempt,
 } from '@mining/database';
@@ -73,6 +75,13 @@ async function databaseNow(): Promise<Date> {
 export type UnresolvedNativeBitcoinSubmissionIntent = StoredNativeBitcoinSubmissionIntent & {
   candidate: StoredNativeBitcoinCandidate;
   proposalEvidence: StoredNativeBitcoinProposalEvidence;
+};
+
+export type NativeBitcoinSubmissionIntentRecoveryState = {
+  intent: StoredNativeBitcoinSubmissionIntent;
+  candidate: StoredNativeBitcoinCandidate;
+  submission: StoredNativeBitcoinSubmissionAttempt | null;
+  terminalObservation: StoredNativeBitcoinSubmissionRecoveryObservation | null;
 };
 
 export class NativeBitcoinEvidenceRepository {
@@ -160,6 +169,39 @@ export class NativeBitcoinEvidenceRepository {
     return prisma.nativeBitcoinSubmissionAttempt.findUnique({
       where: { idempotencyKey: boundedIdempotencyKey(idempotencyKey) },
     });
+  }
+
+  async findRecoveryObservationByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<StoredNativeBitcoinSubmissionRecoveryObservation | null> {
+    return prisma.nativeBitcoinSubmissionRecoveryObservation.findUnique({
+      where: { idempotencyKey: boundedIdempotencyKey(idempotencyKey) },
+    });
+  }
+
+  async getSubmissionIntentRecoveryState(
+    submissionIntentId: string,
+  ): Promise<NativeBitcoinSubmissionIntentRecoveryState | null> {
+    const state = await prisma.nativeBitcoinSubmissionIntent.findUnique({
+      where: { id: submissionIntentId },
+      include: {
+        candidate: true,
+        submission: true,
+        recoveryObservations: {
+          where: { status: { in: ['ACTIVE_CHAIN', 'STALE_CHAIN'] } },
+          orderBy: [{ observedAt: 'asc' }, { id: 'asc' }],
+          take: 1,
+        },
+      },
+    });
+    if (!state) return null;
+    const { candidate, submission, recoveryObservations, ...intent } = state;
+    return {
+      intent,
+      candidate,
+      submission,
+      terminalObservation: recoveryObservations[0] ?? null,
+    };
   }
 
   async recordProposal(input: {
@@ -368,6 +410,88 @@ export class NativeBitcoinEvidenceRepository {
     }
   }
 
+  async recordSubmissionRecoveryObservation(input: {
+    idempotencyKey: string;
+    submissionIntentId: string;
+    observation: BitcoinSubmittedBlockObservation;
+  }): Promise<StoredNativeBitcoinSubmissionRecoveryObservation> {
+    const idempotencyKey = boundedIdempotencyKey(input.idempotencyKey);
+    const intent = await prisma.nativeBitcoinSubmissionIntent.findUnique({
+      where: { id: input.submissionIntentId },
+      include: { candidate: true },
+    });
+    if (!intent) throw new Error('Native Bitcoin submission intent does not exist');
+    const observation = input.observation;
+    const data = {
+      idempotencyKey,
+      submissionIntentId: intent.id,
+      status: observation.status,
+      blockHash: hash(observation.blockHash, 'Recovery block hash'),
+      confirmations: observation.confirmations,
+      blockHeight: observation.blockHeight,
+      transactionCount: observation.transactionCount,
+      chainTipHash: hash(observation.chainTipHash, 'Recovery chain tip hash'),
+      chainHeight: observation.chainHeight,
+      sourceDigest: hash(observation.sourceDigest, 'Recovery source digest'),
+      observedAt: date(observation.observedAt, 'Recovery observation time'),
+    } as const;
+    if (
+      data.blockHash !== intent.candidate.blockHash ||
+      !Number.isSafeInteger(data.confirmations) ||
+      !Number.isSafeInteger(data.chainHeight) ||
+      data.chainHeight < 0 ||
+      (data.blockHeight !== null &&
+        (!Number.isSafeInteger(data.blockHeight) || data.blockHeight < 0)) ||
+      (data.transactionCount !== null &&
+        (!Number.isSafeInteger(data.transactionCount) ||
+          data.transactionCount < 1 ||
+          data.transactionCount > 100_001)) ||
+      (data.status === 'ACTIVE_CHAIN' &&
+        (data.confirmations < 1 ||
+          data.blockHeight === null ||
+          data.transactionCount === null ||
+          data.confirmations !== data.chainHeight - data.blockHeight + 1)) ||
+      (data.status === 'STALE_CHAIN' &&
+        (data.confirmations !== -1 ||
+          data.blockHeight === null ||
+          data.transactionCount === null)) ||
+      (data.status === 'NOT_FOUND' &&
+        (data.confirmations !== 0 || data.blockHeight !== null || data.transactionCount !== null))
+    ) {
+      throw new Error('Native Bitcoin recovery observation evidence is inconsistent');
+    }
+    const existing = await prisma.nativeBitcoinSubmissionRecoveryObservation.findUnique({
+      where: { idempotencyKey },
+    });
+    if (existing) {
+      if (
+        existing.submissionIntentId !== data.submissionIntentId ||
+        existing.status !== data.status ||
+        existing.blockHash !== data.blockHash ||
+        existing.confirmations !== data.confirmations ||
+        existing.blockHeight !== data.blockHeight ||
+        existing.transactionCount !== data.transactionCount ||
+        existing.chainTipHash !== data.chainTipHash ||
+        existing.chainHeight !== data.chainHeight ||
+        existing.sourceDigest !== data.sourceDigest ||
+        !sameDate(existing.observedAt, data.observedAt)
+      ) {
+        throw new Error('Native Bitcoin recovery observation idempotency conflict');
+      }
+      return existing;
+    }
+    try {
+      return await prisma.nativeBitcoinSubmissionRecoveryObservation.create({ data });
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      const raced = await prisma.nativeBitcoinSubmissionRecoveryObservation.findUnique({
+        where: { idempotencyKey },
+      });
+      if (!raced) throw new Error('Native Bitcoin recovery observation uniqueness conflict');
+      return this.recordSubmissionRecoveryObservation(input);
+    }
+  }
+
   async listUnresolvedSubmissionIntents(input?: {
     minimumAgeMilliseconds?: number;
     limit?: number;
@@ -389,6 +513,9 @@ export class NativeBitcoinEvidenceRepository {
       where: {
         createdAt: { lte: new Date(now.getTime() - minimumAgeMilliseconds) },
         submission: null,
+        recoveryObservations: {
+          none: { status: { in: ['ACTIVE_CHAIN', 'STALE_CHAIN'] } },
+        },
       },
       include: { candidate: true, proposalEvidence: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
