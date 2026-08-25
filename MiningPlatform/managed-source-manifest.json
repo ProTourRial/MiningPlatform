@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 596,
-  "managedFilesChecksum": "67693761e46bac12d6982751a530b6537dd8d339757ea6fb9a2d7139577f60b6",
+  "managedFileCount": 597,
+  "managedFilesChecksum": "a9dacee31cdce67f1cd66b8cdebb580ec921167f81d6798c6de480e27b35dc6f",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1211,8 +1211,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "08270f388634a44508c27a5c7f7f32ba64c3dab67f44246ca1e9ec205264aadb",
-      "size": 47705
+      "sha256": "9455be71183362ddb403887dac2dec3f99d9bb67b7ffc461f64d59b2c57c1c31",
+      "size": 48699
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1316,8 +1316,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "b319454c20271dcb60d1cf561a3e216d308e1a5b114aa814565bb04f27e56554",
-      "size": 4753
+      "sha256": "2736e3ba8bbc7d4d9d19e7713e2989c19dfbe19b6b9f1542baaa77726e9ff996",
+      "size": 5327
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1506,8 +1506,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "8b8aef30cd341da75569202400e1ac42aad3437e19fbe2dc1a96b887dcb41a58",
-      "size": 16792
+      "sha256": "9400b01c3ed7451ba1f986f576ae506742cd5b695b87d19de5fad15c8ac8e9c2",
+      "size": 17044
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1716,8 +1716,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "c19737030750cda910999c34c0a3d453ea08569bbfd4cc067b720b2f8a4430e8",
-      "size": 10143
+      "sha256": "ed3c89377c7059839b5ef533a06e58b409a43abed2b3ad40113f49b25c5f0d1f",
+      "size": 10300
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2105,6 +2105,11 @@
       "size": 3829
     },
     {
+      "path": "packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql",
+      "sha256": "4b2f482bc55513f570e3151785ff6052e00d474561a3a123982cc1562dd877f2",
+      "size": 5100
+    },
+    {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
       "sha256": "9b677f26a93c15274b40945c3e021811da0c86523606ad9c47b51affe98cfa38",
       "size": 127
@@ -2116,8 +2121,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "e57fe6ef3dedd0096877043d4314093d11fc11b5bc6366da53b604f64895432d",
-      "size": 69979
+      "sha256": "98b11ca5f8afeb88ad7299189b49be7dd25ed2e02e7722f76108428113698745",
+      "size": 71863
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -2806,8 +2811,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "fd8552b01178f31e5a52874ac09f5d26e97dc8a9d216023aea1bcb6cfc1d5746",
-      "size": 16205
+      "sha256": "2d808247a9ec44a5d47e0b26c43acb10c42ff01d55cd8660c429beb29833a1e6",
+      "size": 17003
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2966,8 +2971,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "0aa54eaf5762fa4b23189a68827289d369d8ce23715c1e737b254ccb4a9d9dd8",
-      "size": 16895
+      "sha256": "47712cf4ac47b81abb07116d0b9ee2dd3da002b4e635aff87658448f6153026f",
+      "size": 24913
     },
     {
       "path": "scripts/wait-for-http.mjs",

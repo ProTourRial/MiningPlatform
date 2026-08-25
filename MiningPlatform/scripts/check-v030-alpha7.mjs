@@ -43,6 +43,7 @@ const requiredFiles = [
   'packages/blockchain-adapters/src/bitcoin-address.test.ts',
   'packages/randomx/src/accounting-projection.ts',
   'packages/randomx/src/accounting-projection.test.ts',
+  'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
@@ -98,6 +99,7 @@ for (const expected of [
   'cooldownUntil',
   'payoutRouteId',
   'model NativeBitcoinSubmissionIntent',
+  'model RandomXAcceptedShareEvidence',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
 ])
@@ -227,6 +229,20 @@ for (const expected of [
   'Object.freeze',
 ])
   requireText(randomXAccountingProjection, expected, 'RandomX accounting projection');
+
+const randomXEvidenceMigration = await text(
+  'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
+);
+for (const expected of [
+  'RandomXAcceptedShareEvidence_sourceDigest_key',
+  'RandomXAcceptedShareEvidence_shareFingerprint_key',
+  'RandomXAcceptedShareEvidence_immutable_trigger',
+  'RandomXAcceptedShareEvidence_correlation_trigger',
+  'RandomX accepted-share evidence is immutable',
+  'RandomX evidence account, asset, and pool do not correlate',
+  'RandomX evidence asset must use the RANDOMX or RX/0 algorithm',
+])
+  requireText(randomXEvidenceMigration, expected, 'RandomX accounting-evidence migration');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

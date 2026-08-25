@@ -42,17 +42,22 @@ in application JavaScript is outside the platform's security and correctness bou
    decision, and bounded identifiers. Its deterministic digest binds the algorithm, account, asset,
    pool/session/job, seed, target, nonce, results, timestamps, and correlation. The projector cannot
    persist a fact, allocate a reward, post a journal, or create a balance.
+8. Schema v18 provides an append-only persistence boundary for accepted-share evidence produced by the
+   projector. Database constraints bind each row to matching account, asset, and upstream-pool records,
+   require a RandomX asset, preserve source and share-fingerprint uniqueness, and reject updates or
+   deletes. This evidence table is not a contribution fact and cannot allocate a reward, post a journal,
+   or create a balance.
 
 ## Consequences
 
 - Bitcoin and RandomX transports can evolve independently without optional-field ambiguity.
 - A sidecar outage reduces availability but cannot produce accepted, credited, or paid work.
 - RandomX requires additional deployment capacity and health monitoring before production activation.
-- A schema migration and fresh/upgrade rehearsal are mandatory before miner-facing RandomX traffic is
-  enabled.
-- Accounting evidence now has a deterministic fail-closed projection boundary, but database
-  persistence, immutable retry identity, reward-period assignment, settlement reconciliation, and
-  ledger effects remain intentionally absent.
+- Schema v18 and its fresh/representative-upgrade rehearsals establish the immutable evidence storage
+  boundary required before miner-facing RandomX traffic can be considered.
+- Accounting evidence now has deterministic projection and append-only persistence boundaries, but
+  runtime ingestion, contribution-fact creation, reward-period assignment, settlement reconciliation,
+  and ledger effects remain intentionally absent.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
 
@@ -61,8 +66,8 @@ in application JavaScript is outside the platform's security and correctness bou
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
 - Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
-- Persist algorithm-discriminated job/share evidence with fresh and representative upgrade migration
-  tests.
+- Connect authenticated miner traffic to schema-v18 evidence through a retry-safe runtime repository;
+  do not bypass the projector or database correlation constraints.
 - Prove duplicate/retry safety from accepted share through contribution and reward allocation.
 - Reconcile the upstream RandomX settlement source exactly before any user balance is credited.
 - Run failure-injection E2E for sidecar outage, wrong seed, stale job, upstream rejection, reconnect,

@@ -50,9 +50,10 @@ Release blockers:
 - Load, stress, and chaos validation.
 
 RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
-accounting projection. Persistence remains deliberately blocked until an algorithm-discriminated
-schema can preserve the complete evidence and prove retry safety, reward assignment, settlement, and
-ledger isolation from BTC.
+accounting projection. Schema v18 now preserves accepted-share evidence through an immutable,
+algorithm-discriminated boundary with account/asset/upstream correlation and unique retry identity.
+Runtime ingestion, contribution creation, reward assignment, settlement, and ledger isolation from
+BTC remain deliberately blocked until their own invariants and failure tests are proven.
 
 ## Active Native Pool Laboratory Track
 

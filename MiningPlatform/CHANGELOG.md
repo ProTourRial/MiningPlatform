@@ -9,8 +9,9 @@
 - Schema v15 append-only native Bitcoin candidate, proposal, and submission-attempt evidence with exact template, coinbase-policy, raw-block, job, and source-digest correlation; only bounded hashes and the block header are retained, never raw block bytes.
 - Schema v16 append-only pre-RPC `submitblock` intents, one-to-one intent-to-outcome correlation, and deterministic backfill that links historical schema-v15 submission evidence without rewriting its outcome.
 - Schema v17 append-only recovery observations for unresolved submission intents, with exact candidate/block correlation and distinct active-chain, stale-chain, and not-found evidence.
+- Schema v18 append-only RandomX accepted-share evidence with unique source and share fingerprints, exact account/asset/upstream/session/job/hash/difficulty correlation, RandomX-asset enforcement, and database rejection of updates or deletes.
 - Authenticated APIs for selecting an account payout destination, creating idempotent payout requests, listing payout history, cancelling pre-approval requests, and recording separated administrator approval or rejection.
-- Fresh and representative alpha.7-to-schema-17 migration rehearsal plus controlled-payout and native-evidence integration coverage for historical-data preservation, v15-intent backfill, retry safety, balanced reservation, self-approval rejection, unique final decisions, append-only evidence, concurrent idempotency, proposal freshness, digest correlation, and wallet-reservation oversubscription prevention.
+- Fresh and representative alpha.7-to-schema-18 migration rehearsal plus controlled-payout, native-evidence, and RandomX-evidence integration coverage for historical-data preservation, v15-intent backfill, retry safety, balanced reservation, self-approval rejection, unique final decisions, append-only evidence, concurrent idempotency, proposal freshness, digest correlation, and wallet-reservation oversubscription prevention.
 - ADR-0014 defining the isolated signer boundary, payout evidence state machine, independent production gates, and reconciliation requirements.
 - Bitcoin Core watch-only RPC adapter with exact satoshi conversion, synchronized wallet snapshots, PSBT construction and output verification, reserved-fee enforcement, input unlock on preparation failure, finalization, mempool preflight, raw broadcast, and confirmation/reorg observations.
 - Versioned signer protocol with canonical manifest digests and replay-bound HMAC authentication, plus an isolated transaction-signer service that independently validates destination, amount, fee, owned change outputs, key allowlist, and manifest expiry before calling a signer-only Bitcoin Core wallet.
@@ -43,7 +44,7 @@
 - `PILOT` and `ACTIVE` payout routes now bind an explicit asset-matched hot wallet, eliminating nondeterministic wallet selection when an asset has multiple treasury wallets.
 - One payout may have only one append-only approval decision, enforced by both the service state machine and a database uniqueness constraint.
 - Payout preference reads expose explicit blockers for request, signing, and broadcast gates; auto withdrawal remains ineffective whenever any required gate or destination prerequisite is missing.
-- Active root CI and the packaged workflow now run isolated schema-v17 fresh and representative alpha.7 upgrade rehearsals instead of stopping at the released schema-v13 verifier.
+- Active root CI and the packaged workflow now run isolated schema-v18 fresh and representative alpha.7 upgrade rehearsals instead of stopping at the released schema-v13 verifier.
 - Active root and packaged CI now include an isolated native-Bitcoin regtest job that rebuilds the checksum-verified Core image, runs the canonical block trace, and destroys its image, volume, and network on every outcome.
 - Deployment HTTP readiness polling now drains responses and exits naturally instead of forcing process termination, avoiding a Windows libuv shutdown assertion while preserving the Linux CI behavior.
 
@@ -55,10 +56,16 @@
 
 - The API and web application do not possess private keys and cannot sign or broadcast. The isolated signer and watch-only adapter boundary now exist, while durable wallet orchestration, broadcast recovery, confirmation/reorg handling, and final wallet reconciliation are still under implementation; all real-funds gates remain disabled by default.
 - Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
-- RandomX validation and its fail-closed accounting projector are not yet connected to a miner-facing listener, persistence, reward allocation, or production sidecar; projected evidence is an in-memory value only and no RandomX share can affect balances in this checkpoint.
+- RandomX validation and its fail-closed accounting projector are not yet connected to a miner-facing listener, runtime repository, reward allocation, or production sidecar. Schema v18 can persist immutable accepted-share evidence, but no runtime invokes it and no RandomX share can create a contribution, journal, reward, or balance in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
 - The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, submission, and recovery boundaries are not invoked by Stratum or production Docker. A disposable two-node Core 31.0 regtest trace now proves a live witness transaction through two confirmations, long-poll replacement, longer-chain stale-block detection, and exact reorg-tip persistence across one process restart. In-flight restart, deeper/partitioned fork, version-upgrade, Stratum runtime wiring, durable raw-block retrieval plus explicit operator resubmission policy, reward reversal, and Redis restart/partition evidence remain mandatory. A not-found observation never triggers `submitblock`; no production block is automatically submitted and no reward can be created in this checkpoint.
+
+### Validation evidence
+
+- Exact-tree schema-v18 fresh and representative alpha.7 upgrade rehearsals apply all 18 migrations, preserve the historical fixtures, reject account/asset/pool mismatches and non-RandomX assets, reject evidence updates and deletes, and pass controlled-payout plus mining-worker integration coverage.
+- Repository lint passes 31/31, tests and typecheck each pass 49/49, and production build passes 31/31 with 21 generated Next.js routes after Prisma Client regeneration from schema v18.
+- Static alpha.7 checks, the 597-file managed-source manifest, and the 598-file release manifest verify against the final checkpoint tree.
 
 ### Development assistance
 

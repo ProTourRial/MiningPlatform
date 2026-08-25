@@ -130,9 +130,11 @@ observation evidence.
 RandomX kini memiliki projector murni yang hanya menghasilkan evidence setelah local validation dan
 upstream acceptance sama-sama lulus. Evidence mengikat algorithm `rx/0`, asset/account,
 pool/session/job, seed, target, nonce, submitted/computed result, difficulty, timestamp, correlation,
-dan digest. Projector tidak memiliki akses database atau ledger; schema immutable, persistence,
-idempotent contribution ingestion, reward period, settlement, dan reconciliation RandomX tetap gap
-aktif dan tidak ada saldo yang dapat berubah.
+dan digest. Schema v18 menyediakan tabel evidence append-only dengan identitas retry unik, foreign key
+account/asset/pool, validasi korelasi RandomX, serta larangan `UPDATE`/`DELETE`; fresh dan representative
+upgrade migration telah membuktikan boundary tersebut. Projector tetap tidak memiliki akses database
+atau ledger. Runtime ingestion, pembentukan contribution fact, reward period, settlement, dan
+reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo yang dapat berubah.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:

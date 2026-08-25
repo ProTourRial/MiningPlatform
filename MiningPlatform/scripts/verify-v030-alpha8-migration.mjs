@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260824030000_native_bitcoin_submission_recovery_observation';
+const latestMigration = '20260825010000_randomx_accounting_evidence';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -268,7 +268,8 @@ try {
         OR to_regclass('public."NativeBitcoinSubmissionIntent"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionRecoveryObservation"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionAttempt"') IS NULL
-      THEN RAISE EXCEPTION 'controlled payout execution tables are missing'; END IF;
+        OR to_regclass('public."RandomXAcceptedShareEvidence"') IS NULL
+      THEN RAISE EXCEPTION 'required schema-18 tables are missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
@@ -327,6 +328,17 @@ try {
           AND t.tgname = 'NativeBitcoinSubmissionAttempt_correlation_trigger' AND NOT t.tgisinternal
       ) THEN RAISE EXCEPTION 'native Bitcoin evidence triggers are missing'; END IF;
       IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'RandomXAcceptedShareEvidence'
+          AND t.tgname = 'RandomXAcceptedShareEvidence_immutable_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'RandomXAcceptedShareEvidence'
+          AND t.tgname = 'RandomXAcceptedShareEvidence_correlation_trigger'
+          AND NOT t.tgisinternal
+      ) THEN RAISE EXCEPTION 'RandomX accounting evidence triggers are missing'; END IF;
+      IF NOT EXISTS (
         SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'PayoutApproval'
           AND indexname = 'PayoutApproval_payoutId_key'
       ) THEN RAISE EXCEPTION 'one final payout approval decision is not database-enforced'; END IF;
@@ -349,6 +361,142 @@ try {
     END $$;
   `);
 
+  psql(`
+    INSERT INTO "Asset" (
+      "id", "symbol", "name", "algorithm", "decimals", "enabled",
+      "minimumPayout", "requiredConfirmations", "updatedAt"
+    ) VALUES (
+      'alpha8-randomx-asset', 'XMR-ALPHA8', 'RandomX migration fixture', 'RANDOMX', 12,
+      false, 0.01, 10, NOW()
+    ) ON CONFLICT ("symbol") DO NOTHING;
+    INSERT INTO "User" (
+      "id", "email", "passwordHash", "displayName", "role", "status",
+      "accountType", "emailVerifiedAt", "updatedAt"
+    ) VALUES (
+      'alpha8-randomx-user', 'randomx-alpha8@local.invalid', 'MIGRATION_FIXTURE',
+      'RandomX Migration User', 'USER', 'ACTIVE', 'INDIVIDUAL', NOW(), NOW()
+    ) ON CONFLICT ("email") DO NOTHING;
+    INSERT INTO "MiningAccount" (
+      "id", "userId", "assetId", "feePolicyId", "username", "rewardMethod",
+      "platformFeePercent", "updatedAt"
+    ) VALUES (
+      'alpha8-randomx-account', 'alpha8-randomx-user', 'alpha8-randomx-asset',
+      'fee-policy-platform-default-v1', 'alpha8_randomx_account', 'FOLLOW_UPSTREAM',
+      0.5, NOW()
+    ) ON CONFLICT ("username") DO NOTHING;
+    INSERT INTO "Asset" (
+      "id", "symbol", "name", "algorithm", "decimals", "enabled",
+      "minimumPayout", "requiredConfirmations", "updatedAt"
+    ) VALUES (
+      'alpha8-nonrandomx-asset', 'SHA-ALPHA8', 'Non-RandomX correlation fixture',
+      'SHA256D', 8, false, 0.01, 10, NOW()
+    ) ON CONFLICT ("symbol") DO NOTHING;
+    INSERT INTO "MiningAccount" (
+      "id", "userId", "assetId", "feePolicyId", "username", "rewardMethod",
+      "platformFeePercent", "updatedAt"
+    ) VALUES (
+      'alpha8-nonrandomx-account', 'alpha8-randomx-user', 'alpha8-nonrandomx-asset',
+      'fee-policy-platform-default-v1', 'alpha8_nonrandomx_account', 'FOLLOW_UPSTREAM',
+      0.5, NOW()
+    ) ON CONFLICT ("username") DO NOTHING;
+    INSERT INTO "UpstreamPool" (
+      "id", "assetId", "poolKey", "name", "host", "port", "tls",
+      "rewardMethod", "status", "updatedAt"
+    ) VALUES (
+      'alpha8-randomx-pool', 'alpha8-randomx-asset', 'alpha8-randomx',
+      'RandomX Migration Pool', '127.0.0.1', 3333, false, 'FOLLOW_UPSTREAM', 'SETUP', NOW()
+    ) ON CONFLICT ("assetId", "poolKey") DO NOTHING;
+    INSERT INTO "UpstreamPool" (
+      "id", "assetId", "poolKey", "name", "host", "port", "tls",
+      "rewardMethod", "status", "updatedAt"
+    ) VALUES (
+      'alpha8-nonrandomx-pool', 'alpha8-nonrandomx-asset', 'alpha8-sha',
+      'Non-RandomX Correlation Pool', '127.0.0.1', 3334, false,
+      'FOLLOW_UPSTREAM', 'SETUP', NOW()
+    ) ON CONFLICT ("assetId", "poolKey") DO NOTHING;
+    INSERT INTO "RandomXAcceptedShareEvidence" (
+      "id", "sourceDigest", "shareFingerprint", "algorithm", "miningAccountId",
+      "assetId", "upstreamPoolId", "upstreamSessionId", "upstreamJobId",
+      "upstreamClientId", "workerName", "seedHash", "targetHex", "target", "nonce",
+      "submittedResult", "computedResult", "acceptedDifficulty", "jobReceivedAt",
+      "jobExpiresAt", "submittedAt", "acceptedAt", "correlationId", "validationDigest",
+      "upstreamDecisionDigest"
+    ) VALUES (
+      'alpha8-randomx-evidence', repeat('1', 64), repeat('2', 64), 'rx/0',
+      'alpha8-randomx-account', 'alpha8-randomx-asset', 'alpha8-randomx-pool',
+      'alpha8-randomx-session', 'alpha8-randomx-job', 'alpha8-randomx-client',
+      'alpha8_randomx_account.worker', repeat('3', 64), '0200000000000000', 2,
+      '78563412', repeat('4', 64), repeat('4', 64), 1000.5,
+      NOW() - INTERVAL '2 minutes', NOW() + INTERVAL '2 minutes',
+      NOW() - INTERVAL '1 minute', NOW(), 'alpha8-randomx-correlation', repeat('5', 64),
+      repeat('6', 64)
+    ) ON CONFLICT ("sourceDigest") DO NOTHING;
+
+    DO $$
+    BEGIN
+      IF (SELECT count(*) FROM "RandomXAcceptedShareEvidence"
+          WHERE "id" = 'alpha8-randomx-evidence') <> 1
+      THEN RAISE EXCEPTION 'RandomX evidence retry identity is not unique'; END IF;
+      BEGIN
+        INSERT INTO "RandomXAcceptedShareEvidence" (
+          "id", "sourceDigest", "shareFingerprint", "algorithm", "miningAccountId",
+          "assetId", "upstreamPoolId", "upstreamSessionId", "upstreamJobId",
+          "upstreamClientId", "workerName", "seedHash", "targetHex", "target", "nonce",
+          "submittedResult", "computedResult", "acceptedDifficulty", "jobReceivedAt",
+          "jobExpiresAt", "submittedAt", "acceptedAt", "correlationId", "validationDigest",
+          "upstreamDecisionDigest"
+        ) SELECT
+          'alpha8-randomx-bad-correlation', repeat('7', 64), repeat('8', 64), "algorithm",
+          'alpha8-nonrandomx-account', "assetId", "upstreamPoolId", "upstreamSessionId",
+          "upstreamJobId", "upstreamClientId", "workerName", "seedHash", "targetHex", "target",
+          "nonce", "submittedResult", "computedResult", "acceptedDifficulty", "jobReceivedAt",
+          "jobExpiresAt", "submittedAt", "acceptedAt", "correlationId", "validationDigest",
+          "upstreamDecisionDigest"
+        FROM "RandomXAcceptedShareEvidence" WHERE "id" = 'alpha8-randomx-evidence';
+        RAISE EXCEPTION 'RandomX evidence correlation mismatch unexpectedly succeeded';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'RandomX evidence account, asset, and pool do not correlate'
+        THEN RAISE; END IF;
+      END;
+      BEGIN
+        INSERT INTO "RandomXAcceptedShareEvidence" (
+          "id", "sourceDigest", "shareFingerprint", "algorithm", "miningAccountId",
+          "assetId", "upstreamPoolId", "upstreamSessionId", "upstreamJobId",
+          "upstreamClientId", "workerName", "seedHash", "targetHex", "target", "nonce",
+          "submittedResult", "computedResult", "acceptedDifficulty", "jobReceivedAt",
+          "jobExpiresAt", "submittedAt", "acceptedAt", "correlationId", "validationDigest",
+          "upstreamDecisionDigest"
+        ) SELECT
+          'alpha8-randomx-bad-algorithm', repeat('9', 64), repeat('a', 64), "algorithm",
+          'alpha8-nonrandomx-account', 'alpha8-nonrandomx-asset', 'alpha8-nonrandomx-pool',
+          "upstreamSessionId", "upstreamJobId", "upstreamClientId", "workerName", "seedHash",
+          "targetHex", "target", "nonce", "submittedResult", "computedResult",
+          "acceptedDifficulty", "jobReceivedAt", "jobExpiresAt", "submittedAt", "acceptedAt",
+          "correlationId", "validationDigest", "upstreamDecisionDigest"
+        FROM "RandomXAcceptedShareEvidence" WHERE "id" = 'alpha8-randomx-evidence';
+        RAISE EXCEPTION 'Non-RandomX evidence asset unexpectedly succeeded';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'RandomX evidence asset must use the RANDOMX or RX/0 algorithm'
+        THEN RAISE; END IF;
+      END;
+      BEGIN
+        UPDATE "RandomXAcceptedShareEvidence" SET "acceptedDifficulty" = 1001
+        WHERE "id" = 'alpha8-randomx-evidence';
+        RAISE EXCEPTION 'RandomX evidence update unexpectedly succeeded';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'RandomX accepted-share evidence is immutable'
+        THEN RAISE; END IF;
+      END;
+      BEGIN
+        DELETE FROM "RandomXAcceptedShareEvidence" WHERE "id" = 'alpha8-randomx-evidence';
+        RAISE EXCEPTION 'RandomX evidence delete unexpectedly succeeded';
+      EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'RandomX accepted-share evidence is immutable'
+        THEN RAISE; END IF;
+      END;
+    END $$;
+  `);
+
   process.env.AUTH_JWT_SECRET ??= 'alpha8-migration-test-jwt-secret-at-least-32-bytes';
   process.env.AUTH_ENCRYPTION_KEY ??= Buffer.alloc(32, 17).toString('base64url');
   run('pnpm', [
@@ -363,7 +511,9 @@ try {
     'src/payout-execution.integration.test.ts',
   ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
-  process.stdout.write(`\nSchema-17 payout and native-recovery ${mode} verification passed.\n`);
+  process.stdout.write(
+    `\nSchema-18 payout, native-recovery, and RandomX-evidence ${mode} verification passed.\n`,
+  );
 } finally {
   if (
     temporaryPrismaRoot &&
