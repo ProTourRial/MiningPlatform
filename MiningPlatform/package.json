@@ -89,7 +89,8 @@
     "verify:migration:v030-alpha7:fresh": "node scripts/verify-v030-alpha7-migration.mjs fresh",
     "verify:migration:v030-alpha7:upgrade": "node scripts/verify-v030-alpha7-migration.mjs upgrade",
     "verify:migration:v030-alpha8:fresh": "node scripts/verify-v030-alpha8-migration.mjs fresh",
-    "verify:migration:v030-alpha8:upgrade": "node scripts/verify-v030-alpha8-migration.mjs upgrade"
+    "verify:migration:v030-alpha8:upgrade": "node scripts/verify-v030-alpha8-migration.mjs upgrade",
+    "test:integration:native-bitcoin-regtest": "tsx --tsconfig scripts/tsconfig.json scripts/native-bitcoin-regtest-integration.ts"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

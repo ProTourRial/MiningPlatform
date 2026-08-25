@@ -41,8 +41,18 @@ test('controlled payout reserves once, separates approval, and reverses rejected
   process.env.PAYOUT_BROADCAST_ENABLED = 'false';
 
   const btc = await prisma.asset.findUniqueOrThrow({ where: { symbol: 'BTC' } });
-  const controlBefore = await prisma.payoutControl.findUniqueOrThrow({
+  const controlBefore = await prisma.payoutControl.upsert({
     where: { assetId: btc.id },
+    update: {},
+    create: {
+      id: `payout-control-${btc.id}`,
+      assetId: btc.id,
+      requestsEnabled: false,
+      signingEnabled: false,
+      broadcastEnabled: false,
+      paused: true,
+      pauseReason: 'Integration fixture is fail-closed until this test enables requests.',
+    },
   });
   try {
     await prisma.payoutControl.update({
@@ -172,8 +182,16 @@ test('controlled payout reserves once, separates approval, and reverses rejected
         assetId: btc.id,
       },
     });
-    const clearing = await prisma.ledgerAccount.findUniqueOrThrow({
+    const clearing = await prisma.ledgerAccount.upsert({
       where: { code: 'BTC-REWARD-CLEARING' },
+      update: {},
+      create: {
+        code: 'BTC-REWARD-CLEARING',
+        name: 'BTC Reward Clearing',
+        type: 'CLEARING',
+        assetId: btc.id,
+        systemAccount: true,
+      },
     });
     const funding = await prisma.journalEntry.create({
       data: {

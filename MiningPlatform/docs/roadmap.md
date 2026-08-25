@@ -71,9 +71,12 @@ job visibility, 128 unique leases, and monotonic TTL extension. Schemas v15-v17 
 idempotent, digest-correlated candidate/proposal/pre-RPC-intent/submission/recovery records. The
 offline coordinators prove intent-before-RPC, durable-outcome replay, fail-closed unresolved-intent
 detection, and read-only active/stale/not-found block observation, with fresh and alpha.7 upgrade
-migration evidence. Live regtest, Redis restart/partition/failover evidence, Stratum wiring, durable
-raw-block retrieval, and an explicitly approved operator resubmission policy for still-not-found
-intents remain mandatory before steps 1-3 can be declared complete.
+migration evidence. A checksum-pinned Bitcoin Core 31.0 single-node regtest trace now proves an
+authoritative template, wallet-owned coinbase, network-target candidate, valid proposal, accepted
+`submitblock`, and two confirmations. Transaction-bearing/long-poll/restart/fork evidence, Redis
+restart/partition/failover evidence, Stratum wiring, durable raw-block retrieval, and an explicitly
+approved operator resubmission policy for still-not-found intents remain mandatory before steps 1-3
+can be declared complete.
 
 PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
 independent risk approval exist. Regtest success never authorizes mainnet custody or payout.

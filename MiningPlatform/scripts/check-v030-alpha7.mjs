@@ -44,6 +44,7 @@ const requiredFiles = [
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
+  'apps/api/src/payout-execution.integration.test.ts',
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
   'scripts/verify-v030-alpha7-migration.mjs',
@@ -51,6 +52,10 @@ const requiredFiles = [
   'apps/mining-worker/src/native-bitcoin-evidence.ts',
   'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
   'apps/mining-worker/src/native-bitcoin-submission-recovery.ts',
+  'docker-compose.regtest.yml',
+  'infrastructure/docker/bitcoin-core-regtest.Dockerfile',
+  'scripts/native-bitcoin-regtest-integration.ts',
+  '.github/workflows/native-bitcoin-regtest.yml',
   'packages/database/prisma/migrations/20260824010000_native_bitcoin_submission_evidence/migration.sql',
   'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
   'packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql',
@@ -168,6 +173,37 @@ for (const expected of [
 ])
   requireText(nativeMiningRpc, expected, 'Native Bitcoin mining RPC adapter');
 
+const regtestDockerfile = await text('infrastructure/docker/bitcoin-core-regtest.Dockerfile');
+for (const expected of [
+  'BITCOIN_CORE_VERSION=31.0',
+  'd3e4c58a35b1d0a97a457462c94f55501ad167c660c245cb1ffa565641c65074',
+  '4de1d568dedd48604f75132421bc0abeca432639589b49a3909c81db3a813112',
+  'sha256sum --check --strict',
+  'USER bitcoin',
+])
+  requireText(regtestDockerfile, expected, 'Bitcoin Core regtest Dockerfile');
+
+const regtestCompose = await text('docker-compose.regtest.yml');
+for (const expected of [
+  "profiles: ['native-regtest']",
+  "'127.0.0.1:${BITCOIN_REGTEST_RPC_PORT:-18443}:18443'",
+  '- -listen=0',
+  'no-new-privileges:true',
+])
+  requireText(regtestCompose, expected, 'Bitcoin Core regtest Compose profile');
+
+const regtestIntegration = await text('scripts/native-bitcoin-regtest-integration.ts');
+for (const expected of [
+  'disposable-bitcoin-core-31-regtest-only',
+  "expectedChain: 'regtest'",
+  'buildNativeBitcoinJob',
+  'validateBlockProposal',
+  'submitBlock',
+  'observeSubmittedBlock',
+  "nodeRpc.call<VerboseBlock>('getblock'",
+])
+  requireText(regtestIntegration, expected, 'Native Bitcoin live-regtest integration');
+
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [
   "principal.authenticationType !== 'access-token'",
@@ -243,6 +279,15 @@ for (const expected of [
   'assert.equal(await prisma.payout.count',
 ])
   requireText(integration, expected, 'Payout-control integration');
+
+const payoutExecutionIntegration = await text('apps/api/src/payout-execution.integration.test.ts');
+for (const expected of [
+  'prisma.payoutControl.upsert',
+  "where: { code: 'BTC-REWARD-CLEARING' }",
+  "type: 'CLEARING'",
+  'Integration fixture is fail-closed',
+])
+  requireText(payoutExecutionIntegration, expected, 'Payout-execution integration');
 
 const authIntegration = await text('apps/api/src/auth.integration.test.ts');
 for (const expected of [
@@ -325,6 +370,26 @@ if (activeWorkflow) {
   requireText(dockerWorkflow, 'docker compose', 'GitHub Docker E2E workflow');
 } else {
   requireText(workflow, 'docker compose', 'Packaged GitHub CI');
+}
+
+const packagedRegtestWorkflow = await text('.github/workflows/native-bitcoin-regtest.yml');
+const activeRegtestWorkflow = await parentWorkflow('native-bitcoin-regtest.yml');
+const regtestWorkflow = activeRegtestWorkflow ?? packagedRegtestWorkflow;
+if (activeRegtestWorkflow) {
+  requireText(
+    activeRegtestWorkflow,
+    'working-directory: MiningPlatform',
+    'Active native Bitcoin regtest workflow',
+  );
+}
+for (const expected of [
+  'pnpm --filter @mining/bitcoin-template... build',
+  'up -d --build --wait bitcoin-core-regtest',
+  'pnpm test:integration:native-bitcoin-regtest',
+  'down -v --rmi local --remove-orphans',
+]) {
+  requireText(regtestWorkflow, expected, 'Active native Bitcoin regtest workflow');
+  requireText(packagedRegtestWorkflow, expected, 'Packaged native Bitcoin regtest workflow');
 }
 
 process.stdout.write('v0.3.0-alpha.7 static payout-control checks passed.\n');

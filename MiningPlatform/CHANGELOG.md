@@ -32,6 +32,7 @@
 - Database-backed native Bitcoin evidence repository with exact idempotent retries, conflict rejection, concurrency-safe candidate creation, proposal-to-candidate binding, and fresh valid-proposal enforcement before a submission attempt can be recorded.
 - Fail-closed native submission coordinator that persists intent before RPC, suppresses a second `submitblock` after a durable outcome, never submits a rejected proposal, and exposes intent-without-outcome as an explicit recovery exception after transport or persistence ambiguity.
 - Read-only submitted-block recovery boundary using bounded `getblockheader` plus `getblockstats` evidence; a known block is classified as active or stale, while not-found remains unresolved and never authorizes automatic resubmission.
+- Checksum-pinned Bitcoin Core 31.0 regtest image, loopback-only disposable Compose profile, and canonical live trace proving `getblocktemplate` readiness, wallet-owned coinbase construction, network-target candidate solving, proposal acceptance, `submitblock`, and two confirmations without exposing raw block bytes.
 
 ### Changed
 
@@ -42,7 +43,12 @@
 - One payout may have only one append-only approval decision, enforced by both the service state machine and a database uniqueness constraint.
 - Payout preference reads expose explicit blockers for request, signing, and broadcast gates; auto withdrawal remains ineffective whenever any required gate or destination prerequisite is missing.
 - Active root CI and the packaged workflow now run isolated schema-v17 fresh and representative alpha.7 upgrade rehearsals instead of stopping at the released schema-v13 verifier.
+- Active root and packaged CI now include an isolated native-Bitcoin regtest job that rebuilds the checksum-verified Core image, runs the canonical block trace, and destroys its image, volume, and network on every outcome.
 - Deployment HTTP readiness polling now drains responses and exits naturally instead of forcing process termination, avoiding a Windows libuv shutdown assertion while preserving the Linux CI behavior.
+
+### Fixed
+
+- Controlled-payout integration now creates its fail-closed payout-control and reward-clearing fixtures idempotently, so an exact fresh-migration test run no longer depends on a later database seed step.
 
 ### Safety boundary
 
@@ -51,7 +57,7 @@
 - RandomX validation is not yet connected to a miner-facing listener, upstream pool, reward projection, or production sidecar; no RandomX share can affect balances in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
-- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, submission, and recovery boundaries are not invoked by Stratum or Docker. Durable intent/outcome/recovery evidence, offline fail-closed coordinators, and live Redis two-client evidence now exist; runtime wiring, durable raw-block retrieval plus explicit operator resubmission policy, Redis restart/partition evidence, and Bitcoin Core regtest remain mandatory. A not-found observation never triggers `submitblock`; no block is automatically submitted and no reward can be created in this checkpoint.
+- The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, submission, and recovery boundaries are not invoked by Stratum or production Docker. A disposable single-node Core 31.0 regtest trace now proves the canonical path through two confirmations, but transaction-bearing/long-poll/restart/fork evidence, Stratum runtime wiring, durable raw-block retrieval plus explicit operator resubmission policy, and Redis restart/partition evidence remain mandatory. A not-found observation never triggers `submitblock`; no production block is automatically submitted and no reward can be created in this checkpoint.
 
 ### Development assistance
 

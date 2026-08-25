@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 590,
-  "managedFilesChecksum": "74d24e1672536481cf95ace985d21e98a94568a15ebbcdaecfc15d138469a202",
+  "managedFileCount": 594,
+  "managedFilesChecksum": "1472ce5727e577084f241a33b1bbae955a36432c89f7d51b237b3627b0beb790",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -33,6 +33,11 @@
       "path": ".github/workflows/ci.yml",
       "sha256": "ad4d24c6db09f822b77179ba72892599047f9191c81dfbd31a326d78f8dcd2b2",
       "size": 6293
+    },
+    {
+      "path": ".github/workflows/native-bitcoin-regtest.yml",
+      "sha256": "ed7a0d7eb5eca8f2b23886ca4f0320e095a80d8ab4f7b8c59d7dfa93395365cb",
+      "size": 1795
     },
     {
       "path": ".gitignore",
@@ -536,8 +541,8 @@
     },
     {
       "path": "apps/api/src/payout-execution.integration.test.ts",
-      "sha256": "5228dee24aee92b99223568b70766540d1ae2ca1aff27893d91a9e7360a40732",
-      "size": 12556
+      "sha256": "caf9dd9b87aa0618b4394523702d6c83af8999d6fa0b17a3471bc82d709ed33c",
+      "size": 13030
     },
     {
       "path": "apps/api/src/runtime.ts",
@@ -1206,8 +1211,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "a593e14c13457be63fabcf0e44b91b182833c26bc921be09cc1efd7714aa7f23",
-      "size": 46100
+      "sha256": "ce4e4808e3f7d6ea2d7cec4475bfc99505cf562cceb1fb30043dca9a5b774352",
+      "size": 46906
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1223,6 +1228,11 @@
       "path": "docker-compose.dev.yml",
       "sha256": "befeab2fd3417db936c6c75f6adacf4fad3160c57388e50d550dafbbd279c745",
       "size": 2507
+    },
+    {
+      "path": "docker-compose.regtest.yml",
+      "sha256": "d855ec99b0226ffff67675251c02ddcc5d11899b4ffb60d3c94cc3cce2ebf0b6",
+      "size": 1261
     },
     {
       "path": "docker-compose.yml",
@@ -1311,8 +1321,8 @@
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
-      "sha256": "33fa0cf850ee6820c1ffaa9b537c9b4b89b312cb0dae0ba4b138a02084c8adbf",
-      "size": 8577
+      "sha256": "76d4b31e17994ce084873b278faaeac07821533d3a2bd025b8d02aa8c5d49f1b",
+      "size": 9420
     },
     {
       "path": "docs/adr/README.md",
@@ -1496,8 +1506,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "aeb91f7c1352945cfe61037d76f6f6cd3a42d6ccc6951b99dceb1babbe53e0d6",
-      "size": 14813
+      "sha256": "2402e00533f581a0dccd3a198c87889addfbd6c2b7bb50c9320bbd0f5d023c7c",
+      "size": 15335
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1706,8 +1716,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "fd8e129d251d65fd9cac9481dc1477756cfd6607cf0f94b1d422131f18b6bb85",
-      "size": 9252
+      "sha256": "a7600bcf7c0730883107baaf9a0e155c3539ebb5ad085fa4a2a35ebd558052ab",
+      "size": 9503
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -1768,6 +1778,11 @@
       "path": "infrastructure/docker/api.Dockerfile",
       "sha256": "370cf1af05b585bc88c761ff514d22f8ba7302d6e50ea6c966e8ad208c4b8ed0",
       "size": 892
+    },
+    {
+      "path": "infrastructure/docker/bitcoin-core-regtest.Dockerfile",
+      "sha256": "86905750047392330cf416073d95b9a7c429042b66e80e286d97d1b84689fce4",
+      "size": 1877
     },
     {
       "path": "infrastructure/docker/mining-worker.Dockerfile",
@@ -1846,8 +1861,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "32984b186fb5ffa8044b73154dc9e14fb6e3f97c61c732a6c4f74bb8be15db89",
-      "size": 7123
+      "sha256": "830b2f6d94ff78bf6eae18d7f6971115f7d54c958b3d0cea40d90f9fde18beb6",
+      "size": 7256
     },
     {
       "path": "packages/bitcoin-template/package.json",
@@ -2781,8 +2796,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "716879664d9aed6e6155b6f0df9465f145f8bea775ec0474cc1ae1b6f37afb6c",
-      "size": 12475
+      "sha256": "2cf40cfcdf31028444e2a7a745736d76704e7ebe748a355ca7c623d12aeb8d27",
+      "size": 15048
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2820,6 +2835,11 @@
       "size": 1441
     },
     {
+      "path": "scripts/native-bitcoin-regtest-integration.ts",
+      "sha256": "d8ec1ed1dc2c3a473c4d464a012c9ca152e08368063779e6b4f976a3f5d87489",
+      "size": 7230
+    },
+    {
       "path": "scripts/reconciliation-resolution-decide-cli.ts",
       "sha256": "b84c56dd6ff98908bde24ac3f9f4b49493217d888b1c6aeb20d0105a4cd53fe8",
       "size": 2315
@@ -2846,8 +2866,8 @@
     },
     {
       "path": "scripts/tsconfig.json",
-      "sha256": "bbe930971a5748d480190de7aa4749c7b20bd57034484dd7b804f12ba14a3342",
-      "size": 652
+      "sha256": "39f146de220ea60673259636a05a7cef35260735157d74042ee421d13b3b5db3",
+      "size": 814
     },
     {
       "path": "scripts/user-role-cli.ts",

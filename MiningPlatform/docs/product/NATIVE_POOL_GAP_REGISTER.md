@@ -67,29 +67,33 @@ durable, dan mengekspos intent tanpa outcome sebagai recovery exception. Recover
 membaca `getblockheader` plus `getblockstats`: active/stale menjadi terminal evidence, sedangkan
 not-found tetap unresolved dan tidak pernah memicu resubmit. Fresh serta representative alpha.7
 upgrade rehearsal telah lulus 17 migration, termasuk backfill outcome v15, tanpa menulis ulang payout
-historis. Belum ada container Bitcoin Core regtest, Redis restart/partition/failover evidence, wiring
-Stratum, durable raw-block retrieval/approved operator resubmission untuk unresolved intent, atau live
-proposal/`submitblock` trace; karena itu status P0 belum selesai dan native mining tetap nonaktif.
+historis. Image non-root Bitcoin Core 31.0 sekarang dibangun dari tarball resmi dengan SHA-256 amd64
+dan arm64 yang dipin. Compose profile disposable serta trace live membuktikan template dari node,
+coinbase ke wallet regtest, network-target candidate, proposal valid, `submitblock` accepted, dan dua
+confirmation. Belum ada transaction-bearing/long-poll/restart/fork evidence, Redis
+restart/partition/failover evidence, wiring Stratum, atau durable raw-block retrieval/approved operator
+resubmission untuk unresolved intent; karena itu status P0 belum selesai dan native mining tetap
+nonaktif.
 
 ## Priority register
 
-| Priority | Gap                                                         | Dampak                                                        | Exit evidence minimum                                                                                                  |
-| -------- | ----------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| P0       | Bitcoin Core belum menjadi sumber native mining job         | Platform belum mengendalikan pekerjaan mining                 | Regtest `getblocktemplate` dengan freshness, node sync, capability, dan failover checks                                |
-| P0       | Belum ada block-template dan coinbase builder               | Tidak dapat membuat job yang membayar reward pool             | Deterministic coinbase/merkle/header builder dengan exact value, script, witness commitment, dan byte fixtures         |
-| P0       | Belum ada native block-candidate dan `submitblock` pipeline | Tidak dapat mengirim blok hasil miner                         | Valid candidate reconstruction, pre-submit validation, `submitblock`, duplicate/reject evidence, dan correlation trace |
-| P0       | Reward utama masih `FOLLOW_UPSTREAM`                        | Pendapatan dan settlement bergantung pada upstream            | Native `PoolRound` dari block evidence sampai reward period tanpa laporan settlement upstream                          |
-| P0       | Payout nyata belum menyelesaikan durable execution          | Saldo belum dapat dibayarkan dengan bukti end-to-end          | Reservation → approval → encrypted PSBT → isolated signer → broadcast → confirmation → reconciliation                  |
-| P1       | Belum ada reward scheme native                              | Reward blok pool belum dapat dibagi                           | PPLNS dan/atau PROP specification, deterministic scoring, rounding, retry, reversal, dan invariant ledger              |
-| P1       | Belum ada maturity, orphan, dan reorg lifecycle             | Reward dapat diakui terlalu awal atau salah                   | Immature/mature/orphan/reorg state machine driven by authoritative chain observations                                  |
-| P1       | Stratum belum memiliki bukti kapasitas produksi             | Miner publik dapat mengalami reject, latency, atau disconnect | Load, stress, soak, latency percentile, backpressure, reconnect, dan capacity envelope                                 |
-| P1       | Extranonce belum dikoordinasikan global                     | Multi-replica dapat menduplikasi ruang kerja                  | Durable globally unique allocation/lease with restart, partition, and expiry tests                                     |
-| P1       | VarDiff produksi belum lengkap                              | Difficulty miner tidak optimal/stabil                         | Statistical retarget validation per device and algorithm with upstream/native floors                                   |
-| P1       | PostgreSQL, Redis, dan node belum memiliki bukti HA         | Satu gangguan dapat menghentikan pool                         | Failover, backup/restore, PITR, measured RPO/RTO, and disaster-recovery evidence                                       |
-| P1       | DDoS dan abuse protection Stratum belum lengkap             | Endpoint TCP publik rentan disalahgunakan                     | Connection/share limits, reputation/ban controls, SYN/edge protection, and attack tests                                |
-| P2       | Belum ada pool reserve                                      | PPS/FPPS dapat menciptakan insolvency                         | Capital policy, reserve ledger, variance model, exposure limits, and stress tests                                      |
-| P2       | Compliance/legal readiness belum selesai                    | Custody dan payout publik belum layak diaktifkan              | Jurisdictional legal, tax, privacy, KYC/AML, sanctions, terms, and custody decisions                                   |
-| P2       | Pool-specific monitoring belum lengkap                      | Operator tidak melihat risiko pool secara utuh                | Pool luck, template age, node divergence, propagation, maturity, reserve, and liability SLOs                           |
+| Priority | Gap                                                      | Dampak                                                        | Exit evidence minimum                                                                                              |
+| -------- | -------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| P0       | Bitcoin Core belum menjadi sumber job runtime miner      | Platform belum mengendalikan pekerjaan mining produksi        | Regtest `getblocktemplate` dengan freshness, long-poll, node sync, restart, divergence, dan failover checks        |
+| P0       | Builder native belum terhubung ke Stratum                | Miner belum menerima job yang dibangun oleh pool              | Deterministic coinbase/merkle/header builder diproyeksikan ke miner dengan exact correlation dan capacity evidence |
+| P0       | Candidate/`submitblock` belum terhubung ke miner runtime | Share miner belum dapat memicu pipeline blok terkontrol       | Valid candidate, pre-submit intent, `submitblock`, duplicate/reject/recovery evidence dari submission miner nyata  |
+| P0       | Reward utama masih `FOLLOW_UPSTREAM`                     | Pendapatan dan settlement bergantung pada upstream            | Native `PoolRound` dari block evidence sampai reward period tanpa laporan settlement upstream                      |
+| P0       | Payout nyata belum menyelesaikan durable execution       | Saldo belum dapat dibayarkan dengan bukti end-to-end          | Reservation → approval → encrypted PSBT → isolated signer → broadcast → confirmation → reconciliation              |
+| P1       | Belum ada reward scheme native                           | Reward blok pool belum dapat dibagi                           | PPLNS dan/atau PROP specification, deterministic scoring, rounding, retry, reversal, dan invariant ledger          |
+| P1       | Belum ada maturity, orphan, dan reorg lifecycle          | Reward dapat diakui terlalu awal atau salah                   | Immature/mature/orphan/reorg state machine driven by authoritative chain observations                              |
+| P1       | Stratum belum memiliki bukti kapasitas produksi          | Miner publik dapat mengalami reject, latency, atau disconnect | Load, stress, soak, latency percentile, backpressure, reconnect, dan capacity envelope                             |
+| P1       | Extranonce belum dikoordinasikan global                  | Multi-replica dapat menduplikasi ruang kerja                  | Durable globally unique allocation/lease with restart, partition, and expiry tests                                 |
+| P1       | VarDiff produksi belum lengkap                           | Difficulty miner tidak optimal/stabil                         | Statistical retarget validation per device and algorithm with upstream/native floors                               |
+| P1       | PostgreSQL, Redis, dan node belum memiliki bukti HA      | Satu gangguan dapat menghentikan pool                         | Failover, backup/restore, PITR, measured RPO/RTO, and disaster-recovery evidence                                   |
+| P1       | DDoS dan abuse protection Stratum belum lengkap          | Endpoint TCP publik rentan disalahgunakan                     | Connection/share limits, reputation/ban controls, SYN/edge protection, and attack tests                            |
+| P2       | Belum ada pool reserve                                   | PPS/FPPS dapat menciptakan insolvency                         | Capital policy, reserve ledger, variance model, exposure limits, and stress tests                                  |
+| P2       | Compliance/legal readiness belum selesai                 | Custody dan payout publik belum layak diaktifkan              | Jurisdictional legal, tax, privacy, KYC/AML, sanctions, terms, and custody decisions                               |
+| P2       | Pool-specific monitoring belum lengkap                   | Operator tidak melihat risiko pool secara utuh                | Pool luck, template age, node divergence, propagation, maturity, reserve, and liability SLOs                       |
 
 ## Native Bitcoin mining path
 
@@ -183,6 +187,11 @@ getblocktemplate
 → balanced immutable ledger
 → coinbase/wallet/liability reconciliation
 ```
+
+Prefix kanonis melalui `getblocktemplate`, coinbase/job, solved network-target candidate,
+`submitblock`, dan dua confirmation kini lulus terhadap Bitcoin Core 31.0 nyata. Tahap miner-facing,
+maturity, reward allocation, fee, ledger, dan reconciliation di bawahnya belum lulus dan tidak boleh
+dianggap tersirat dari acceptance blok regtest tersebut.
 
 Acceptance invariants:
 

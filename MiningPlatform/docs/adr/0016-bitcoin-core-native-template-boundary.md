@@ -51,6 +51,10 @@ defaults.
 12. Recovery for an unresolved intent is read-only. A ready, chain-bound node is queried with bounded
     `getblockheader` and `getblockstats` calls. Active-chain and stale-chain observations stop automatic
     recovery polling; not-found is retained as evidence but never authorizes `submitblock` replay.
+13. The disposable laboratory builds Bitcoin Core 31.0 from official release tarballs whose amd64 and
+    arm64 SHA-256 values are pinned. It runs as a non-root user, disables P2P listening, publishes RPC
+    only to host loopback, requires an explicit destructive-regtest acknowledgement, and is never a
+    production Compose dependency.
 
 ## Consequences
 
@@ -85,7 +89,12 @@ defaults.
   size, target, proposal, submission, cross-replica allocation, and refresh-expiry behavior.
 - A two-client integration test against disposable Redis 7 proves private-job visibility,
   idempotency, Redis-time allocation, 128 unique leases, and monotonic TTL extension without skips.
-  No Redis restart/partition or live Bitcoin Core evidence is claimed yet.
+  No Redis restart/partition evidence is claimed yet.
+- A canonical live trace against checksum-verified Bitcoin Core 31.0 regtest creates a wallet-owned
+  address, obtains and normalizes an authoritative template, builds and solves the native candidate,
+  receives a valid proposal result, submits the block, verifies the exact coinbase destination through
+  Core, and observes one then two active-chain confirmations. The trace emits bounded identities and
+  digests, never raw block bytes, and CI destroys its disposable image and volume on every outcome.
 - Schemas v15-v17 retain append-only candidate, proposal, pre-RPC intent, submission-attempt, and
   submitted-block recovery records. Database constraints and triggers bind every intent/outcome and
   observation to one candidate, reject expired or rejected proposals, enforce exact active-chain
@@ -100,13 +109,12 @@ defaults.
 
 ## Next acceptance gates
 
-- Pin a Bitcoin Core image/version and add a disposable regtest-only Compose profile.
-- Prove live `getblocktemplate` readiness, long-poll replacement, malformed/stale rejection, and node
-  restart behavior.
+- Expand live Core evidence to transaction-bearing templates, long-poll replacement,
+  stale-tip/fork rejection, node restart, and version-upgrade behavior.
 - Prove private template retention and global extranonce allocation through Redis restart, partition,
   failover, counter exhaustion, and wall-clock expiry scenarios.
-- Expand byte fixtures with live Bitcoin Core regtest templates and compare reconstructed blocks
-  against Core proposal validation.
+- Retain canonical live template/candidate digests as versioned compatibility fixtures without
+  retaining wallet secrets or raw block bytes.
 - Wire the offline coordinators to a regtest-only runtime and add durable raw-block retrieval plus an
   explicitly approved operator resubmission workflow for an intent that remains not-found after
   dispatch.
@@ -118,6 +126,7 @@ defaults.
 - <https://bitcoincore.org/en/doc/31.0.0/rpc/mining/submitblock/>
 - <https://bitcoincore.org/en/doc/31.0.0/rpc/blockchain/getblockheader/>
 - <https://bitcoincore.org/en/doc/31.0.0/rpc/blockchain/getblockstats/>
+- <https://bitcoincore.org/bin/bitcoin-core-31.0/SHA256SUMS>
 - <https://github.com/bitcoin/bips/blob/master/bip-0022.mediawiki>
 - <https://github.com/bitcoin/bips/blob/master/bip-0023.mediawiki>
 - <https://github.com/bitcoin/bips/blob/master/bip-0145.mediawiki>
