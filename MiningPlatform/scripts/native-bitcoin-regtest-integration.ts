@@ -24,8 +24,13 @@ type VerboseBlock = {
   height: number;
   confirmations: number;
   tx: Array<{
+    txid: string;
     vout: Array<{ scriptPubKey: { address?: string } }>;
   }>;
+};
+
+type WalletBalances = {
+  mine?: { trusted?: number };
 };
 
 function requireRegtestUrl(): string {
@@ -106,10 +111,28 @@ async function main(): Promise<void> {
   assert.match(payoutAddress, /^bcrt1[0-9ac-hj-np-z]+$/);
 
   const initialChain = await nodeRpc.call<{ blocks: number }>('getblockchaininfo');
-  if (initialChain.blocks === 0) {
-    const seedBlocks = await nodeRpc.call<string[]>('generatetoaddress', [1, payoutAddress]);
-    assert.equal(seedBlocks.length, 1);
+  const maturityHeight = 101;
+  if (initialChain.blocks < maturityHeight) {
+    const seedBlocks = await nodeRpc.call<string[]>('generatetoaddress', [
+      maturityHeight - initialChain.blocks,
+      payoutAddress,
+    ]);
+    assert.equal(seedBlocks.length, maturityHeight - initialChain.blocks);
   }
+
+  const balances = await walletRpc.call<WalletBalances>('getbalances');
+  assert.equal((balances.mine?.trusted ?? 0) >= 1, true, 'regtest coinbase must be mature');
+  const transactionAddress = await walletRpc.call<string>('getnewaddress', [
+    'native-regtest-template-transaction',
+    'bech32',
+  ]);
+  const templateTransactionId = await walletRpc.call<string>('sendtoaddress', [
+    transactionAddress,
+    1,
+  ]);
+  assert.match(templateTransactionId, /^[0-9a-f]{64}$/);
+  const mempoolBefore = await nodeRpc.call<string[]>('getrawmempool');
+  assert.equal(mempoolBefore.includes(templateTransactionId), true);
 
   const adapter = new BitcoinNativeMiningRpcAdapter(nodeRpc, {
     expectedChain: 'regtest',
@@ -124,6 +147,16 @@ async function main(): Promise<void> {
 
   const template = await adapter.getBlockTemplate();
   assert.equal(template.height, readiness.blocks + 1);
+  const templateTransaction = template.transactions.find(
+    (transaction) => transaction.txid === templateTransactionId,
+  );
+  assert.ok(templateTransaction, 'GBT must contain the wallet transaction');
+  assert.notEqual(
+    templateTransaction.hash,
+    templateTransaction.txid,
+    'the live witness transaction must bind distinct txid and wtxid evidence',
+  );
+  assert.notEqual(template.defaultWitnessCommitment, null);
   const bundle = buildNativeBitcoinJob({
     template,
     payoutAddress,
@@ -164,6 +197,11 @@ async function main(): Promise<void> {
   assert.equal(acceptedBlock.height, template.height);
   assert.equal(acceptedBlock.confirmations, 2);
   assert.equal(
+    acceptedBlock.tx.some((transaction) => transaction.txid === templateTransactionId),
+    true,
+    'Bitcoin Core must confirm the exact transaction included by the native template builder',
+  );
+  assert.equal(
     acceptedBlock.tx[0]?.vout.some((output) => output.scriptPubKey.address === payoutAddress),
     true,
     'Bitcoin Core must confirm the native coinbase pays the disposable wallet address',
@@ -177,6 +215,7 @@ async function main(): Promise<void> {
         templateHeight: template.height,
         blockHash: candidate.blockHash,
         payoutAddress,
+        templateTransactionId,
         proposalStatus: proposal.status,
         submissionStatus: submitted.status,
         confirmations: finalObservation.confirmations,

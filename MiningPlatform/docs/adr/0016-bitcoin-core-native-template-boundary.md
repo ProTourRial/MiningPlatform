@@ -90,11 +90,12 @@ defaults.
 - A two-client integration test against disposable Redis 7 proves private-job visibility,
   idempotency, Redis-time allocation, 128 unique leases, and monotonic TTL extension without skips.
   No Redis restart/partition evidence is claimed yet.
-- A canonical live trace against checksum-verified Bitcoin Core 31.0 regtest creates a wallet-owned
-  address, obtains and normalizes an authoritative template, builds and solves the native candidate,
-  receives a valid proposal result, submits the block, verifies the exact coinbase destination through
-  Core, and observes one then two active-chain confirmations. The trace emits bounded identities and
-  digests, never raw block bytes, and CI destroys its disposable image and volume on every outcome.
+- A canonical live trace against checksum-verified Bitcoin Core 31.0 regtest matures a wallet-owned
+  coinbase, creates a real witness transaction, proves its distinct txid/wtxid is present in the
+  authoritative template, builds and solves the native candidate, receives a valid proposal result,
+  submits the block, verifies the exact transaction and coinbase destination through Core, and
+  observes one then two active-chain confirmations. The trace emits bounded identities and digests,
+  never raw block bytes, and CI destroys its disposable image and volume on every outcome.
 - Schemas v15-v17 retain append-only candidate, proposal, pre-RPC intent, submission-attempt, and
   submitted-block recovery records. Database constraints and triggers bind every intent/outcome and
   observation to one candidate, reject expired or rejected proposals, enforce exact active-chain
@@ -109,8 +110,8 @@ defaults.
 
 ## Next acceptance gates
 
-- Expand live Core evidence to transaction-bearing templates, long-poll replacement,
-  stale-tip/fork rejection, node restart, and version-upgrade behavior.
+- Expand live Core evidence to long-poll replacement, stale-tip/fork rejection, node restart, and
+  version-upgrade behavior.
 - Prove private template retention and global extranonce allocation through Redis restart, partition,
   failover, counter exhaustion, and wall-clock expiry scenarios.
 - Retain canonical live template/candidate digests as versioned compatibility fixtures without
