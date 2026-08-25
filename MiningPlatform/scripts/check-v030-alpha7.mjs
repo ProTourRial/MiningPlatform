@@ -43,6 +43,8 @@ const requiredFiles = [
   'packages/blockchain-adapters/src/bitcoin-address.test.ts',
   'packages/randomx/src/accounting-projection.ts',
   'packages/randomx/src/accounting-projection.test.ts',
+  'apps/mining-worker/src/randomx-accounting-evidence.ts',
+  'apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts',
   'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
@@ -243,6 +245,17 @@ for (const expected of [
   'RandomX evidence asset must use the RANDOMX or RX/0 algorithm',
 ])
   requireText(randomXEvidenceMigration, expected, 'RandomX accounting-evidence migration');
+
+const randomXEvidenceRepository = await text(
+  'apps/mining-worker/src/randomx-accounting-evidence.ts',
+);
+for (const expected of [
+  'projectRandomXAcceptedContribution(input)',
+  'randomXAcceptedShareEvidence.create',
+  'RandomX accounting evidence idempotency conflict',
+  'RandomX share fingerprint is already bound to different evidence',
+])
+  requireText(randomXEvidenceRepository, expected, 'RandomX accounting-evidence repository');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

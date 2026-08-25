@@ -47,6 +47,10 @@ in application JavaScript is outside the platform's security and correctness bou
    require a RandomX asset, preserve source and share-fingerprint uniqueness, and reject updates or
    deletes. This evidence table is not a contribution fact and cannot allocate a reward, post a journal,
    or create a balance.
+9. The mining-worker persistence repository accepts projection input rather than caller-constructed
+   evidence, invokes the projector itself, collapses concurrent identical source-digest retries to one
+   row, and rejects a share fingerprint already bound to different evidence. It is a dormant boundary;
+   no miner-facing or event-consumer runtime invokes it in this checkpoint.
 
 ## Consequences
 
@@ -66,8 +70,8 @@ in application JavaScript is outside the platform's security and correctness bou
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
 - Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
-- Connect authenticated miner traffic to schema-v18 evidence through a retry-safe runtime repository;
-  do not bypass the projector or database correlation constraints.
+- Connect authenticated miner traffic to the retry-safe schema-v18 repository without bypassing the
+  projector or database correlation constraints.
 - Prove duplicate/retry safety from accepted share through contribution and reward allocation.
 - Reconcile the upstream RandomX settlement source exactly before any user balance is credited.
 - Run failure-injection E2E for sidecar outage, wrong seed, stale job, upstream rejection, reconnect,

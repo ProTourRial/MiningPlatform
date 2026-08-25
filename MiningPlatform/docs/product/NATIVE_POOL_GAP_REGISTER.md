@@ -133,7 +133,9 @@ pool/session/job, seed, target, nonce, submitted/computed result, difficulty, ti
 dan digest. Schema v18 menyediakan tabel evidence append-only dengan identitas retry unik, foreign key
 account/asset/pool, validasi korelasi RandomX, serta larangan `UPDATE`/`DELETE`; fresh dan representative
 upgrade migration telah membuktikan boundary tersebut. Projector tetap tidak memiliki akses database
-atau ledger. Runtime ingestion, pembentukan contribution fact, reward period, settlement, dan
+atau ledger. Repository mining-worker yang dormant kini memanggil projector sebelum persistence,
+menggabungkan retry identik/concurrent, dan menolak fingerprint yang dipakai ulang dengan evidence
+berbeda. Miner-facing/event ingestion, pembentukan contribution fact, reward period, settlement, dan
 reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo yang dapat berubah.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation

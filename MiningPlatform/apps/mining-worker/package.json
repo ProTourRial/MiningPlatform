@@ -21,6 +21,7 @@
     "@mining/logger": "workspace:*",
     "@mining/miner-detection": "workspace:*",
     "@mining/mining-core": "workspace:*",
+    "@mining/randomx": "workspace:*",
     "@mining/shared": "workspace:*"
   },
   "devDependencies": {

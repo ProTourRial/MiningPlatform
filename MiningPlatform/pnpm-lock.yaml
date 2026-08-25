@@ -190,6 +190,9 @@ importers:
       '@mining/mining-core':
         specifier: workspace:*
         version: link:../../packages/mining-core
+      '@mining/randomx':
+        specifier: workspace:*
+        version: link:../../packages/randomx
       '@mining/shared':
         specifier: workspace:*
         version: link:../../packages/shared
