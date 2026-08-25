@@ -49,6 +49,11 @@ Release blockers:
 - Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
+RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
+accounting projection. Persistence remains deliberately blocked until an algorithm-discriminated
+schema can preserve the complete evidence and prove retry safety, reward assignment, settlement, and
+ledger isolation from BTC.
+
 ## Active Native Pool Laboratory Track
 
 The native-pool track now runs alongside controlled payout completion. Its canonical gap register is
@@ -71,7 +76,7 @@ job visibility, 128 unique leases, and monotonic TTL extension. Schemas v15-v17 
 idempotent, digest-correlated candidate/proposal/pre-RPC-intent/submission/recovery records. The
 offline coordinators prove intent-before-RPC, durable-outcome replay, fail-closed unresolved-intent
 detection, and read-only active/stale/not-found block observation, with fresh and alpha.7 upgrade
-migration evidence. A checksum-pinned Bitcoin Core 31.0 single-node regtest trace now proves a live
+migration evidence. A checksum-pinned Bitcoin Core 31.0 two-node regtest trace now proves a live
 witness transaction in the authoritative template, wallet-owned coinbase, network-target candidate,
 valid proposal, accepted `submitblock`, exact transaction inclusion, and two confirmations.
 The trace also proves long-poll replacement, deterministic reorganization to a longer isolated-node

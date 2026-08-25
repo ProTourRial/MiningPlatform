@@ -37,6 +37,11 @@ in application JavaScript is outside the platform's security and correctness bou
 6. Accounting may consume only a locally verified and upstream-accepted RandomX contribution. Reward
    periods remain asset and upstream-pool scoped, and no BTC fee, wallet, payout route, or settlement
    policy may be inferred for a RandomX asset.
+7. A pure accounting projector independently checks the accepted validation state, exact submitted and
+   computed hash, parsed target, positive 12-decimal difficulty, job/submission/time ordering, upstream
+   decision, and bounded identifiers. Its deterministic digest binds the algorithm, account, asset,
+   pool/session/job, seed, target, nonce, results, timestamps, and correlation. The projector cannot
+   persist a fact, allocate a reward, post a journal, or create a balance.
 
 ## Consequences
 
@@ -45,6 +50,9 @@ in application JavaScript is outside the platform's security and correctness bou
 - RandomX requires additional deployment capacity and health monitoring before production activation.
 - A schema migration and fresh/upgrade rehearsal are mandatory before miner-facing RandomX traffic is
   enabled.
+- Accounting evidence now has a deterministic fail-closed projection boundary, but database
+  persistence, immutable retry identity, reward-period assignment, settlement reconciliation, and
+  ledger effects remain intentionally absent.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
 

@@ -41,6 +41,8 @@ const requiredFiles = [
   `packages/database/prisma/migrations/${expectedMigration}/migration.sql`,
   'packages/blockchain-adapters/src/bitcoin-address.ts',
   'packages/blockchain-adapters/src/bitcoin-address.test.ts',
+  'packages/randomx/src/accounting-projection.ts',
+  'packages/randomx/src/accounting-projection.test.ts',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
@@ -212,6 +214,19 @@ for (const expected of [
   "nodeRpc.call<VerboseBlock>('getblock'",
 ])
   requireText(regtestIntegration, expected, 'Native Bitcoin live-regtest integration');
+
+const randomXAccountingProjection = await text('packages/randomx/src/accounting-projection.ts');
+for (const expected of [
+  'projectRandomXAcceptedContribution',
+  "input.validation.reason !== 'ACCEPTED'",
+  'RandomX accounting requires upstream acceptance',
+  'computedResult !== submittedResult',
+  'randomXShareFingerprint(input.job, input.submission)',
+  'input.validation.target !== target',
+  'randomx-accepted-contribution-v1',
+  'Object.freeze',
+])
+  requireText(randomXAccountingProjection, expected, 'RandomX accounting projection');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

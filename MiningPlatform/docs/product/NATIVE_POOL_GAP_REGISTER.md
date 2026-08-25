@@ -127,6 +127,13 @@ observation evidence.
 
 ## Accounting and reward gaps
 
+RandomX kini memiliki projector murni yang hanya menghasilkan evidence setelah local validation dan
+upstream acceptance sama-sama lulus. Evidence mengikat algorithm `rx/0`, asset/account,
+pool/session/job, seed, target, nonce, submitted/computed result, difficulty, timestamp, correlation,
+dan digest. Projector tidak memiliki akses database atau ledger; schema immutable, persistence,
+idempotent contribution ingestion, reward period, settlement, dan reconciliation RandomX tetap gap
+aktif dan tidak ada saldo yang dapat berubah.
+
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:
 

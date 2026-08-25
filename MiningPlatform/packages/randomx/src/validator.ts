@@ -18,7 +18,10 @@ const MAX_XMRIG_BLOB_BYTES = 407;
 const MAX_UINT32 = 0xffff_ffffn;
 const MAX_UINT64 = 0xffff_ffff_ffff_ffffn;
 
-function fingerprint(job: RandomXJob, submission: RandomXShareSubmission): string {
+export function randomXShareFingerprint(
+  job: RandomXJob,
+  submission: RandomXShareSubmission,
+): string {
   return createHash('sha256')
     .update(
       [
@@ -110,7 +113,7 @@ export class RandomXShareValidator {
     submission: RandomXShareSubmission,
     now = new Date(),
   ): Promise<RandomXValidationResult> {
-    const shareFingerprint = fingerprint(job, submission);
+    const shareFingerprint = randomXShareFingerprint(job, submission);
     try {
       validateJob(job);
     } catch {

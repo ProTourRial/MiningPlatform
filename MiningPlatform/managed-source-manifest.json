@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 594,
-  "managedFilesChecksum": "ec757b70227279da5b50f95e34ceeceaefed4aa2dd549a2acbcb83e7b3730081",
+  "managedFileCount": 596,
+  "managedFilesChecksum": "67693761e46bac12d6982751a530b6537dd8d339757ea6fb9a2d7139577f60b6",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1211,8 +1211,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "7d89c07862977e32570d36c2e73399c9312c29eb57b7f269cca2f8182a6e4749",
-      "size": 47274
+      "sha256": "08270f388634a44508c27a5c7f7f32ba64c3dab67f44246ca1e9ec205264aadb",
+      "size": 47705
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1316,8 +1316,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "813d3f6dd22aad9e217755b1bcdfe9f90e2aaa8bc0c6111973d15b44ea232271",
-      "size": 4034
+      "sha256": "b319454c20271dcb60d1cf561a3e216d308e1a5b114aa814565bb04f27e56554",
+      "size": 4753
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1506,8 +1506,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "bcc0c75571790ab683d595241c0368b4382c274a65e4210cdb451ba314985eb6",
-      "size": 16260
+      "sha256": "8b8aef30cd341da75569202400e1ac42aad3437e19fbe2dc1a96b887dcb41a58",
+      "size": 16792
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1716,8 +1716,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "ef2e8ef1eee4ee4b15d3d3b2a21301cf9a9cab5581942956a407225a717e6d2d",
-      "size": 9818
+      "sha256": "c19737030750cda910999c34c0a3d453ea08569bbfd4cc067b720b2f8a4430e8",
+      "size": 10143
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2325,9 +2325,19 @@
       "size": 650
     },
     {
+      "path": "packages/randomx/src/accounting-projection.test.ts",
+      "sha256": "d6fdd2de15ad189b4037e45027a999c70a724c31557b3773cbad1a0dcf988043",
+      "size": 3906
+    },
+    {
+      "path": "packages/randomx/src/accounting-projection.ts",
+      "sha256": "2f7d14d908afb0840f2d596adeb64dc70dd3f5d9ef60da3708e1f62b45731321",
+      "size": 7543
+    },
+    {
       "path": "packages/randomx/src/index.ts",
-      "sha256": "103184b4f726b4d1cfe42730f4df95ac94e72ca5f891ae191fe491c81136dc75",
-      "size": 219
+      "sha256": "60fe609db6361a45aa406c698bb406487d8a84f686e9c6d55e46807453072ca7",
+      "size": 263
     },
     {
       "path": "packages/randomx/src/randomx-service-client.ts",
@@ -2346,8 +2356,8 @@
     },
     {
       "path": "packages/randomx/src/validator.ts",
-      "sha256": "3cc5fea2d05475cf9cd6aeb61cdd225476e22908f0b1fd50972bff9f5bb14e34",
-      "size": 5380
+      "sha256": "968139e72d7e9d095d28c5a254b721d58a6b2237bc5912c11fb583c9c4a6c32f",
+      "size": 5418
     },
     {
       "path": "packages/randomx/tsconfig.json",
@@ -2796,8 +2806,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "052975fbae6826ba055df8302233a577a5064e4ee36b3a60c733922f9dc1fba4",
-      "size": 15553
+      "sha256": "fd8552b01178f31e5a52874ac09f5d26e97dc8a9d216023aea1bcb6cfc1d5746",
+      "size": 16205
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
