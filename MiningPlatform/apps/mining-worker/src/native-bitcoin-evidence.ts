@@ -508,10 +508,13 @@ export class NativeBitcoinEvidenceRepository {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1_000) {
       throw new Error('Native Bitcoin unresolved-intent limit is invalid');
     }
-    const now = await databaseNow();
+    const createdBefore =
+      minimumAgeMilliseconds === 0
+        ? undefined
+        : new Date((await databaseNow()).getTime() - minimumAgeMilliseconds);
     return prisma.nativeBitcoinSubmissionIntent.findMany({
       where: {
-        createdAt: { lte: new Date(now.getTime() - minimumAgeMilliseconds) },
+        ...(createdBefore ? { createdAt: { lte: createdBefore } } : {}),
         submission: null,
         recoveryObservations: {
           none: { status: { in: ['ACTIVE_CHAIN', 'STALE_CHAIN'] } },

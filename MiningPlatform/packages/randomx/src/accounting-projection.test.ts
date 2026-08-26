@@ -79,6 +79,18 @@ test('projection is deterministic and binds accounting-relevant identities', () 
     projectRandomXAcceptedContribution({ ...baseInput, acceptedDifficulty: '1001' }).sourceDigest,
     first.sourceDigest,
   );
+  assert.notEqual(
+    randomXShareFingerprint({ ...job, blob: `01${job.blob.slice(2)}` }, submission),
+    baseInput.validation.fingerprint,
+  );
+  assert.notEqual(
+    randomXShareFingerprint({ ...job, target: '0400000000000000' }, submission),
+    baseInput.validation.fingerprint,
+  );
+  assert.notEqual(
+    randomXShareFingerprint({ ...job, height: 124n }, submission),
+    baseInput.validation.fingerprint,
+  );
 });
 
 test('fails closed for rejected, mismatched, stale, or malformed accounting evidence', () => {

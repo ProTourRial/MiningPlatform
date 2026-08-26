@@ -45,6 +45,11 @@ const requiredFiles = [
   'packages/randomx/src/accounting-projection.test.ts',
   'apps/mining-worker/src/randomx-accounting-evidence.ts',
   'apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts',
+  'apps/mining-worker/src/randomx-accounting-event.ts',
+  'apps/mining-worker/src/runtime.ts',
+  'apps/mining-worker/src/supported-events.ts',
+  'packages/shared/src/events.ts',
+  'packages/randomx/src/validator.ts',
   'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
@@ -256,6 +261,42 @@ for (const expected of [
   'RandomX share fingerprint is already bound to different evidence',
 ])
   requireText(randomXEvidenceRepository, expected, 'RandomX accounting-evidence repository');
+
+const randomXEventContract = await text('packages/shared/src/events.ts');
+for (const expected of [
+  "randomXShareAccepted: 'mining.randomx.share.accepted.v1'",
+  'export interface RandomXAcceptedSharePayload',
+  'localAccepted: true',
+  'upstreamAccepted: true',
+])
+  requireText(randomXEventContract, expected, 'RandomX accepted-share event contract');
+
+const randomXEventConsumer = await text('apps/mining-worker/src/randomx-accounting-event.ts');
+for (const expected of [
+  "RANDOMX_ACCOUNTING_EVENT_PRODUCER = 'randomx-mining-gateway'",
+  'expectedIdempotencyKey = `randomx-share:${payload.localFingerprint}`',
+  'pg_advisory_xact_lock',
+  'PrismaTransactionalIdempotencyService',
+  'this.repository.recordAcceptedShare(parsed.input, transaction)',
+  'payload shape is invalid',
+])
+  requireText(randomXEventConsumer, expected, 'RandomX accounting-event consumer');
+
+const randomXWorkerRuntime = await text('apps/mining-worker/src/runtime.ts');
+requireText(
+  randomXWorkerRuntime,
+  'event.eventName === MiningEvents.randomXShareAccepted',
+  'RandomX accounting runtime branch',
+);
+
+const randomXValidator = await text('packages/randomx/src/validator.ts');
+for (const expected of [
+  'randomx-share-fingerprint-v2',
+  'job.blob',
+  'job.target',
+  "job.height?.toString() ?? ''",
+])
+  requireText(randomXValidator, expected, 'RandomX share fingerprint');
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

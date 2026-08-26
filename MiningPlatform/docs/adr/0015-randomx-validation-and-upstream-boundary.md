@@ -31,7 +31,7 @@ in application JavaScript is outside the platform's security and correctness bou
    rejected before they can reach a miner-facing runtime. Session replacement clears every retained
    job so proofs cannot cross an upstream authorization boundary.
 5. Runtime activation remains disabled until the mining event contract and database schema store
-   algorithm-discriminated job and share evidence. A RandomX contribution must retain asset,
+   algorithm-discriminated job and share evidence. The versioned evidence-only event now retains asset,
    algorithm, upstream pool/session, job, seed hash, target, nonce, submitted result, computed result,
    assigned work, decision timestamps, and correlation identifiers.
 6. Accounting may consume only a locally verified and upstream-accepted RandomX contribution. Reward
@@ -49,8 +49,14 @@ in application JavaScript is outside the platform's security and correctness bou
    or create a balance.
 9. The mining-worker persistence repository accepts projection input rather than caller-constructed
    evidence, invokes the projector itself, collapses concurrent identical source-digest retries to one
-   row, and rejects a share fingerprint already bound to different evidence. It is a dormant boundary;
-   no miner-facing or event-consumer runtime invokes it in this checkpoint.
+   row, and rejects a share fingerprint already bound to different evidence.
+10. Mining-worker owns `mining.randomx.share.accepted.v1` through a dedicated consumer, not the Bitcoin
+    projection switch. The consumer requires the exact bounded payload, producer name, mining-account
+    aggregate, upstream-decision time, and `randomx-share:<fingerprint>` idempotency key. It then takes
+    a PostgreSQL transaction advisory lock and completes event idempotency plus immutable evidence in
+    one transaction. The fingerprint binds algorithm, job blob, target, height, upstream job/client
+    identity, and submitted proof; the source digest separately binds pool/session evidence. No
+    miner-facing producer exists in this checkpoint.
 
 ## Consequences
 
@@ -59,9 +65,9 @@ in application JavaScript is outside the platform's security and correctness bou
 - RandomX requires additional deployment capacity and health monitoring before production activation.
 - Schema v18 and its fresh/representative-upgrade rehearsals establish the immutable evidence storage
   boundary required before miner-facing RandomX traffic can be considered.
-- Accounting evidence now has deterministic projection and append-only persistence boundaries, but
-  runtime ingestion, contribution-fact creation, reward-period assignment, settlement reconciliation,
-  and ledger effects remain intentionally absent.
+- Accounting evidence now has deterministic projection, append-only persistence, and strict internal
+  event-consumption boundaries. Miner-facing production, contribution-fact creation, reward-period
+  assignment, settlement reconciliation, and ledger effects remain intentionally absent.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
 
@@ -70,8 +76,8 @@ in application JavaScript is outside the platform's security and correctness bou
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
 - Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
-- Connect authenticated miner traffic to the retry-safe schema-v18 repository without bypassing the
-  projector or database correlation constraints.
+- Add the authenticated miner-facing producer and prove that only its accepted local-plus-upstream
+  decisions reach the strict event consumer without bypassing the projector or database constraints.
 - Prove duplicate/retry safety from accepted share through contribution and reward allocation.
 - Reconcile the upstream RandomX settlement source exactly before any user balance is credited.
 - Run failure-injection E2E for sidecar outage, wrong seed, stale job, upstream rejection, reconnect,

@@ -22,20 +22,27 @@ export function randomXShareFingerprint(
   job: RandomXJob,
   submission: RandomXShareSubmission,
 ): string {
-  return createHash('sha256')
-    .update(
-      [
-        job.clientId,
-        job.id,
-        job.seedHash,
-        submission.workerName,
-        submission.nonce,
-        submission.result,
-      ]
-        .map((value) => value.toLowerCase())
-        .join('\u0000'),
-    )
-    .digest('hex');
+  const hash = createHash('sha256');
+  for (const value of [
+    'randomx-share-fingerprint-v2',
+    job.algorithm,
+    job.clientId,
+    job.id,
+    job.blob,
+    job.seedHash,
+    job.target,
+    job.height?.toString() ?? '',
+    submission.workerName,
+    submission.nonce,
+    submission.result,
+  ]) {
+    const normalized = value.toLowerCase();
+    hash.update(String(Buffer.byteLength(normalized, 'utf8')));
+    hash.update(':');
+    hash.update(normalized);
+    hash.update(';');
+  }
+  return hash.digest('hex');
 }
 
 function readLittleEndian(hex: string): bigint {

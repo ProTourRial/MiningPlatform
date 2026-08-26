@@ -16,6 +16,7 @@ import {
   type ShareUpstreamDecisionPayload,
 } from '@mining/shared';
 import { MiningProjection } from './projection.js';
+import { RandomXAccountingEventConsumer } from './randomx-accounting-event.js';
 import { supportedMiningEvents } from './supported-events.js';
 
 const buildInfo = getBuildInfo('mining-worker');
@@ -33,6 +34,7 @@ const consumer = await RedisStreamEventConsumer.connect({
 });
 const publisher = await RedisStreamEventBus.connect({ url: redisUrl, stream: eventStream });
 const projection = new MiningProjection();
+const randomXAccounting = new RandomXAccountingEventConsumer();
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => abortController.abort());
@@ -77,6 +79,21 @@ try {
       logger.debug(
         { eventId: event.eventId, eventName: event.eventName },
         'event is not owned by mining projection; acknowledged without projection',
+      );
+      return;
+    }
+    if (event.eventName === MiningEvents.randomXShareAccepted) {
+      const result = await randomXAccounting.handle(event);
+      logger.debug(
+        {
+          eventId: event.eventId,
+          eventName: event.eventName,
+          evidenceId: result.evidenceId,
+          processed: result.processed,
+        },
+        result.processed
+          ? 'RandomX accepted-share evidence persisted'
+          : 'duplicate RandomX accepted-share event skipped',
       );
       return;
     }

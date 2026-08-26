@@ -52,10 +52,11 @@ Release blockers:
 RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
 accounting projection. Schema v18 now preserves accepted-share evidence through an immutable,
 algorithm-discriminated boundary with account/asset/upstream correlation and unique retry identity.
-A dormant mining-worker repository now invokes the projector and collapses concurrent identical
-retries before persistence. Miner/event ingestion, contribution creation, reward assignment,
-settlement, and ledger isolation from BTC remain deliberately blocked until their own invariants and
-failure tests are proven.
+A strict mining-worker event consumer now validates the versioned accepted-share contract and commits
+event idempotency plus evidence atomically under a PostgreSQL advisory lock. Its fingerprint binds the
+full bounded work blob, target, and height. No miner-facing producer emits the event yet; contribution
+creation, reward assignment, settlement, and ledger effects remain deliberately blocked until their
+own invariants and failure tests are proven.
 
 ## Active Native Pool Laboratory Track
 

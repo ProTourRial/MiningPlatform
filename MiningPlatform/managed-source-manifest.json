@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 599,
-  "managedFilesChecksum": "5741f2019fb7123210983ddbe67d5266819418d102bb5d0e5407101d2e459e72",
+  "managedFileCount": 600,
+  "managedFilesChecksum": "428ef871846845128acc3bafd099e1e8744824f8a949c5108a1da544b8b47076",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -571,8 +571,8 @@
     },
     {
       "path": "apps/mining-worker/src/native-bitcoin-evidence.ts",
-      "sha256": "90b3b9812bbc1612b20ee7aec98493db517c594fc785569660ef7f2361aa833b",
-      "size": 20402
+      "sha256": "fbc23568448542ea4a9cea0662df957876bf4442a5b3aacabc52aeab44d9718c",
+      "size": 20519
     },
     {
       "path": "apps/mining-worker/src/native-bitcoin-submission-coordinator.integration.test.ts",
@@ -600,29 +600,34 @@
       "size": 26129
     },
     {
+      "path": "apps/mining-worker/src/randomx-accounting-event.ts",
+      "sha256": "1d9a7fcb53ea223db49f8364308602b7dcc6f9027ad3c37e3fd3fb03b8a3df3f",
+      "size": 12320
+    },
+    {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts",
-      "sha256": "985ba05dd60f683452c342f542673a3af443f73a6854411450163ab5e794ebcc",
-      "size": 4368
+      "sha256": "ac6763f6e79a55796aa9382aab569fcf80a90bb9815e8f8a8126299fc806a57b",
+      "size": 9004
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.ts",
-      "sha256": "9f3c68eb1c22c8ad18ce6c74043e87e42b02f3322571130baf0189e6b4617db3",
-      "size": 4836
+      "sha256": "6c1a7db4e2dd17f22ee58893b01b8a4976d3e8f0f151d742d7c5fcbce5d8d658",
+      "size": 4946
     },
     {
       "path": "apps/mining-worker/src/runtime.ts",
-      "sha256": "f5980439f010e8b81f0abd9b0f38d691704f74c473d1567633a1b71fde11c951",
-      "size": 3754
+      "sha256": "e9295e8ae3f1d81c6483847e659b0782d3167f3c5fce3075044bcf4e8b7c4eb0",
+      "size": 4388
     },
     {
       "path": "apps/mining-worker/src/supported-events.test.ts",
-      "sha256": "cf98e1488be8f7915502d1819cd8d08d5fc6d7e546f0f3c35d76de64c11815f1",
-      "size": 1569
+      "sha256": "55d4099f0213bf6a583ccbfd0dfb7ab4d3a4906ce96435d9a70bfb3c38ee05d1",
+      "size": 2029
     },
     {
       "path": "apps/mining-worker/src/supported-events.ts",
-      "sha256": "89503d1ea5faacbe24197d921395067c0bd97985348dcf0cd990b8da71210c23",
-      "size": 1245
+      "sha256": "3896c9c0c05bbdd6066b188bf9efbfc1422cdf50399e0f925dcef32d8d7ed827",
+      "size": 1400
     },
     {
       "path": "apps/mining-worker/tsconfig.json",
@@ -1221,8 +1226,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "9f93d4d2c42c558fc837a4bdd9d6eb6b4f9418e119ec0f2e40d0dccba6f4825b",
-      "size": 49227
+      "sha256": "914744069796471d3fdbdf18c07fca223d5bb385cf4ae440f0ae31d00fcaa6ae",
+      "size": 50125
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1326,8 +1331,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "2b07b890ca4e02a669b69c29b9373aeca2a37137c0db74d6bca1fafa8e4a03b3",
-      "size": 5689
+      "sha256": "d60d951b61ce26104e33b74216deec0629ad939b99c4ca981b01b8e40c76b974",
+      "size": 6348
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1516,8 +1521,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "538510e34a0dd13780684d33b89c3b436e1dcc025f5ee71ef4037da9c78f9437",
-      "size": 17247
+      "sha256": "eb04dab83f1b380741d5fce9818d967e64d34681ac6684eb52f08a022740025f",
+      "size": 17525
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1726,8 +1731,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "0d99b4f4463e17adb4b2594df702f6235218b5635d9642d5f692147c378c0ead",
-      "size": 10428
+      "sha256": "316a86baaaba0e1c901eae7acbdfbc7a9b5d1bad96bc52485e00f8493b12d46a",
+      "size": 10565
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2341,8 +2346,8 @@
     },
     {
       "path": "packages/randomx/src/accounting-projection.test.ts",
-      "sha256": "d6fdd2de15ad189b4037e45027a999c70a724c31557b3773cbad1a0dcf988043",
-      "size": 3906
+      "sha256": "b088bbe0171f57e71b7df27bc169d31c01e4bcf6b3867d89064420f1d89ccbcc",
+      "size": 4325
     },
     {
       "path": "packages/randomx/src/accounting-projection.ts",
@@ -2371,8 +2376,8 @@
     },
     {
       "path": "packages/randomx/src/validator.ts",
-      "sha256": "968139e72d7e9d095d28c5a254b721d58a6b2237bc5912c11fb583c9c4a6c32f",
-      "size": 5418
+      "sha256": "8f4f21f406d90cafb59f1045e21bc6d27130b30277be0c37db36d76c58458a1b",
+      "size": 5640
     },
     {
       "path": "packages/randomx/tsconfig.json",
@@ -2501,8 +2506,8 @@
     },
     {
       "path": "packages/shared/src/events.ts",
-      "sha256": "c31306fe0ac4800dabedcd3f70c576597d71a55459cd54e05c9f4e3697206108",
-      "size": 8610
+      "sha256": "dec3dd049ac32f2fec4a5da7162d575a38fc1278f202a29c80c2dfe37bdee62d",
+      "size": 9540
     },
     {
       "path": "packages/shared/src/index.ts",
@@ -2821,8 +2826,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "b36381902744affdba8aa48309693cabe71d3fb22178b95b17d947a082b7f80e",
-      "size": 17581
+      "sha256": "4ce28408e55a4c6145ef48013e1918302960d535a1052d5e12bb7f52d0b9cb85",
+      "size": 19160
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

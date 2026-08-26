@@ -16,6 +16,7 @@ export const MiningEvents = {
   shareUpstreamPending: 'mining.share.upstream-pending.v1',
   shareUpstreamAccepted: 'mining.share.upstream-accepted.v1',
   shareUpstreamRejected: 'mining.share.upstream-rejected.v1',
+  randomXShareAccepted: 'mining.randomx.share.accepted.v1',
   hashrateUpdated: 'mining.hashrate.updated.v1',
   workerStateChanged: 'mining.worker.state-changed.v1',
   workerDeviceDetected: 'mining.worker.device-detected.v1',
@@ -105,6 +106,39 @@ export interface ShareUpstreamDecisionPayload extends ShareUpstreamPendingPayloa
   upstreamAccepted: boolean;
   errorCode?: number;
   errorMessage?: string;
+}
+
+/**
+ * Versioned hand-off from the future RandomX mining gateway into the evidence-only
+ * accounting boundary. Decimal integers are strings so the contract remains JSON-safe.
+ */
+export interface RandomXAcceptedSharePayload {
+  miningAccountId: string;
+  assetId: string;
+  algorithm: 'rx/0';
+  upstreamPoolId: string;
+  upstreamSessionId: string;
+  upstreamJobId: string;
+  upstreamClientId: string;
+  workerName: string;
+  jobBlob: string;
+  seedHash: string;
+  targetHex: string;
+  jobHeight: string;
+  jobReceivedAt: string;
+  jobExpiresAt: string;
+  nonce: string;
+  submittedResult: string;
+  submittedAt: string;
+  localAccepted: true;
+  localReason: 'ACCEPTED';
+  localFingerprint: string;
+  computedResult: string;
+  localTarget: string;
+  acceptedDifficulty: string;
+  upstreamAccepted: true;
+  upstreamDecidedAt: string;
+  upstreamDecisionDigest: string;
 }
 
 export interface ContributionAcceptedPayload {

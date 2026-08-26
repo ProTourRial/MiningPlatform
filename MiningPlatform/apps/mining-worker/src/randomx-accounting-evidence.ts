@@ -6,6 +6,7 @@
 
 import {
   prisma,
+  type Prisma,
   type RandomXAcceptedShareEvidence as StoredRandomXAcceptedShareEvidence,
 } from '@mining/database';
 import {
@@ -90,9 +91,10 @@ function persistenceData(projected: RandomXAcceptedContributionEvidence) {
 export class RandomXAccountingEvidenceRepository {
   async recordAcceptedShare(
     input: RandomXAccountingProjectionInput,
+    database: Pick<Prisma.TransactionClient, 'randomXAcceptedShareEvidence'> = prisma,
   ): Promise<StoredRandomXAcceptedShareEvidence> {
     const projected = projectRandomXAcceptedContribution(input);
-    const existing = await prisma.randomXAcceptedShareEvidence.findUnique({
+    const existing = await database.randomXAcceptedShareEvidence.findUnique({
       where: { sourceDigest: projected.sourceDigest },
     });
     if (existing) {
@@ -101,19 +103,19 @@ export class RandomXAccountingEvidenceRepository {
     }
 
     try {
-      return await prisma.randomXAcceptedShareEvidence.create({
+      return await database.randomXAcceptedShareEvidence.create({
         data: persistenceData(projected),
       });
     } catch (error) {
       if (!isUniqueViolation(error)) throw error;
-      const raced = await prisma.randomXAcceptedShareEvidence.findUnique({
+      const raced = await database.randomXAcceptedShareEvidence.findUnique({
         where: { sourceDigest: projected.sourceDigest },
       });
       if (raced) {
         assertEquivalent(raced, projected);
         return raced;
       }
-      const fingerprintConflict = await prisma.randomXAcceptedShareEvidence.findUnique({
+      const fingerprintConflict = await database.randomXAcceptedShareEvidence.findUnique({
         where: { shareFingerprint: projected.shareFingerprint },
       });
       if (fingerprintConflict) {

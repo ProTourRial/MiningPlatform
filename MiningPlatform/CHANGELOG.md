@@ -21,6 +21,7 @@
 - Isolated CryptoNote JSON-RPC upstream adapter for RandomX login, mandatory seeded-job normalization, bounded job retention and expiry, TLS-capable transport, correlated submissions, response timeouts, line-size limits, and fail-closed protocol parsing.
 - Deterministic RandomX accounting projector that emits immutable, algorithm-discriminated evidence only after local hash/target acceptance and upstream acceptance, binding the asset/account, pool/session/job, seed, target, nonce, submitted/computed result, difficulty, timestamps, correlation, and source digests without writing a balance.
 - Retry-safe RandomX accounting-evidence repository that always invokes the fail-closed projector before persistence, collapses concurrent identical retries to one immutable schema-v18 row, and rejects a share fingerprint reused with different evidence.
+- Versioned `mining.randomx.share.accepted.v1` contract and a strict mining-worker consumer that validates the exact bounded payload, required internal producer identifier, account aggregate, acceptance timestamps, and canonical share idempotency key before atomically completing event idempotency and immutable schema-v18 evidence under a PostgreSQL transaction advisory lock.
 - ADR-0015 defining separate RandomX validation and CryptoNote upstream boundaries, algorithm-discriminated accounting evidence, and fail-closed production activation gates.
 - Native Pool Gap Register promoted to an active engineering track, prioritizing the Bitcoin regtest path from `getblocktemplate` and deterministic coinbase construction through `submitblock`, maturity, native reward allocation, versioned fees, balanced ledger posting, and exact coinbase/wallet/liability reconciliation.
 - Owner-confirmed native Bitcoin mainnet coinbase default `1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA`, with the separate BEP20 deposit destination retained as non-Bitcoin receiving metadata and explicit network-mismatch safeguards documented.
@@ -39,6 +40,7 @@
 
 ### Changed
 
+- RandomX share fingerprint v2 now binds the algorithm, full bounded job blob, target, and height in addition to upstream client/job identity and the submitted worker proof, preventing otherwise-identical proof fields from being replayed against mutated work.
 - The alpha.7 static release checker now tracks all 32 exact-tree workspace package files and the current independently gated payout readiness controls introduced during Unreleased development.
 - Payout readiness now evaluates the selected account destination, active route window, minimum/maximum amount, current posted user liability, recent matched wallet reconciliation, signer configuration, wallet reserve, single-payout limit, and rolling daily limit.
 - Wallet liquidity checks lock the selected hot wallet and subtract all active reservations before admitting a new request, preventing concurrent accounts from committing the same node balance.
@@ -52,12 +54,13 @@
 ### Fixed
 
 - Controlled-payout integration now creates its fail-closed payout-control and reward-clearing fixtures idempotently, so an exact fresh-migration test run no longer depends on a later database seed step.
+- Immediate native-Bitcoin unresolved-intent listing no longer round-trips a microsecond PostgreSQL timestamp through JavaScript millisecond precision; a zero minimum age now omits the redundant time predicate, while positive recovery ages remain database-clock based and conservative.
 
 ### Safety boundary
 
 - The API and web application do not possess private keys and cannot sign or broadcast. The isolated signer and watch-only adapter boundary now exist, while durable wallet orchestration, broadcast recovery, confirmation/reorg handling, and final wallet reconciliation are still under implementation; all real-funds gates remain disabled by default.
 - Production activation still requires external custody credentials, funded-wallet authorization, operational approvers, incident controls, and exact deployment evidence; this development milestone does not authorize transfer of real funds.
-- RandomX validation and its fail-closed accounting projector are not yet connected to a miner-facing listener, runtime event flow, reward allocation, or production sidecar. Schema v18 and a retry-safe repository can persist immutable accepted-share evidence, but no runtime invokes that repository and no RandomX share can create a contribution, journal, reward, or balance in this checkpoint.
+- RandomX validation is not yet connected to a miner-facing listener or production sidecar. Mining-worker now owns a strict evidence-only event consumer, but no runtime producer emits that event and the consumer cannot create a contribution, journal, reward, payout, or balance in this checkpoint.
 - The RandomX upstream adapter is intentionally separate from Bitcoin Stratum V1 and is not activated by runtime configuration in this checkpoint.
 - The configured native coinbase destination does not activate mining or guarantee revenue; native Bitcoin mining remains hard-disabled in Docker, and the laboratory must use disposable regtest funds and a regtest-owned destination.
 - The native Bitcoin template, coinbase/job/candidate, Redis coordination, proposal, submission, and recovery boundaries are not invoked by Stratum or production Docker. A disposable two-node Core 31.0 regtest trace now proves a live witness transaction through two confirmations, long-poll replacement, longer-chain stale-block detection, and exact reorg-tip persistence across one process restart. In-flight restart, deeper/partitioned fork, version-upgrade, Stratum runtime wiring, durable raw-block retrieval plus explicit operator resubmission policy, reward reversal, and Redis restart/partition evidence remain mandatory. A not-found observation never triggers `submitblock`; no production block is automatically submitted and no reward can be created in this checkpoint.
@@ -65,9 +68,9 @@
 ### Validation evidence
 
 - Exact-tree schema-v18 fresh and representative alpha.7 upgrade rehearsals apply all 18 migrations, preserve the historical fixtures, reject account/asset/pool mismatches and non-RandomX assets, reject evidence updates and deletes, and pass controlled-payout plus mining-worker integration coverage.
-- RandomX repository integration proves eight concurrent identical writes produce one row, a reused fingerprint cannot bind different evidence, locally rejected work is not persisted, and the complete mining-worker suite passes 7/7.
+- RandomX integration proves eight concurrent repository writes and four concurrent event deliveries each produce one evidence row, altered payload reuse conflicts, untrusted/unknown payloads fail closed, persistence failure rolls back event idempotency, and the complete mining-worker suite passes 9/9.
 - Repository lint passes 31/31, tests and typecheck each pass 49/49, and production build passes 31/31 with 21 generated Next.js routes after Prisma Client regeneration from schema v18.
-- Static alpha.7 checks, the 599-file managed-source manifest, and the 600-file release manifest verify against the final checkpoint tree.
+- Static alpha.7 checks, the 600-file managed-source manifest, and the 601-file release manifest verify against the final checkpoint tree.
 
 ### Development assistance
 
