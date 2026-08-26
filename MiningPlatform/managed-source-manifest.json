@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 602,
-  "managedFilesChecksum": "07058a46eb0c1a84bd963851116c55de1925bc69484b3f357e630d1bb16ce0d1",
+  "managedFileCount": 611,
+  "managedFilesChecksum": "92bbadc38f5fa92f5903984405c64c7466ce284430f8bdb76f40c71e2696f780",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -685,6 +685,36 @@
       "size": 135
     },
     {
+      "path": "apps/randomx-gateway/package.json",
+      "sha256": "69e072fcb68486a40166c9ce4874fca58a4aca27026005980eadd29d8602846a",
+      "size": 653
+    },
+    {
+      "path": "apps/randomx-gateway/src/index.ts",
+      "sha256": "571614e2d0abc14f14a0208df7c18161104d5bc2950fb47521aea27e2bccf357",
+      "size": 203
+    },
+    {
+      "path": "apps/randomx-gateway/src/submission-coordinator.integration.test.ts",
+      "sha256": "944a993e6ff420b5d3a76951e56569c18d043e1d06cea0efc6572cdad2b590e7",
+      "size": 15080
+    },
+    {
+      "path": "apps/randomx-gateway/src/submission-coordinator.ts",
+      "sha256": "fa8c20fc5b09e05f58fc7091cd4a5426aa2962a56bc7c494dfe8f26785dc5f61",
+      "size": 9738
+    },
+    {
+      "path": "apps/randomx-gateway/src/submission-repository.ts",
+      "sha256": "ab26b5d48cd5cba8b923b953a9a4821352536b9d5478870341ee62ce28bb3c9b",
+      "size": 13740
+    },
+    {
+      "path": "apps/randomx-gateway/tsconfig.json",
+      "sha256": "b1df01c7b3ffbfde2f65f433286f600e3ff181d47db39bce8337daea3c30a2c7",
+      "size": 145
+    },
+    {
       "path": "apps/scheduler/package.json",
       "sha256": "231afb1a92d880c21f9b3c5b6941dd687ac4ad6cfdc02a9f8a2a1651f4fa29cd",
       "size": 678
@@ -696,8 +726,8 @@
     },
     {
       "path": "apps/scheduler/src/runtime.ts",
-      "sha256": "5ed68cb62ebf1073195b8c83fb6bfbccf124d166e6377e179f52ed1332d4b27c",
-      "size": 3405
+      "sha256": "91d6ac95ebb7c1e3b294966c6eb3297ea6f0c9b8eec6d8d60194c305d0ef0cea",
+      "size": 3484
     },
     {
       "path": "apps/scheduler/tsconfig.json",
@@ -1226,8 +1256,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "9c1336eb87dae9e5e4ecad70d8ea2dfdb06fcc8ee70d034d26e2444fdbf142fc",
-      "size": 50543
+      "sha256": "c4a0955da78f3ddf0c22f0d098afedbf7af73171826a14db784edc65392bc0b1",
+      "size": 51250
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1331,8 +1361,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "c049390585bfdfc8e9238ccb91521a89f77349093ea21bd0a80fb38e44de0dbd",
-      "size": 7120
+      "sha256": "8fc3b217004e8f068de99c71878fb25270b302622438825db2a750e76d3583f8",
+      "size": 8075
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1521,8 +1551,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "fc2be8a9238df2d2b18abde7fcf93c466d54f1a9e807c8f3e1dc1043f1475ac8",
-      "size": 17770
+      "sha256": "f0f9ff81235b340d37090b485eb1f61b9601ff369aabeb5f244eb073e17c9790",
+      "size": 18129
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1876,8 +1906,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "830b2f6d94ff78bf6eae18d7f6971115f7d54c958b3d0cea40d90f9fde18beb6",
-      "size": 7256
+      "sha256": "7c660241eb8f17dff41c81a94211f9f7ea184cadd92f23a1419f4e93c32ce893",
+      "size": 7342
     },
     {
       "path": "packages/bitcoin-template/package.json",
@@ -2125,6 +2155,11 @@
       "size": 5100
     },
     {
+      "path": "packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql",
+      "sha256": "b49a1659e9d843dd47a4c6faec804667120869e6b360c2dda980707113bae5a6",
+      "size": 17181
+    },
+    {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
       "sha256": "9b677f26a93c15274b40945c3e021811da0c86523606ad9c47b51affe98cfa38",
       "size": 127
@@ -2136,8 +2171,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "98b11ca5f8afeb88ad7299189b49be7dd25ed2e02e7722f76108428113698745",
-      "size": 71863
+      "sha256": "4fba47c63e1698ac806f75faecdba8abd530bc5bb87eb69e119df92903a7bc98",
+      "size": 76146
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -2366,8 +2401,8 @@
     },
     {
       "path": "packages/randomx/src/index.ts",
-      "sha256": "834a1ea12226355806f48f7fd4c360b876515050baa6d557ecc1389efebeb007",
-      "size": 306
+      "sha256": "fc6e000b357980140b142eed5b32d1711f2421a3a3faca31b2d620ef1f8230fd",
+      "size": 346
     },
     {
       "path": "packages/randomx/src/randomx-service-client.ts",
@@ -2378,6 +2413,16 @@
       "path": "packages/randomx/src/randomx.test.ts",
       "sha256": "efce3dbf460f3879ed07509778074ff351dd65542cf1df75864d9bcbfcc74b73",
       "size": 4313
+    },
+    {
+      "path": "packages/randomx/src/submission-intent.test.ts",
+      "sha256": "f51d1a044006d09aca681f9f62b055b68cc4e33dee7cceeaeb2177c7858ab21c",
+      "size": 4630
+    },
+    {
+      "path": "packages/randomx/src/submission-intent.ts",
+      "sha256": "65a4a9ba1c090a7ab93066a16e08a7512c3a44ebe63e24df8b5e0f652f6851b9",
+      "size": 8032
     },
     {
       "path": "packages/randomx/src/types.ts",
@@ -2736,8 +2781,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "590fb6e9be072d24644cefe5375da75f438b2b476eb83b2109a6685dbeb93fd1",
-      "size": 304744
+      "sha256": "9ff5c9684cc93ead3744e382a5741212383558ef769f0243f0819175d8156f90",
+      "size": 305385
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -2836,8 +2881,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "8419dcba95575eda1e15e83d49dfc883e4a111e867665303daac2521536b530a",
-      "size": 19731
+      "sha256": "12abb75de694d0263d4f598f7147946402aad940275bc6553c8bc2ef8213e570",
+      "size": 22289
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2996,8 +3041,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "47712cf4ac47b81abb07116d0b9ee2dd3da002b4e635aff87658448f6153026f",
-      "size": 24913
+      "sha256": "1f5395c8ab9330f74b88a0f2a1e72c759aa2a7bd4b7faf3691345a122710fd3f",
+      "size": 29883
     },
     {
       "path": "scripts/wait-for-http.mjs",

@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260825010000_randomx_accounting_evidence';
+const latestMigration = '20260826010000_randomx_submission_outbox';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -243,6 +243,77 @@ try {
         repeat('e', 64), 'alpha8-upgrade-work', repeat('1', 64), NOW()
       );
     `);
+
+    for (const migration of [
+      '20260824020000_native_bitcoin_submission_intent',
+      '20260824030000_native_bitcoin_submission_recovery_observation',
+      '20260825010000_randomx_accounting_evidence',
+    ]) {
+      cpSync(join(migrationsRoot, migration), join(temporaryMigrations, migration), {
+        recursive: true,
+      });
+    }
+    run('pnpm', [
+      '--filter',
+      '@mining/database',
+      'exec',
+      'prisma',
+      'migrate',
+      'deploy',
+      '--config',
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+    ]);
+    psql(`
+      INSERT INTO "Asset" (
+        "id", "symbol", "name", "algorithm", "decimals", "enabled",
+        "minimumPayout", "requiredConfirmations", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-asset', 'XMR-ALPHA8-UPGRADE',
+        'RandomX schema-18 upgrade fixture', 'RANDOMX', 12, false, 0.01, 10, NOW()
+      );
+      INSERT INTO "User" (
+        "id", "email", "passwordHash", "displayName", "role", "status",
+        "accountType", "emailVerifiedAt", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-user', 'randomx-alpha8-upgrade@local.invalid',
+        'UPGRADE_FIXTURE', 'RandomX Alpha8 Upgrade User', 'USER', 'ACTIVE',
+        'INDIVIDUAL', NOW(), NOW()
+      );
+      INSERT INTO "MiningAccount" (
+        "id", "userId", "assetId", "feePolicyId", "username", "rewardMethod",
+        "platformFeePercent", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-account', 'alpha8-upgrade-randomx-user',
+        'alpha8-upgrade-randomx-asset', 'fee-policy-platform-default-v1',
+        'alpha8_upgrade_randomx_account', 'FOLLOW_UPSTREAM', 0.5, NOW()
+      );
+      INSERT INTO "UpstreamPool" (
+        "id", "assetId", "poolKey", "name", "host", "port", "tls",
+        "rewardMethod", "status", "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-pool', 'alpha8-upgrade-randomx-asset',
+        'alpha8-upgrade-randomx', 'RandomX Alpha8 Upgrade Pool', '127.0.0.1',
+        4444, false, 'FOLLOW_UPSTREAM', 'SETUP', NOW()
+      );
+      INSERT INTO "RandomXAcceptedShareEvidence" (
+        "id", "sourceDigest", "shareFingerprint", "algorithm", "miningAccountId",
+        "assetId", "upstreamPoolId", "upstreamSessionId", "upstreamJobId",
+        "upstreamClientId", "workerName", "seedHash", "targetHex", "target", "nonce",
+        "submittedResult", "computedResult", "acceptedDifficulty", "jobReceivedAt",
+        "jobExpiresAt", "submittedAt", "acceptedAt", "correlationId", "validationDigest",
+        "upstreamDecisionDigest"
+      ) VALUES (
+        'alpha8-upgrade-randomx-evidence', repeat('a', 64), repeat('b', 64), 'rx/0',
+        'alpha8-upgrade-randomx-account', 'alpha8-upgrade-randomx-asset',
+        'alpha8-upgrade-randomx-pool', 'alpha8-upgrade-randomx-session',
+        'alpha8-upgrade-randomx-job', 'alpha8-upgrade-randomx-client',
+        'alpha8_upgrade_randomx_account.worker', repeat('c', 64), '0200000000000000',
+        2, '78563412', repeat('d', 64), repeat('d', 64), 1000.5,
+        NOW() - INTERVAL '2 minutes', NOW() + INTERVAL '2 minutes',
+        NOW() - INTERVAL '1 minute', NOW(), 'alpha8-upgrade-randomx-correlation',
+        repeat('e', 64), repeat('f', 64)
+      );
+    `);
   }
 
   run('pnpm', ['db:migrate:deploy']);
@@ -269,7 +340,10 @@ try {
         OR to_regclass('public."NativeBitcoinSubmissionRecoveryObservation"') IS NULL
         OR to_regclass('public."NativeBitcoinSubmissionAttempt"') IS NULL
         OR to_regclass('public."RandomXAcceptedShareEvidence"') IS NULL
-      THEN RAISE EXCEPTION 'required schema-18 tables are missing'; END IF;
+        OR to_regclass('public."RandomXUpstreamJobEvidence"') IS NULL
+        OR to_regclass('public."RandomXShareSubmissionIntent"') IS NULL
+        OR to_regclass('public."RandomXUpstreamShareDecision"') IS NULL
+      THEN RAISE EXCEPTION 'required schema-19 tables are missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
@@ -339,6 +413,27 @@ try {
           AND NOT t.tgisinternal
       ) THEN RAISE EXCEPTION 'RandomX accounting evidence triggers are missing'; END IF;
       IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'RandomXUpstreamJobEvidence'
+          AND t.tgname = 'RandomXUpstreamJobEvidence_immutable_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'RandomXShareSubmissionIntent'
+          AND t.tgname = 'RandomXShareSubmissionIntent_correlation_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'RandomXUpstreamShareDecision'
+          AND t.tgname = 'RandomXUpstreamShareDecision_correlation_trigger'
+          AND NOT t.tgisinternal
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+        WHERE c.relname = 'OutboxEvent'
+          AND t.tgname = 'OutboxEvent_randomx_envelope_immutable_trigger'
+          AND NOT t.tgisinternal
+      ) THEN RAISE EXCEPTION 'RandomX submission/outbox invariant triggers are missing'; END IF;
+      IF NOT EXISTS (
         SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'PayoutApproval'
           AND indexname = 'PayoutApproval_payoutId_key'
       ) THEN RAISE EXCEPTION 'one final payout approval decision is not database-enforced'; END IF;
@@ -358,6 +453,12 @@ try {
           AND intent."workId" = submission."workId"
           AND intent."idempotencyKey" LIKE 'migration:v16:%'
       ) THEN RAISE EXCEPTION 'schema-v15 submission history was not linked to a v16 intent'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1 FROM "RandomXAcceptedShareEvidence"
+        WHERE "id" = 'alpha8-upgrade-randomx-evidence'
+          AND "shareFingerprint" = repeat('b', 64)
+          AND "acceptedDifficulty" = 1000.5
+      ) THEN RAISE EXCEPTION 'schema-v18 RandomX evidence was rewritten during upgrade'; END IF;
     END $$;
   `);
 
@@ -511,8 +612,9 @@ try {
     'src/payout-execution.integration.test.ts',
   ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
+  run('pnpm', ['--filter', '@mining/randomx-gateway', 'test']);
   process.stdout.write(
-    `\nSchema-18 payout, native-recovery, and RandomX-evidence ${mode} verification passed.\n`,
+    `\nSchema-19 payout, native-recovery, and RandomX submission/outbox ${mode} verification passed.\n`,
   );
 } finally {
   if (

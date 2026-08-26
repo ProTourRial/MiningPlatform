@@ -82,6 +82,7 @@
     "settlement:import": "tsx --tsconfig scripts/tsconfig.json scripts/settlement-import-cli.ts",
     "journal:reverse": "tsx --tsconfig scripts/tsconfig.json scripts/journal-reversal-cli.ts",
     "test:integration:accounting": "tsx --tsconfig scripts/tsconfig.json scripts/financial-truth-integration.ts",
+    "test:integration:randomx-gateway": "pnpm --filter @mining/randomx-gateway test",
     "reconciliation:resolution:request": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-request-cli.ts",
     "reconciliation:resolution:decide": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-decide-cli.ts",
     "test:integration:reconciliation": "tsx --tsconfig scripts/tsconfig.json scripts/reconciliation-resolution-integration.ts",

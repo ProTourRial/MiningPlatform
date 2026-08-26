@@ -266,6 +266,31 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
 
+  apps/randomx-gateway:
+    dependencies:
+      '@mining/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@mining/randomx':
+        specifier: workspace:*
+        version: link:../../packages/randomx
+      '@mining/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
   apps/scheduler:
     dependencies:
       '@mining/build-info':

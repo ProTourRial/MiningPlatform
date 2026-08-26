@@ -573,62 +573,65 @@ model CompanyProfile {
 }
 
 model Asset {
-  id                    String                         @id @default(cuid())
-  symbol                String                         @unique
-  name                  String
-  algorithm             String
-  decimals              Int
-  enabled               Boolean                        @default(false)
-  minimumPayout         Decimal                        @db.Decimal(36, 18)
-  requiredConfirmations Int                            @default(3)
-  createdAt             DateTime                       @default(now())
-  updatedAt             DateTime                       @updatedAt
-  miningAccounts        MiningAccount[]
-  shares                Share[]
-  rewardPeriods         RewardPeriod[]
-  ledgerAccounts        LedgerAccount[]
-  journalLines          JournalLine[]
-  payoutAddresses       PayoutAddress[]
-  payouts               Payout[]
-  wallets               Wallet[]
-  walletTransactions    WalletTransaction[]
-  upstreamPools         UpstreamPool[]
-  reconciliations       UpstreamReconciliation[]
-  stratumJobs           StratumJob[]
-  feePolicies           MiningFeePolicy[]
-  contributionFacts     ContributionFact[]
-  randomXShareEvidence  RandomXAcceptedShareEvidence[]
-  networks              AssetNetwork[]
-  balanceReservations   BalanceReservation[]
-  payoutControls        PayoutControl[]
+  id                       String                         @id @default(cuid())
+  symbol                   String                         @unique
+  name                     String
+  algorithm                String
+  decimals                 Int
+  enabled                  Boolean                        @default(false)
+  minimumPayout            Decimal                        @db.Decimal(36, 18)
+  requiredConfirmations    Int                            @default(3)
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  miningAccounts           MiningAccount[]
+  shares                   Share[]
+  rewardPeriods            RewardPeriod[]
+  ledgerAccounts           LedgerAccount[]
+  journalLines             JournalLine[]
+  payoutAddresses          PayoutAddress[]
+  payouts                  Payout[]
+  wallets                  Wallet[]
+  walletTransactions       WalletTransaction[]
+  upstreamPools            UpstreamPool[]
+  reconciliations          UpstreamReconciliation[]
+  stratumJobs              StratumJob[]
+  feePolicies              MiningFeePolicy[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXJobEvidence       RandomXUpstreamJobEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
+  networks                 AssetNetwork[]
+  balanceReservations      BalanceReservation[]
+  payoutControls           PayoutControl[]
 }
 
 model MiningAccount {
-  id                      String                         @id @default(cuid())
-  userId                  String
-  assetId                 String
-  feePolicyId             String
-  username                String                         @unique
-  rewardMethod            RewardMethod                   @default(FOLLOW_UPSTREAM)
-  platformFeePercent      Decimal                        @db.Decimal(7, 4)
-  autoWithdrawalEnabled   Boolean                        @default(false)
-  selectedPayoutAddressId String?
-  enabled                 Boolean                        @default(true)
-  createdAt               DateTime                       @default(now())
-  updatedAt               DateTime                       @updatedAt
-  deletedAt               DateTime?
-  user                    User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset                   Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  feePolicy               MiningFeePolicy                @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
-  scopedFeePolicies       MiningFeePolicy[]              @relation("ScopedMiningAccountFeePolicy")
-  workers                 Worker[]
-  rewardAllocations       RewardAllocation[]
-  contributionFacts       ContributionFact[]
-  randomXShareEvidence    RandomXAcceptedShareEvidence[]
-  periodContributions     RewardPeriodContribution[]
-  referralAttribution     ReferralAttribution?
-  selectedPayoutAddress   PayoutAddress?                 @relation("MiningAccountPayoutDestination", fields: [selectedPayoutAddressId], references: [id], onDelete: Restrict)
-  payouts                 Payout[]
+  id                       String                         @id @default(cuid())
+  userId                   String
+  assetId                  String
+  feePolicyId              String
+  username                 String                         @unique
+  rewardMethod             RewardMethod                   @default(FOLLOW_UPSTREAM)
+  platformFeePercent       Decimal                        @db.Decimal(7, 4)
+  autoWithdrawalEnabled    Boolean                        @default(false)
+  selectedPayoutAddressId  String?
+  enabled                  Boolean                        @default(true)
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  deletedAt                DateTime?
+  user                     User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset                    Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  feePolicy                MiningFeePolicy                @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
+  scopedFeePolicies        MiningFeePolicy[]              @relation("ScopedMiningAccountFeePolicy")
+  workers                  Worker[]
+  rewardAllocations        RewardAllocation[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
+  periodContributions      RewardPeriodContribution[]
+  referralAttribution      ReferralAttribution?
+  selectedPayoutAddress    PayoutAddress?                 @relation("MiningAccountPayoutDestination", fields: [selectedPayoutAddressId], references: [id], onDelete: Restrict)
+  payouts                  Payout[]
 
   @@unique([userId, assetId])
   @@index([assetId, enabled])
@@ -1055,6 +1058,80 @@ model RandomXAcceptedShareEvidence {
   @@index([assetId, upstreamPoolId, acceptedAt])
   @@index([miningAccountId, acceptedAt])
   @@index([upstreamPoolId, upstreamSessionId, upstreamJobId])
+}
+
+model RandomXUpstreamJobEvidence {
+  id                String                         @id @default(cuid())
+  sourceDigest      String                         @unique
+  algorithm         String
+  assetId           String
+  upstreamPoolId    String
+  upstreamSessionId String
+  upstreamJobId     String
+  upstreamClientId  String
+  jobBlob           String                         @db.Text
+  seedHash          String
+  targetHex         String
+  height            Decimal                        @db.Decimal(20, 0)
+  receivedAt        DateTime
+  expiresAt         DateTime
+  createdAt         DateTime                       @default(now())
+  asset             Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool      UpstreamPool                   @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  submissionIntents RandomXShareSubmissionIntent[]
+
+  @@unique([upstreamPoolId, upstreamSessionId, upstreamJobId])
+  @@index([assetId, upstreamPoolId, receivedAt])
+  @@index([upstreamPoolId, expiresAt])
+}
+
+model RandomXShareSubmissionIntent {
+  id                 String                        @id @default(cuid())
+  idempotencyKey     String                        @unique
+  sourceDigest       String                        @unique
+  shareFingerprint   String                        @unique
+  jobEvidenceId      String
+  miningAccountId    String
+  assetId            String
+  upstreamPoolId     String
+  workerName         String
+  nonce              String
+  submittedResult    String
+  computedResult     String
+  localTarget        Decimal                       @db.Decimal(20, 0)
+  acceptedDifficulty Decimal                       @db.Decimal(38, 12)
+  submittedAt        DateTime
+  correlationId      String
+  validationDigest   String
+  createdAt          DateTime                      @default(now())
+  jobEvidence        RandomXUpstreamJobEvidence    @relation(fields: [jobEvidenceId], references: [id], onDelete: Restrict)
+  miningAccount      MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset              Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool       UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  decision           RandomXUpstreamShareDecision?
+
+  @@unique([jobEvidenceId, sourceDigest])
+  @@index([miningAccountId, submittedAt])
+  @@index([assetId, upstreamPoolId, submittedAt])
+  @@index([jobEvidenceId, submittedAt])
+}
+
+model RandomXUpstreamShareDecision {
+  id                 String                       @id @default(cuid())
+  idempotencyKey     String                       @unique
+  submissionIntentId String                       @unique
+  accepted           Boolean
+  errorCode          Int?
+  errorMessage       String?
+  sourceDigest       String                       @unique
+  decidedAt          DateTime
+  outboxEventId      String?                      @unique
+  createdAt          DateTime                     @default(now())
+  submissionIntent   RandomXShareSubmissionIntent @relation(fields: [submissionIntentId], references: [id], onDelete: Restrict)
+  outboxEvent        OutboxEvent?                 @relation(fields: [outboxEventId], references: [id], onDelete: Restrict)
+
+  @@index([accepted, decidedAt])
+  @@index([submissionIntentId, decidedAt])
 }
 
 model HashrateBucket {
@@ -1718,36 +1795,38 @@ model NativeBitcoinSubmissionAttempt {
 }
 
 model UpstreamPool {
-  id                    String                         @id @default(cuid())
-  assetId               String
-  poolKey               String
-  name                  String
-  host                  String
-  port                  Int
-  tls                   Boolean                        @default(false)
-  rewardMethod          RewardMethod
-  status                UpstreamStatus                 @default(SETUP)
-  priority              Int                            @default(100)
-  weight                Int                            @default(100)
-  failureThreshold      Int                            @default(3)
-  recoveryTimeoutMs     Int                            @default(30000)
-  consecutiveFailures   Int                            @default(0)
-  successfulConnections Int                            @default(0)
-  lastConnectedAt       DateTime?
-  lastFailureAt         DateTime?
-  circuitOpenedUntil    DateTime?
-  lastError             String?
-  capabilities          Json?
-  encryptedCredential   String?
-  createdAt             DateTime                       @default(now())
-  updatedAt             DateTime                       @updatedAt
-  asset                 Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  rewardPeriods         RewardPeriod[]
-  reconciliations       UpstreamReconciliation[]
-  upstreamSessions      UpstreamSession[]
-  stratumJobs           StratumJob[]
-  contributionFacts     ContributionFact[]
-  randomXShareEvidence  RandomXAcceptedShareEvidence[]
+  id                       String                         @id @default(cuid())
+  assetId                  String
+  poolKey                  String
+  name                     String
+  host                     String
+  port                     Int
+  tls                      Boolean                        @default(false)
+  rewardMethod             RewardMethod
+  status                   UpstreamStatus                 @default(SETUP)
+  priority                 Int                            @default(100)
+  weight                   Int                            @default(100)
+  failureThreshold         Int                            @default(3)
+  recoveryTimeoutMs        Int                            @default(30000)
+  consecutiveFailures      Int                            @default(0)
+  successfulConnections    Int                            @default(0)
+  lastConnectedAt          DateTime?
+  lastFailureAt            DateTime?
+  circuitOpenedUntil       DateTime?
+  lastError                String?
+  capabilities             Json?
+  encryptedCredential      String?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  asset                    Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  rewardPeriods            RewardPeriod[]
+  reconciliations          UpstreamReconciliation[]
+  upstreamSessions         UpstreamSession[]
+  stratumJobs              StratumJob[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXJobEvidence       RandomXUpstreamJobEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
 
   @@unique([assetId, name])
   @@unique([assetId, poolKey])
@@ -1871,25 +1950,26 @@ model SystemSetting {
 }
 
 model OutboxEvent {
-  id             String            @id @default(cuid())
-  eventId        String            @unique
-  eventName      String
-  eventVersion   Int               @default(1)
-  producer       String
-  aggregateType  String
-  aggregateId    String
-  correlationId  String
-  causationId    String?
-  idempotencyKey String            @unique
-  payload        Json
-  occurredAt     DateTime
-  status         OutboxEventStatus @default(PENDING)
-  availableAt    DateTime          @default(now())
-  publishedAt    DateTime?
-  attempts       Int               @default(0)
-  lastError      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                      String                        @id @default(cuid())
+  eventId                 String                        @unique
+  eventName               String
+  eventVersion            Int                           @default(1)
+  producer                String
+  aggregateType           String
+  aggregateId             String
+  correlationId           String
+  causationId             String?
+  idempotencyKey          String                        @unique
+  payload                 Json
+  occurredAt              DateTime
+  status                  OutboxEventStatus             @default(PENDING)
+  availableAt             DateTime                      @default(now())
+  publishedAt             DateTime?
+  attempts                Int                           @default(0)
+  lastError               String?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  randomXUpstreamDecision RandomXUpstreamShareDecision?
 
   @@index([status, availableAt])
   @@index([aggregateType, aggregateId, createdAt])

@@ -22,7 +22,8 @@ const idempotencyRetentionDays = positiveInteger(process.env.IDEMPOTENCY_RETENTI
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   const parsed = Number(value ?? fallback);
-  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`Expected positive integer, received ${value}`);
+  if (!Number.isInteger(parsed) || parsed <= 0)
+    throw new Error(`Expected positive integer, received ${value}`);
   return parsed;
 }
 
@@ -44,7 +45,11 @@ async function runRetention(): Promise<void> {
       where: { recordedAt: { lt: daysAgo(snapshotRetentionDays) } },
     });
     const publishedOutbox = await tx.outboxEvent.deleteMany({
-      where: { status: 'PUBLISHED', publishedAt: { lt: daysAgo(outboxRetentionDays) } },
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: { lt: daysAgo(outboxRetentionDays) },
+        randomXUpstreamDecision: null,
+      },
     });
     const expiredFingerprints = await tx.shareFingerprint.deleteMany({
       where: { shareId: null, expiresAt: { lt: new Date() } },
@@ -81,7 +86,9 @@ try {
     } catch (error) {
       logger.error({ error }, 'retention cycle failed');
     }
-    await sleep(intervalMilliseconds, undefined, { signal: abortController.signal }).catch(() => undefined);
+    await sleep(intervalMilliseconds, undefined, { signal: abortController.signal }).catch(
+      () => undefined,
+    );
   }
 } finally {
   await prisma.$disconnect();

@@ -52,7 +52,13 @@ const requiredFiles = [
   'apps/mining-worker/src/supported-events.ts',
   'packages/shared/src/events.ts',
   'packages/randomx/src/validator.ts',
+  'packages/randomx/src/submission-intent.ts',
+  'packages/randomx/src/submission-intent.test.ts',
   'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
+  'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
+  'apps/randomx-gateway/src/submission-repository.ts',
+  'apps/randomx-gateway/src/submission-coordinator.ts',
+  'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
@@ -83,8 +89,8 @@ const packageFiles = [
     .filter((entry) => entry.isDirectory())
     .map((entry) => `packages/${entry.name}/package.json`),
 ];
-if (packageFiles.length !== 32)
-  throw new Error(`Expected 32 workspace package files, found ${packageFiles.length}`);
+if (packageFiles.length !== 33)
+  throw new Error(`Expected 33 workspace package files, found ${packageFiles.length}`);
 for (const path of packageFiles) {
   const parsed = JSON.parse(await text(path));
   if (parsed.version !== expectedVersion) {
@@ -109,6 +115,9 @@ for (const expected of [
   'payoutRouteId',
   'model NativeBitcoinSubmissionIntent',
   'model RandomXAcceptedShareEvidence',
+  'model RandomXUpstreamJobEvidence',
+  'model RandomXShareSubmissionIntent',
+  'model RandomXUpstreamShareDecision',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
 ])
@@ -311,6 +320,62 @@ for (const expected of [
   "job.height?.toString() ?? ''",
 ])
   requireText(randomXValidator, expected, 'RandomX share fingerprint');
+
+const randomXSubmissionIntent = await text('packages/randomx/src/submission-intent.ts');
+for (const expected of [
+  'projectRandomXSubmissionIntent',
+  'requires accepted local validation',
+  'randomx-upstream-job-evidence-v1',
+  'randomx-share-submission-intent-v1',
+  'randomx-local-validation-v1',
+  'Object.freeze',
+])
+  requireText(randomXSubmissionIntent, expected, 'RandomX submission-intent projector');
+
+const randomXSubmissionMigration = await text(
+  'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
+);
+for (const expected of [
+  'RandomXUpstreamJobEvidence_immutable_trigger',
+  'RandomXShareSubmissionIntent_correlation_trigger',
+  'RandomXUpstreamShareDecision_correlation_trigger',
+  'OutboxEvent_randomx_envelope_immutable_trigger',
+  'requires exact correlated outbox evidence',
+  'RandomX accepted-share outbox envelope is immutable',
+])
+  requireText(randomXSubmissionMigration, expected, 'RandomX submission/outbox migration');
+
+const randomXSubmissionRepository = await text('apps/randomx-gateway/src/submission-repository.ts');
+for (const expected of [
+  'projectRandomXSubmissionIntent(input)',
+  'pg_advisory_xact_lock',
+  'SELECT CURRENT_TIMESTAMP AS "now"',
+  'randomXShareSubmissionIntent.create',
+  'createRandomXAcceptedShareEvent',
+  'outboxEvent.create',
+  'randomXUpstreamShareDecision.create',
+])
+  requireText(randomXSubmissionRepository, expected, 'RandomX submission repository');
+
+const randomXSubmissionCoordinator = await text(
+  'apps/randomx-gateway/src/submission-coordinator.ts',
+);
+for (const expected of [
+  'RandomXSubmissionUncertainError',
+  'recordPreparedSubmission',
+  'findDecisionByIntent',
+  'ahead of authoritative database time',
+  'automatic resubmission is blocked',
+  'recordDecision',
+])
+  requireText(randomXSubmissionCoordinator, expected, 'RandomX submission coordinator');
+
+const scheduler = await text('apps/scheduler/src/runtime.ts');
+requireText(
+  scheduler,
+  'randomXUpstreamDecision: null',
+  'RandomX accepted outbox retention protection',
+);
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [

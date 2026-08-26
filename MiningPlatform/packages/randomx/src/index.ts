@@ -7,5 +7,6 @@
 export * from './accounting-projection.js';
 export * from './accepted-share-event.js';
 export * from './randomx-service-client.js';
+export * from './submission-intent.js';
 export * from './types.js';
 export * from './validator.js';
