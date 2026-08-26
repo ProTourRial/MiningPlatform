@@ -43,6 +43,8 @@ const requiredFiles = [
   'packages/blockchain-adapters/src/bitcoin-address.test.ts',
   'packages/randomx/src/accounting-projection.ts',
   'packages/randomx/src/accounting-projection.test.ts',
+  'packages/randomx/src/accepted-share-event.ts',
+  'packages/randomx/src/accepted-share-event.test.ts',
   'apps/mining-worker/src/randomx-accounting-evidence.ts',
   'apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts',
   'apps/mining-worker/src/randomx-accounting-event.ts',
@@ -265,6 +267,7 @@ for (const expected of [
 const randomXEventContract = await text('packages/shared/src/events.ts');
 for (const expected of [
   "randomXShareAccepted: 'mining.randomx.share.accepted.v1'",
+  "acceptedShare: 'randomx-mining-gateway'",
   'export interface RandomXAcceptedSharePayload',
   'localAccepted: true',
   'upstreamAccepted: true',
@@ -273,7 +276,7 @@ for (const expected of [
 
 const randomXEventConsumer = await text('apps/mining-worker/src/randomx-accounting-event.ts');
 for (const expected of [
-  "RANDOMX_ACCOUNTING_EVENT_PRODUCER = 'randomx-mining-gateway'",
+  'event.producer !== RandomXEventProducers.acceptedShare',
   'expectedIdempotencyKey = `randomx-share:${payload.localFingerprint}`',
   'pg_advisory_xact_lock',
   'PrismaTransactionalIdempotencyService',
@@ -281,6 +284,17 @@ for (const expected of [
   'payload shape is invalid',
 ])
   requireText(randomXEventConsumer, expected, 'RandomX accounting-event consumer');
+
+const randomXAcceptedShareEvent = await text('packages/randomx/src/accepted-share-event.ts');
+for (const expected of [
+  'createRandomXAcceptedShareEvent',
+  'projectRandomXAcceptedContribution(input.accounting)',
+  'requires a uint64 job height',
+  'applyRandomXNonce',
+  'RandomXEventProducers.acceptedShare',
+  'Object.freeze',
+])
+  requireText(randomXAcceptedShareEvent, expected, 'RandomX accepted-share event factory');
 
 const randomXWorkerRuntime = await text('apps/mining-worker/src/runtime.ts');
 requireText(

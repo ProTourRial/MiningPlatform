@@ -8,11 +8,14 @@ import { createHash } from 'node:crypto';
 import { prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
 import type { RandomXAccountingProjectionInput } from '@mining/randomx';
-import { MiningEvents, type RandomXAcceptedSharePayload } from '@mining/shared';
+import {
+  MiningEvents,
+  RandomXEventProducers,
+  type RandomXAcceptedSharePayload,
+} from '@mining/shared';
 import { PrismaTransactionalIdempotencyService } from './prisma-idempotency.js';
 import { RandomXAccountingEvidenceRepository } from './randomx-accounting-evidence.js';
 
-export const RANDOMX_ACCOUNTING_EVENT_PRODUCER = 'randomx-mining-gateway';
 const RANDOMX_ACCOUNTING_OWNER = 'randomx-accounting-evidence-v1';
 const IDEMPOTENCY_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
 const MAX_UINT64 = 0xffff_ffff_ffff_ffffn;
@@ -190,7 +193,7 @@ export function parseRandomXAccountingEvent(
   if (event.eventName !== MiningEvents.randomXShareAccepted || event.eventVersion !== 1) {
     throw new Error('RandomX accounting event name or version is unsupported');
   }
-  if (event.producer !== RANDOMX_ACCOUNTING_EVENT_PRODUCER) {
+  if (event.producer !== RandomXEventProducers.acceptedShare) {
     throw new Error('RandomX accounting event producer is unsupported');
   }
   if (event.aggregateType !== 'MiningAccount') {

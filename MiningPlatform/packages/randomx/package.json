@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts"
   },
+  "dependencies": {
+    "@mining/shared": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "22.0.0",
     "eslint": "9.39.5",

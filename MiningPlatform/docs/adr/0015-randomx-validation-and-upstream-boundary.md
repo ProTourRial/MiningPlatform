@@ -57,6 +57,11 @@ in application JavaScript is outside the platform's security and correctness bou
     one transaction. The fingerprint binds algorithm, job blob, target, height, upstream job/client
     identity, and submitted proof; the source digest separately binds pool/session evidence. No
     miner-facing producer exists in this checkpoint.
+11. A side-effect-free factory is the canonical producer-side representation of that event. It invokes
+    the accounting projector again, requires a bounded CryptoNote blob and uint64 height, normalizes
+    every payload/envelope field, and returns a frozen object. It does not publish. The future gateway
+    must persist a pre-RPC submission intent and enqueue the accepted decision through a transactional
+    outbox so transport ambiguity cannot silently resubmit or lose upstream-accepted work.
 
 ## Consequences
 
@@ -65,9 +70,10 @@ in application JavaScript is outside the platform's security and correctness bou
 - RandomX requires additional deployment capacity and health monitoring before production activation.
 - Schema v18 and its fresh/representative-upgrade rehearsals establish the immutable evidence storage
   boundary required before miner-facing RandomX traffic can be considered.
-- Accounting evidence now has deterministic projection, append-only persistence, and strict internal
-  event-consumption boundaries. Miner-facing production, contribution-fact creation, reward-period
-  assignment, settlement reconciliation, and ledger effects remain intentionally absent.
+- Accounting evidence now has deterministic projection, canonical event construction, append-only
+  persistence, and strict internal event-consumption boundaries. Miner-facing production, durable
+  submission/outbox orchestration, contribution-fact creation, reward-period assignment, settlement
+  reconciliation, and ledger effects remain intentionally absent.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
 
@@ -78,6 +84,8 @@ in application JavaScript is outside the platform's security and correctness bou
 - Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
 - Add the authenticated miner-facing producer and prove that only its accepted local-plus-upstream
   decisions reach the strict event consumer without bypassing the projector or database constraints.
+- Persist an idempotent submission intent before upstream RPC and enqueue the accepted event in the
+  same transaction as durable decision evidence; never infer rejection from an ambiguous timeout.
 - Prove duplicate/retry safety from accepted share through contribution and reward allocation.
 - Reconcile the upstream RandomX settlement source exactly before any user balance is credited.
 - Run failure-injection E2E for sidecar outage, wrong seed, stale job, upstream rejection, reconnect,

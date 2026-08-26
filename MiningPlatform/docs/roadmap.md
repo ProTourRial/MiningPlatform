@@ -56,7 +56,9 @@ A strict mining-worker event consumer now validates the versioned accepted-share
 event idempotency plus evidence atomically under a PostgreSQL advisory lock. Its fingerprint binds the
 full bounded work blob, target, and height. No miner-facing producer emits the event yet; contribution
 creation, reward assignment, settlement, and ledger effects remain deliberately blocked until their
-own invariants and failure tests are proven.
+own invariants and failure tests are proven. A canonical producer-side factory now revalidates and
+freezes the exact envelope, while durable pre-RPC intent and transactional outbox delivery remain the
+next mandatory boundary before any authenticated gateway may publish it.
 
 ## Active Native Pool Laboratory Track
 

@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 600,
-  "managedFilesChecksum": "428ef871846845128acc3bafd099e1e8744824f8a949c5108a1da544b8b47076",
+  "managedFileCount": 602,
+  "managedFilesChecksum": "07058a46eb0c1a84bd963851116c55de1925bc69484b3f357e630d1bb16ce0d1",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -601,13 +601,13 @@
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-event.ts",
-      "sha256": "1d9a7fcb53ea223db49f8364308602b7dcc6f9027ad3c37e3fd3fb03b8a3df3f",
-      "size": 12320
+      "sha256": "cf69907dcfcf0d4bd6be5eaa01b8e1b744f74a88646f1eedfb973a2cc5cd839e",
+      "size": 12277
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts",
-      "sha256": "ac6763f6e79a55796aa9382aab569fcf80a90bb9815e8f8a8126299fc806a57b",
-      "size": 9004
+      "sha256": "beaf45ca961b65bf753a8eec3b3b0527e71e6577b629deb76467fe2e4bdd5deb",
+      "size": 7260
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.ts",
@@ -1226,8 +1226,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "914744069796471d3fdbdf18c07fca223d5bb385cf4ae440f0ae31d00fcaa6ae",
-      "size": 50125
+      "sha256": "9c1336eb87dae9e5e4ecad70d8ea2dfdb06fcc8ee70d034d26e2444fdbf142fc",
+      "size": 50543
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1331,8 +1331,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "d60d951b61ce26104e33b74216deec0629ad939b99c4ca981b01b8e40c76b974",
-      "size": 6348
+      "sha256": "c049390585bfdfc8e9238ccb91521a89f77349093ea21bd0a80fb38e44de0dbd",
+      "size": 7120
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1521,8 +1521,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "eb04dab83f1b380741d5fce9818d967e64d34681ac6684eb52f08a022740025f",
-      "size": 17525
+      "sha256": "fc2be8a9238df2d2b18abde7fcf93c466d54f1a9e807c8f3e1dc1043f1475ac8",
+      "size": 17770
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1731,8 +1731,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "316a86baaaba0e1c901eae7acbdfbc7a9b5d1bad96bc52485e00f8493b12d46a",
-      "size": 10565
+      "sha256": "1b5074e9ecf6f818ce5c8e28c9ba62933ef03a9577ad2415fd2d65dff3348be4",
+      "size": 10794
     },
     {
       "path": "docs/security/threat-model-v1.md",
@@ -2341,8 +2341,18 @@
     },
     {
       "path": "packages/randomx/package.json",
-      "sha256": "7ad311e08d968baf72fcf0551aba32d94031633791e610535b672744f617baa8",
-      "size": 650
+      "sha256": "b9e4e668eb93660476eb38a0495fbae589166f6d1444c8b1a7e21173479d7e16",
+      "size": 711
+    },
+    {
+      "path": "packages/randomx/src/accepted-share-event.test.ts",
+      "sha256": "61ad1c1a9834e92c022b50466ffb1c346cdfc422b1e3f380bfa2ade0c3fc218e",
+      "size": 3738
+    },
+    {
+      "path": "packages/randomx/src/accepted-share-event.ts",
+      "sha256": "340b6bdf2e54f26c23df4a39d433c20a88fba36eada84ac23e30ffcd8da121de",
+      "size": 3464
     },
     {
       "path": "packages/randomx/src/accounting-projection.test.ts",
@@ -2356,8 +2366,8 @@
     },
     {
       "path": "packages/randomx/src/index.ts",
-      "sha256": "60fe609db6361a45aa406c698bb406487d8a84f686e9c6d55e46807453072ca7",
-      "size": 263
+      "sha256": "834a1ea12226355806f48f7fd4c360b876515050baa6d557ecc1389efebeb007",
+      "size": 306
     },
     {
       "path": "packages/randomx/src/randomx-service-client.ts",
@@ -2506,8 +2516,8 @@
     },
     {
       "path": "packages/shared/src/events.ts",
-      "sha256": "dec3dd049ac32f2fec4a5da7162d575a38fc1278f202a29c80c2dfe37bdee62d",
-      "size": 9540
+      "sha256": "dd6fba58e370855cf052caaa225338f6ba64edaa7a8fc6b54a3ecd13d3fd3ae5",
+      "size": 9635
     },
     {
       "path": "packages/shared/src/index.ts",
@@ -2726,8 +2736,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "7665a0da874978f0ba77f9d015bcec1b45f131b5928f2355b411eb181b93d509",
-      "size": 304639
+      "sha256": "590fb6e9be072d24644cefe5375da75f438b2b476eb83b2109a6685dbeb93fd1",
+      "size": 304744
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -2826,8 +2836,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "4ce28408e55a4c6145ef48013e1918302960d535a1052d5e12bb7f52d0b9cb85",
-      "size": 19160
+      "sha256": "8419dcba95575eda1e15e83d49dfc883e4a111e867665303daac2521536b530a",
+      "size": 19731
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

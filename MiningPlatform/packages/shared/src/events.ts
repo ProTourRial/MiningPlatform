@@ -47,6 +47,10 @@ export const MiningEvents = {
   walletTransactionConfirmed: 'wallet.transaction.confirmed.v1',
 } as const;
 
+export const RandomXEventProducers = {
+  acceptedShare: 'randomx-mining-gateway',
+} as const;
+
 export type MiningEventName = (typeof MiningEvents)[keyof typeof MiningEvents];
 
 export interface DomainEvent<TPayload> {

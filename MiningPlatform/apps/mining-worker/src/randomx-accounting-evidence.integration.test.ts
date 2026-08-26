@@ -8,12 +8,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { prisma } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
-import { randomXShareFingerprint, type RandomXAccountingProjectionInput } from '@mining/randomx';
-import { MiningEvents, type RandomXAcceptedSharePayload } from '@mining/shared';
 import {
-  RANDOMX_ACCOUNTING_EVENT_PRODUCER,
-  RandomXAccountingEventConsumer,
-} from './randomx-accounting-event.js';
+  createRandomXAcceptedShareEvent,
+  randomXShareFingerprint,
+  type RandomXAccountingProjectionInput,
+} from '@mining/randomx';
+import type { RandomXAcceptedSharePayload } from '@mining/shared';
+import { RandomXAccountingEventConsumer } from './randomx-accounting-event.js';
 import { RandomXAccountingEvidenceRepository } from './randomx-accounting-evidence.js';
 
 const assetId = 'randomx-runtime-test-asset';
@@ -128,54 +129,7 @@ function acceptedEvent(
   input: RandomXAccountingProjectionInput,
   eventId: string,
 ): DomainEvent<RandomXAcceptedSharePayload> {
-  if (
-    !input.validation.accepted ||
-    input.validation.reason !== 'ACCEPTED' ||
-    !input.validation.hash ||
-    input.validation.target === undefined
-  ) {
-    throw new Error('Test fixture requires accepted local validation');
-  }
-  const payload: RandomXAcceptedSharePayload = {
-    miningAccountId: input.miningAccountId,
-    assetId: input.assetId,
-    algorithm: 'rx/0',
-    upstreamPoolId: input.upstream.upstreamPoolId,
-    upstreamSessionId: input.upstream.upstreamSessionId,
-    upstreamJobId: input.job.id,
-    upstreamClientId: input.job.clientId,
-    workerName: input.submission.workerName,
-    jobBlob: input.job.blob,
-    seedHash: input.job.seedHash,
-    targetHex: input.job.target,
-    jobHeight: (input.job.height ?? 0n).toString(),
-    jobReceivedAt: input.job.receivedAt.toISOString(),
-    jobExpiresAt: input.job.expiresAt.toISOString(),
-    nonce: input.submission.nonce,
-    submittedResult: input.submission.result,
-    submittedAt: input.submission.submittedAt.toISOString(),
-    localAccepted: true,
-    localReason: 'ACCEPTED',
-    localFingerprint: input.validation.fingerprint,
-    computedResult: input.validation.hash,
-    localTarget: input.validation.target.toString(),
-    acceptedDifficulty: input.acceptedDifficulty,
-    upstreamAccepted: true,
-    upstreamDecidedAt: input.upstream.decidedAt.toISOString(),
-    upstreamDecisionDigest: input.upstream.sourceDigest,
-  };
-  return {
-    eventId,
-    eventName: MiningEvents.randomXShareAccepted,
-    eventVersion: 1,
-    occurredAt: payload.upstreamDecidedAt,
-    producer: RANDOMX_ACCOUNTING_EVENT_PRODUCER,
-    aggregateType: 'MiningAccount',
-    aggregateId: payload.miningAccountId,
-    correlationId: input.correlationId,
-    idempotencyKey: `randomx-share:${payload.localFingerprint}`,
-    payload,
-  };
+  return createRandomXAcceptedShareEvent({ eventId, accounting: input });
 }
 
 test('persists accepted RandomX evidence once and fails closed on conflicting reuse', async () => {

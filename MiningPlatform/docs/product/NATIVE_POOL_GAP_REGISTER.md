@@ -138,8 +138,10 @@ identik/concurrent, dan menolak fingerprint yang dipakai ulang dengan evidence b
 `mining.randomx.share.accepted.v1` kini memvalidasi payload bounded yang exact, producer, aggregate,
 waktu acceptance, dan canonical share key, lalu menulis event-idempotency plus evidence secara atomik
 di bawah advisory lock PostgreSQL. Fingerprint juga mengikat blob job, target, dan height. Miner-facing
-producer, pembentukan contribution fact, reward period, settlement, dan reconciliation RandomX masih
-merupakan gap aktif dan tidak ada saldo yang dapat berubah.
+producer, durable pre-RPC submission intent, transactional outbox, pembentukan contribution fact,
+reward period, settlement, dan reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo
+yang dapat berubah. Factory producer-side yang murni kini memanggil ulang projector, mewajibkan bounded
+blob plus uint64 height, dan membekukan envelope kanonik; factory itu tidak melakukan publish atau RPC.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:
