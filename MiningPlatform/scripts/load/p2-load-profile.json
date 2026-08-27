@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "p2-load-profile.v1",
+  "safety": {
+    "allowedEnvironments": ["disposable", "staging"],
+    "defaultMode": "synthetic-read-only",
+    "mutationsAllowed": false,
+    "signingAllowed": false,
+    "broadcastAllowed": false
+  },
+  "profiles": [
+    {
+      "id": "smoke",
+      "purpose": "health and readiness smoke",
+      "durationSeconds": 30,
+      "concurrency": 1,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 100
+    },
+    {
+      "id": "baseline",
+      "purpose": "low-rate read-only baseline",
+      "durationSeconds": 300,
+      "concurrency": 5,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 5000
+    },
+    {
+      "id": "ramp",
+      "purpose": "approved ceiling discovery",
+      "durationSeconds": 600,
+      "concurrency": 10,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 10000
+    },
+    {
+      "id": "soak",
+      "purpose": "bounded leak and queue trend detection",
+      "durationSeconds": 1800,
+      "concurrency": 5,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 15000
+    },
+    {
+      "id": "burst",
+      "purpose": "short read-only burst",
+      "durationSeconds": 60,
+      "concurrency": 20,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 5000
+    },
+    {
+      "id": "failure",
+      "purpose": "dependency failure and timeout observation",
+      "durationSeconds": 300,
+      "concurrency": 2,
+      "path": "/api/v1/health/ready",
+      "maxRequests": 500
+    }
+  ]
+}
