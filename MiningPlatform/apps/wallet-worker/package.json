@@ -9,11 +9,14 @@
     "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('wallet-worker tests not configured')\""
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
+    "@mining/blockchain-adapters": "workspace:*",
     "@mining/build-info": "workspace:*",
-    "@mining/logger": "workspace:*"
+    "@mining/database": "workspace:*",
+    "@mining/logger": "workspace:*",
+    "@mining/signer-protocol": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "22.0.0",

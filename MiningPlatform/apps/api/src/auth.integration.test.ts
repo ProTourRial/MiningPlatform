@@ -103,8 +103,8 @@ test('registration, verification, login, refresh rotation, and replay family rev
   );
   assert.equal(enabledPreference.autoWithdrawalEnabled, true);
   assert.equal(enabledPreference.effective, false);
-  assert.ok(enabledPreference.blockers.includes('GLOBAL_PAYOUT_GATE_DISABLED'));
-  assert.ok(enabledPreference.blockers.includes('NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS'));
+  assert.ok(enabledPreference.blockers.includes('PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED'));
+  assert.ok(enabledPreference.blockers.includes('NO_SELECTED_PAYOUT_DESTINATION'));
   const disabledPreference = await payouts.updatePreference(
     preferencePrincipal,
     miningAccount.id,

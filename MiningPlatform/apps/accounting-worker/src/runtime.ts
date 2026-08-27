@@ -17,6 +17,7 @@ logger.info({ build: getBuildInfo('accounting-worker') }, 'accounting-worker bui
 const abortController = new AbortController();
 const ownedEvents = new Set<string>([
   MiningEvents.contributionAccepted,
+  MiningEvents.randomXContributionAccepted,
   MiningEvents.settlementImported,
 ]);
 const consumer = await RedisStreamEventConsumer.connect({

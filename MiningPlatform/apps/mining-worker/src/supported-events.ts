@@ -8,7 +8,7 @@ import { MiningEvents } from '@mining/shared';
 
 export const SUPPORTED_MINING_EVENT_VERSION = 1;
 
-export const supportedMiningEvents = new Set<string>([
+export const supportedMiningProjectionEvents = new Set<string>([
   MiningEvents.sessionConnected,
   MiningEvents.sessionSubscribed,
   MiningEvents.sessionAuthorized,
@@ -28,8 +28,13 @@ export const supportedMiningEvents = new Set<string>([
   MiningEvents.shareUpstreamRejected,
 ]);
 
+export const supportedMiningEvents = new Set<string>([
+  ...supportedMiningProjectionEvents,
+  MiningEvents.randomXShareAccepted,
+]);
+
 export function assertSupportedMiningEvent(eventName: string, eventVersion: number): void {
-  if (!supportedMiningEvents.has(eventName)) {
+  if (!supportedMiningProjectionEvents.has(eventName)) {
     throw new Error(`Unsupported mining event: ${eventName}`);
   }
   if (eventVersion !== SUPPORTED_MINING_EVENT_VERSION) {

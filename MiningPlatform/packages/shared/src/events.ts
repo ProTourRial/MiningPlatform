@@ -16,6 +16,7 @@ export const MiningEvents = {
   shareUpstreamPending: 'mining.share.upstream-pending.v1',
   shareUpstreamAccepted: 'mining.share.upstream-accepted.v1',
   shareUpstreamRejected: 'mining.share.upstream-rejected.v1',
+  randomXShareAccepted: 'mining.randomx.share.accepted.v1',
   hashrateUpdated: 'mining.hashrate.updated.v1',
   workerStateChanged: 'mining.worker.state-changed.v1',
   workerDeviceDetected: 'mining.worker.device-detected.v1',
@@ -33,6 +34,7 @@ export const MiningEvents = {
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   contributionAccepted: 'reward.contribution.accepted.v1',
+  randomXContributionAccepted: 'reward.randomx-contribution.accepted.v1',
   settlementImported: 'reward.settlement.imported.v1',
   reconciliationResolutionRequested: 'reward.reconciliation.resolution-requested.v1',
   reconciliationResolutionApproved: 'reward.reconciliation.resolution-approved.v1',
@@ -44,6 +46,10 @@ export const MiningEvents = {
   payoutApproved: 'payout.approved.v1',
   walletTransactionBroadcast: 'wallet.transaction.broadcast.v1',
   walletTransactionConfirmed: 'wallet.transaction.confirmed.v1',
+} as const;
+
+export const RandomXEventProducers = {
+  acceptedShare: 'randomx-mining-gateway',
 } as const;
 
 export type MiningEventName = (typeof MiningEvents)[keyof typeof MiningEvents];
@@ -107,9 +113,52 @@ export interface ShareUpstreamDecisionPayload extends ShareUpstreamPendingPayloa
   errorMessage?: string;
 }
 
+/**
+ * Versioned hand-off from the RandomX mining gateway into the immutable validation and
+ * accounting boundary. Decimal integers are strings so the contract remains JSON-safe.
+ */
+export interface RandomXAcceptedSharePayload {
+  miningAccountId: string;
+  assetId: string;
+  algorithm: 'rx/0';
+  upstreamPoolId: string;
+  upstreamSessionId: string;
+  upstreamJobId: string;
+  upstreamClientId: string;
+  workerName: string;
+  jobBlob: string;
+  seedHash: string;
+  targetHex: string;
+  jobHeight: string;
+  jobReceivedAt: string;
+  jobExpiresAt: string;
+  nonce: string;
+  submittedResult: string;
+  submittedAt: string;
+  localAccepted: true;
+  localReason: 'ACCEPTED';
+  localFingerprint: string;
+  computedResult: string;
+  localTarget: string;
+  acceptedDifficulty: string;
+  upstreamAccepted: true;
+  upstreamDecidedAt: string;
+  upstreamDecisionDigest: string;
+}
+
 export interface ContributionAcceptedPayload {
   sourceEventId: string;
   shareId: string;
+  miningAccountId: string;
+  assetId: string;
+  upstreamPoolId: string;
+  acceptedDifficulty: string;
+  acceptedAt: string;
+}
+
+export interface RandomXContributionAcceptedPayload {
+  sourceEventId: string;
+  randomXEvidenceId: string;
   miningAccountId: string;
   assetId: string;
   upstreamPoolId: string;

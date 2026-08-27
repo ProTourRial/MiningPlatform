@@ -113,9 +113,9 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha7:fresh
+      - run: pnpm verify:migration:v030-alpha8:fresh
         env:
-          MIGRATION_TEST_ACK: v030-alpha7-fresh-empty-database
+          MIGRATION_TEST_ACK: v030-alpha8-fresh-empty-database
 
   migration-upgrade:
     runs-on: ubuntu-latest
@@ -145,7 +145,6 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
-      - run: pnpm verify:migration:v030-alpha7:upgrade
+      - run: pnpm verify:migration:v030-alpha8:upgrade
         env:
-          MIGRATION_TEST_ACK: v030-alpha6-upgrade-copy
-          SEED_DEVELOPMENT_DATA: "true"
+          MIGRATION_TEST_ACK: v030-alpha7-upgrade-empty-database

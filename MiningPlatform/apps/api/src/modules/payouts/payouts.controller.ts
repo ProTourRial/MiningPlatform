@@ -6,9 +6,16 @@
 
 import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentPrincipal, Scopes, type AuthPrincipal } from '../auth/auth.decorators.js';
+import { CurrentPrincipal, Roles, Scopes, type AuthPrincipal } from '../auth/auth.decorators.js';
 import { AuthGuard } from '../auth/auth.guard.js';
-import { RegisterPayoutAddressDto, UpdateAutoWithdrawalDto } from './payouts.dto.js';
+import {
+  CancelPayoutDto,
+  PayoutDecisionDto,
+  RegisterPayoutAddressDto,
+  RequestPayoutDto,
+  SelectPayoutDestinationDto,
+  UpdateAutoWithdrawalDto,
+} from './payouts.dto.js';
 import { PayoutsService } from './payouts.service.js';
 
 @ApiTags('payouts')
@@ -20,11 +27,24 @@ export class PayoutsController {
   getStatus() {
     return {
       module: 'payouts',
-      status: 'address-control-foundation',
-      enabled: false,
+      status: 'controlled-execution-installed',
+      enabled: process.env.PAYOUTS_ENABLED === 'true',
+      gates: {
+        requests: process.env.PAYOUT_REQUESTS_ENABLED === 'true',
+        signing: process.env.PAYOUT_SIGNING_ENABLED === 'true',
+        broadcast: process.env.PAYOUT_BROADCAST_ENABLED === 'true',
+      },
       reason:
-        'Address registration is available; signing, broadcast, and real payouts remain disabled',
+        'Every real-funds action additionally requires database control, wallet health, and approval evidence',
     };
+  }
+
+  @Get()
+  @ApiBearerAuth()
+  @Scopes('dashboard:read')
+  @UseGuards(AuthGuard)
+  list(@CurrentPrincipal() principal: AuthPrincipal) {
+    return this.payoutsService.list(principal.userId);
   }
 
   @Get('routes')
@@ -74,6 +94,66 @@ export class PayoutsController {
     @Headers('x-step-up-token') stepUpToken: string | undefined,
   ) {
     return this.payoutsService.disableAddress(principal, payoutAddressId, stepUpToken);
+  }
+
+  @Post('destinations/:miningAccountId')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  selectDestination(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('miningAccountId') miningAccountId: string,
+    @Headers('x-step-up-token') stepUpToken: string | undefined,
+    @Body() dto: SelectPayoutDestinationDto,
+  ) {
+    return this.payoutsService.selectDestination(
+      principal,
+      miningAccountId,
+      dto.payoutAddressId,
+      stepUpToken,
+    );
+  }
+
+  @Post('requests')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  request(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @Body() dto: RequestPayoutDto,
+  ) {
+    return this.payoutsService.request(principal, {
+      ...dto,
+      idempotencyKey: idempotencyKey ?? '',
+    });
+  }
+
+  @Post(':payoutId/cancel')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  cancel(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('payoutId') payoutId: string,
+    @Body() dto: CancelPayoutDto,
+  ) {
+    return this.payoutsService.cancel(principal, payoutId, dto.reason);
+  }
+
+  @Post('operations/:payoutId/decision')
+  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @UseGuards(AuthGuard)
+  decide(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('payoutId') payoutId: string,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @Body() dto: PayoutDecisionDto,
+  ) {
+    return this.payoutsService.decide(principal, {
+      payoutId,
+      decision: dto.decision,
+      reason: dto.reason,
+      idempotencyKey: idempotencyKey ?? '',
+    });
   }
 
   @Get('preferences')

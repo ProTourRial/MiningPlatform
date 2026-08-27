@@ -6,7 +6,11 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BitcoinRpcAdapter, validateBitcoinAddress } from './index.js';
+import {
+  BitcoinRpcAdapter,
+  bitcoinAddressToScriptPubKey,
+  validateBitcoinAddress,
+} from './index.js';
 
 test('accepts checksum-valid Bitcoin mainnet Base58 addresses', () => {
   assert.deepEqual(validateBitcoinAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'), {
@@ -56,5 +60,21 @@ test('rejects wrong-network, mixed-case, whitespace, and broken checksums', () =
 test('BitcoinRpcAdapter performs offline address validation without enabling funds operations', async () => {
   const adapter = new BitcoinRpcAdapter('mainnet');
   assert.equal(await adapter.validateAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'), true);
-  await assert.rejects(adapter.getConfirmedBalanceAtomic(), /not implemented/);
+  await assert.rejects(adapter.getConfirmedBalanceAtomic(), /not configured/);
+  await assert.rejects(adapter.broadcastBatch([]), /isolated PSBT signer/);
+});
+
+test('derives deterministic scriptPubKeys only after network and checksum validation', () => {
+  assert.equal(
+    bitcoinAddressToScriptPubKey('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'),
+    '76a91462e907b15cbf27d5425399ebf6f0fb50ebb88f18' + '88ac',
+  );
+  assert.equal(
+    bitcoinAddressToScriptPubKey('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4'),
+    '0014751e76e8199196d454941c45d1b3a323f1433bd6',
+  );
+  assert.throws(
+    () => bitcoinAddressToScriptPubKey('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa', 'regtest'),
+    /Invalid regtest Bitcoin address/,
+  );
 });

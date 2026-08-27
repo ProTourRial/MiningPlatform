@@ -17,6 +17,14 @@ export interface PaymentReceiverAddress {
   purpose: 'DONATION_AND_FUTURE_SITE_PAYMENT';
 }
 
+export interface NativeMiningCoinbaseDestination {
+  asset: 'BTC';
+  network: 'mainnet';
+  address: string;
+  purpose: 'NATIVE_MINING_COINBASE_DEFAULT';
+  enabledByDefault: false;
+}
+
 export const DEFAULT_PAYMENT_RECEIVER_ADDRESSES = Object.freeze<readonly PaymentReceiverAddress[]>([
   {
     asset: 'USDT',
@@ -83,3 +91,17 @@ export const PAYMENT_RECEIVER_POLICY = Object.freeze({
   automatedBalanceCreditEnabled: false,
   payoutsEnabled: false,
 });
+
+/**
+ * Owner-confirmed mainnet destination for a future native Bitcoin coinbase output.
+ * This public address is configuration evidence only: native mining remains disabled
+ * until the regtest and production activation gates are complete.
+ */
+export const DEFAULT_NATIVE_MINING_COINBASE_DESTINATION =
+  Object.freeze<NativeMiningCoinbaseDestination>({
+    asset: 'BTC',
+    network: 'mainnet',
+    address: '1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA',
+    purpose: 'NATIVE_MINING_COINBASE_DEFAULT',
+    enabledByDefault: false,
+  });

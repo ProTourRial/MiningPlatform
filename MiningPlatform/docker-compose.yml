@@ -171,6 +171,9 @@ services:
       VARDIFF_MAXIMUM_DIFFICULTY: ${VARDIFF_MAXIMUM_DIFFICULTY:-1000000000}
       VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR: ${VARDIFF_MAXIMUM_ADJUSTMENT_FACTOR:-4}
       VARDIFF_MINIMUM_SAMPLES: ${VARDIFF_MINIMUM_SAMPLES:-4}
+      NATIVE_BITCOIN_MINING_ENABLED: 'false'
+      BITCOIN_COINBASE_PAYOUT_NETWORK: ${BITCOIN_COINBASE_PAYOUT_NETWORK:-mainnet}
+      BITCOIN_COINBASE_PAYOUT_ADDRESS: ${BITCOIN_COINBASE_PAYOUT_ADDRESS:-1P6FZk2jiRuFkP8m4RuAVi9QVYWvhDCtrA}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
@@ -275,16 +278,54 @@ services:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env}
-      BITCOIN_RPC_URL: ${BITCOIN_RPC_URL:?Set BITCOIN_RPC_URL in .env}
-      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:?Set BITCOIN_RPC_USER in .env}
-      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?Set BITCOIN_RPC_PASSWORD in .env}
-      BITCOIN_WALLET_NAME: ${BITCOIN_WALLET_NAME:?Set BITCOIN_WALLET_NAME in .env}
+      BITCOIN_WATCH_RPC_URL: ${BITCOIN_WATCH_RPC_URL:-}
+      BITCOIN_WATCH_RPC_USER: ${BITCOIN_WATCH_RPC_USER:-}
+      BITCOIN_WATCH_RPC_PASSWORD: ${BITCOIN_WATCH_RPC_PASSWORD:-}
+      BITCOIN_WATCH_WALLET_NAME: ${BITCOIN_WATCH_WALLET_NAME:-}
+      ISOLATED_SIGNER_URL: ${ISOLATED_SIGNER_URL:-https://transaction-signer:4100}
+      SIGNER_SHARED_SECRET: ${SIGNER_SHARED_SECRET:-}
+      WALLET_SIGNER_TLS_CERT_FILE: ${WALLET_SIGNER_TLS_CERT_FILE:-/run/signer-client/client.crt}
+      WALLET_SIGNER_TLS_KEY_FILE: ${WALLET_SIGNER_TLS_KEY_FILE:-/run/signer-client/client.key}
+      WALLET_SIGNER_TLS_CA_FILE: ${WALLET_SIGNER_TLS_CA_FILE:-/run/signer-client/ca.crt}
+      WALLET_ARTIFACT_ENCRYPTION_KEY: ${WALLET_ARTIFACT_ENCRYPTION_KEY:-}
       PAYOUTS_ENABLED: 'false'
+      PAYOUT_SIGNING_ENABLED: 'false'
+      PAYOUT_BROADCAST_ENABLED: 'false'
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
-    networks: [mining-network]
+      transaction-signer: { condition: service_started }
+    volumes:
+      - ${WALLET_SIGNER_TLS_DIRECTORY:-./secrets/signer-client}:/run/signer-client:ro
+    networks: [mining-network, signer-network]
+
+  transaction-signer:
+    profiles: ['wallet']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/transaction-signer.Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *build-metadata
+      NODE_ENV: production
+      SIGNER_ENABLED: ${SIGNER_ENABLED:-false}
+      SIGNER_HOST: 0.0.0.0
+      SIGNER_PORT: 4100
+      SIGNER_SHARED_SECRET: ${SIGNER_SHARED_SECRET:-}
+      SIGNER_KEY_ALLOWLIST_JSON: ${SIGNER_KEY_ALLOWLIST_JSON:-}
+      SIGNER_REQUIRE_MTLS: ${SIGNER_REQUIRE_MTLS:-true}
+      SIGNER_TLS_CERT_FILE: ${SIGNER_TLS_CERT_FILE:-/run/secrets/signer-tls.crt}
+      SIGNER_TLS_KEY_FILE: ${SIGNER_TLS_KEY_FILE:-/run/secrets/signer-tls.key}
+      SIGNER_TLS_CA_FILE: ${SIGNER_TLS_CA_FILE:-/run/secrets/signer-ca.crt}
+      BITCOIN_SIGNER_RPC_URL: ${BITCOIN_SIGNER_RPC_URL:-}
+      BITCOIN_SIGNER_RPC_USER: ${BITCOIN_SIGNER_RPC_USER:-}
+      BITCOIN_SIGNER_RPC_PASSWORD: ${BITCOIN_SIGNER_RPC_PASSWORD:-}
+      BITCOIN_SIGNER_RPC_ALLOW_INSECURE_HTTP: ${BITCOIN_SIGNER_RPC_ALLOW_INSECURE_HTTP:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ${SIGNER_TLS_DIRECTORY:-./secrets/signer-server}:/run/secrets:ro
+    networks: [signer-network]
 
   prometheus:
     image: prom/prometheus:v3.5.0
@@ -325,4 +366,6 @@ volumes:
 
 networks:
   mining-network:
+    driver: bridge
+  signer-network:
     driver: bridge

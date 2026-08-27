@@ -30,6 +30,15 @@ function requireText(contents, expected, label) {
   if (!contents.includes(expected)) throw new Error(`${label} is missing: ${expected}`);
 }
 
+function requireOrderedText(contents, expectedParts, label) {
+  let previousIndex = -1;
+  for (const expected of expectedParts) {
+    const index = contents.indexOf(expected, previousIndex + 1);
+    if (index === -1) throw new Error(`${label} is missing ordered text: ${expected}`);
+    previousIndex = index;
+  }
+}
+
 const requiredFiles = [
   'PROJECT_VISION.md',
   'docs/product/PRODUCT_CONSTITUTION.md',
@@ -41,12 +50,45 @@ const requiredFiles = [
   `packages/database/prisma/migrations/${expectedMigration}/migration.sql`,
   'packages/blockchain-adapters/src/bitcoin-address.ts',
   'packages/blockchain-adapters/src/bitcoin-address.test.ts',
+  'packages/randomx/src/accounting-projection.ts',
+  'packages/randomx/src/accounting-projection.test.ts',
+  'packages/randomx/src/accepted-share-event.ts',
+  'packages/randomx/src/accepted-share-event.test.ts',
+  'apps/mining-worker/src/randomx-accounting-evidence.ts',
+  'apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts',
+  'apps/mining-worker/src/randomx-accounting-event.ts',
+  'apps/mining-worker/src/runtime.ts',
+  'apps/mining-worker/src/supported-events.ts',
+  'packages/shared/src/events.ts',
+  'packages/randomx/src/validator.ts',
+  'packages/randomx/src/submission-intent.ts',
+  'packages/randomx/src/submission-intent.test.ts',
+  'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
+  'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
+  'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
+  'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
+  'apps/randomx-gateway/src/submission-repository.ts',
+  'apps/randomx-gateway/src/submission-coordinator.ts',
+  'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
+  'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
+  'apps/api/src/payout-execution.integration.test.ts',
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
   'scripts/verify-v030-alpha7-migration.mjs',
+  'scripts/verify-v030-alpha8-migration.mjs',
+  'apps/mining-worker/src/native-bitcoin-evidence.ts',
+  'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
+  'apps/mining-worker/src/native-bitcoin-submission-recovery.ts',
+  'docker-compose.regtest.yml',
+  'infrastructure/docker/bitcoin-core-regtest.Dockerfile',
+  'scripts/native-bitcoin-regtest-integration.ts',
+  '.github/workflows/native-bitcoin-regtest.yml',
+  'packages/database/prisma/migrations/20260824010000_native_bitcoin_submission_evidence/migration.sql',
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+  'packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql',
 ];
 await Promise.all(requiredFiles.map((path) => readFile(resolve(root, path))));
 
@@ -59,8 +101,8 @@ const packageFiles = [
     .filter((entry) => entry.isDirectory())
     .map((entry) => `packages/${entry.name}/package.json`),
 ];
-if (packageFiles.length !== 28)
-  throw new Error(`Expected 28 workspace package files, found ${packageFiles.length}`);
+if (packageFiles.length !== 33)
+  throw new Error(`Expected 33 workspace package files, found ${packageFiles.length}`);
 for (const path of packageFiles) {
   const parsed = JSON.parse(await text(path));
   if (parsed.version !== expectedVersion) {
@@ -83,6 +125,16 @@ for (const expected of [
   'addressHash',
   'cooldownUntil',
   'payoutRouteId',
+  'model NativeBitcoinSubmissionIntent',
+  'model RandomXAcceptedShareEvidence',
+  'model RandomXUpstreamJobEvidence',
+  'model RandomXShareSubmissionIntent',
+  'model RandomXUpstreamShareDecision',
+  'upstreamDispatchFingerprint',
+  'enum ContributionSourceType',
+  'randomXEvidenceId',
+  'model NativeBitcoinSubmissionRecoveryObservation',
+  'submissionIntentId',
 ])
   requireText(schema, expected, 'Prisma schema');
 
@@ -103,6 +155,361 @@ for (const expected of [
   'Pilot payout cannot leave manual review without an approval control',
 ])
   requireText(migration, expected, 'Payout-control migration');
+
+const nativeIntentMigration = await text(
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+);
+for (const expected of [
+  'NativeBitcoinSubmissionIntent_immutable_trigger',
+  'NativeBitcoinSubmissionIntent_correlation_trigger',
+  'NativeBitcoinSubmissionAttempt_submissionIntentId_key',
+  'submissionIntentId',
+  'migration:v16:',
+  'requires matching intent and fresh valid proposal evidence',
+])
+  requireText(nativeIntentMigration, expected, 'Native Bitcoin submission-intent migration');
+
+const nativeCoordinator = await text(
+  'apps/mining-worker/src/native-bitcoin-submission-coordinator.ts',
+);
+for (const expected of [
+  'recordSubmissionIntent',
+  'findSubmissionByIdempotencyKey',
+  'NativeBitcoinSubmissionUncertainError',
+  'A prior execution stopped after durable intent and before durable outcome',
+])
+  requireText(nativeCoordinator, expected, 'Native Bitcoin submission coordinator');
+
+const nativeRecoveryMigration = await text(
+  'packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql',
+);
+for (const expected of [
+  'NativeBitcoinRecoveryObservationStatus',
+  'NativeBitcoinSubmissionRecoveryObservation_immutable_trigger',
+  'NativeBitcoinSubmissionRecoveryObservation_correlation_trigger',
+  'confirmations" = "chainHeight" - "blockHeight" + 1',
+  'does not match its submission intent',
+])
+  requireText(nativeRecoveryMigration, expected, 'Native Bitcoin recovery-observation migration');
+
+const nativeRecovery = await text('apps/mining-worker/src/native-bitcoin-submission-recovery.ts');
+for (const expected of [
+  'observeSubmittedBlock',
+  'SUBMISSION_OUTCOME_RECORDED',
+  'STILL_UNRESOLVED',
+  'terminalObservation',
+])
+  requireText(nativeRecovery, expected, 'Native Bitcoin submission recovery coordinator');
+
+const nativeMiningRpc = await text('packages/blockchain-adapters/src/bitcoin-mining-rpc.ts');
+for (const expected of [
+  'observeSubmittedBlock',
+  "'getblockheader'",
+  "'getblockstats'",
+  "status: 'NOT_FOUND'",
+])
+  requireText(nativeMiningRpc, expected, 'Native Bitcoin mining RPC adapter');
+
+const regtestDockerfile = await text('infrastructure/docker/bitcoin-core-regtest.Dockerfile');
+for (const expected of [
+  'BITCOIN_CORE_VERSION=31.0',
+  'd3e4c58a35b1d0a97a457462c94f55501ad167c660c245cb1ffa565641c65074',
+  '4de1d568dedd48604f75132421bc0abeca432639589b49a3909c81db3a813112',
+  'sha256sum --check --strict',
+  'USER bitcoin',
+])
+  requireText(regtestDockerfile, expected, 'Bitcoin Core regtest Dockerfile');
+
+const regtestCompose = await text('docker-compose.regtest.yml');
+for (const expected of [
+  "profiles: ['native-regtest']",
+  "'127.0.0.1:${BITCOIN_REGTEST_RPC_PORT:-18443}:18443'",
+  'bitcoin-core-fork-regtest:',
+  "'127.0.0.1:${BITCOIN_FORK_REGTEST_RPC_PORT:-18444}:18443'",
+  '- -listen=0',
+  'no-new-privileges:true',
+])
+  requireText(regtestCompose, expected, 'Bitcoin Core regtest Compose profile');
+
+const regtestIntegration = await text('scripts/native-bitcoin-regtest-integration.ts');
+for (const expected of [
+  'disposable-bitcoin-core-31-regtest-only',
+  "expectedChain: 'regtest'",
+  'buildNativeBitcoinJob',
+  "walletRpc.call<string>('sendtoaddress'",
+  "nodeRpc.call<string[]>('getrawmempool')",
+  'templateTransactionId',
+  'adapter.getBlockTemplate(longPollBaseline.longPollId)',
+  'longPollReplacement.previousBlockHash',
+  "assert.equal(staleObservation.status, 'STALE_CHAIN')",
+  "forkNodeRpc.call<string>('getblock'",
+  'validateBlockProposal',
+  'submitBlock',
+  'observeSubmittedBlock',
+  "nodeRpc.call<VerboseBlock>('getblock'",
+])
+  requireText(regtestIntegration, expected, 'Native Bitcoin live-regtest integration');
+
+const randomXAccountingProjection = await text('packages/randomx/src/accounting-projection.ts');
+for (const expected of [
+  'projectRandomXAcceptedContribution',
+  "input.validation.reason !== 'ACCEPTED'",
+  'RandomX accounting requires upstream acceptance',
+  'computedResult !== submittedResult',
+  'randomXShareFingerprint(input.job, input.submission)',
+  'input.validation.target !== target',
+  'randomx-accepted-contribution-v1',
+  'Object.freeze',
+])
+  requireText(randomXAccountingProjection, expected, 'RandomX accounting projection');
+
+const randomXEvidenceMigration = await text(
+  'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
+);
+for (const expected of [
+  'RandomXAcceptedShareEvidence_sourceDigest_key',
+  'RandomXAcceptedShareEvidence_shareFingerprint_key',
+  'RandomXAcceptedShareEvidence_immutable_trigger',
+  'RandomXAcceptedShareEvidence_correlation_trigger',
+  'RandomX accepted-share evidence is immutable',
+  'RandomX evidence account, asset, and pool do not correlate',
+  'RandomX evidence asset must use the RANDOMX or RX/0 algorithm',
+])
+  requireText(randomXEvidenceMigration, expected, 'RandomX accounting-evidence migration');
+
+const randomXEvidenceRepository = await text(
+  'apps/mining-worker/src/randomx-accounting-evidence.ts',
+);
+for (const expected of [
+  'projectRandomXAcceptedContribution(input)',
+  'randomXAcceptedShareEvidence.create',
+  'RandomX accounting evidence idempotency conflict',
+  'RandomX share fingerprint is already bound to different evidence',
+])
+  requireText(randomXEvidenceRepository, expected, 'RandomX accounting-evidence repository');
+
+const randomXEventContract = await text('packages/shared/src/events.ts');
+for (const expected of [
+  "randomXShareAccepted: 'mining.randomx.share.accepted.v1'",
+  "randomXContributionAccepted: 'reward.randomx-contribution.accepted.v1'",
+  "acceptedShare: 'randomx-mining-gateway'",
+  'export interface RandomXAcceptedSharePayload',
+  'export interface RandomXContributionAcceptedPayload',
+  'localAccepted: true',
+  'upstreamAccepted: true',
+])
+  requireText(randomXEventContract, expected, 'RandomX accepted-share event contract');
+
+const randomXEventConsumer = await text('apps/mining-worker/src/randomx-accounting-event.ts');
+for (const expected of [
+  'event.producer !== RandomXEventProducers.acceptedShare',
+  'expectedIdempotencyKey = `randomx-share:${payload.localFingerprint}`',
+  'pg_advisory_xact_lock',
+  'PrismaTransactionalIdempotencyService',
+  'this.repository.recordAcceptedShare(parsed.input, transaction)',
+  'ensureRandomXContributionEvent',
+  '`randomx-contribution:${evidence.id}:v1`',
+  'payload shape is invalid',
+])
+  requireText(randomXEventConsumer, expected, 'RandomX accounting-event consumer');
+
+const randomXAcceptedShareEvent = await text('packages/randomx/src/accepted-share-event.ts');
+for (const expected of [
+  'createRandomXAcceptedShareEvent',
+  'projectRandomXAcceptedContribution(input.accounting)',
+  'requires a uint64 job height',
+  'applyRandomXNonce',
+  'RandomXEventProducers.acceptedShare',
+  'Object.freeze',
+])
+  requireText(randomXAcceptedShareEvent, expected, 'RandomX accepted-share event factory');
+
+const randomXWorkerRuntime = await text('apps/mining-worker/src/runtime.ts');
+requireText(
+  randomXWorkerRuntime,
+  'event.eventName === MiningEvents.randomXShareAccepted',
+  'RandomX accounting runtime branch',
+);
+
+const randomXValidator = await text('packages/randomx/src/validator.ts');
+for (const expected of [
+  'randomx-share-fingerprint-v2',
+  'randomx-job-fingerprint-v1',
+  'randomx-upstream-dispatch-v1',
+  'randomXUpstreamDispatchFingerprint',
+  'randomXTargetDifficulty',
+  'job.blob',
+  'job.target',
+  "job.height?.toString() ?? ''",
+])
+  requireText(randomXValidator, expected, 'RandomX share fingerprint');
+
+const randomXSubmissionIntent = await text('packages/randomx/src/submission-intent.ts');
+for (const expected of [
+  'projectRandomXSubmissionIntent',
+  'requires accepted local validation',
+  'randomx-upstream-job-evidence-v1',
+  'randomx-share-submission-intent-v1',
+  'randomx-local-validation-v1',
+  'input.job.clientId !== upstreamSessionId',
+  'randomXUpstreamDispatchFingerprint',
+  'idempotencyKey: `randomx-intent:${upstreamDispatchFingerprint}`',
+  'Object.freeze',
+])
+  requireText(randomXSubmissionIntent, expected, 'RandomX submission-intent projector');
+
+const randomXSubmissionMigration = await text(
+  'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
+);
+for (const expected of [
+  'RandomXUpstreamJobEvidence_immutable_trigger',
+  'RandomXShareSubmissionIntent_correlation_trigger',
+  'RandomXUpstreamShareDecision_correlation_trigger',
+  'OutboxEvent_randomx_envelope_immutable_trigger',
+  'requires exact correlated outbox evidence',
+  'RandomX accepted-share outbox envelope is immutable',
+])
+  requireText(randomXSubmissionMigration, expected, 'RandomX submission/outbox migration');
+
+const randomXDispatchMigration = await text(
+  'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
+);
+for (const expected of [
+  'ADD COLUMN "upstreamDispatchFingerprint" TEXT',
+  'SET "upstreamDispatchFingerprint" = "shareFingerprint"',
+  'RandomXShareSubmissionIntent_dispatch_fingerprint_check',
+  'RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key',
+])
+  requireText(randomXDispatchMigration, expected, 'RandomX authoritative-dispatch migration');
+requireOrderedText(
+  randomXDispatchMigration,
+  [
+    'BEGIN;',
+    'DISABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger"',
+    'ENABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger"',
+    'COMMIT;',
+  ],
+  'RandomX authoritative-dispatch migration transaction',
+);
+
+const nativeBitcoinIntentMigration = await text(
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+);
+requireOrderedText(
+  nativeBitcoinIntentMigration,
+  [
+    'BEGIN;',
+    'DISABLE TRIGGER "NativeBitcoinSubmissionAttempt_immutable_trigger"',
+    'ENABLE TRIGGER "NativeBitcoinSubmissionAttempt_immutable_trigger"',
+    'COMMIT;',
+  ],
+  'Native Bitcoin submission-intent migration transaction',
+);
+
+const randomXAccountingPathMigration = await text(
+  'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
+);
+for (const expected of [
+  'ContributionSourceType',
+  'ContributionFact_randomXEvidenceId_key',
+  'ContributionFact_exact_source_check',
+  'reward.randomx-contribution.accepted.v1',
+  "'randomx-contribution:' || evidence.\"id\" || ':v1'",
+  'accepted_event."producer" = \'randomx-mining-gateway\'',
+  'accepted_event."idempotencyKey" = \'randomx-share:\' || evidence."shareFingerprint"',
+])
+  requireText(randomXAccountingPathMigration, expected, 'RandomX accounting-path migration');
+
+const randomXAccountingService = await text('apps/accounting-worker/src/accounting-service.ts');
+for (const expected of [
+  'MiningEvents.randomXContributionAccepted',
+  "sourceType: 'RANDOMX_ACCEPTED_SHARE'",
+  'randomXEvidenceId: payload.randomXEvidenceId',
+  'sourceEvent.producer !== RandomXEventProducers.acceptedShare',
+  'sourceEvent.idempotencyKey !== `randomx-share:${evidence.shareFingerprint}`',
+  'does not match immutable accepted-share evidence',
+])
+  requireText(randomXAccountingService, expected, 'RandomX accounting contribution path');
+
+const randomXSubmissionRepository = await text('apps/randomx-gateway/src/submission-repository.ts');
+for (const expected of [
+  'projectRandomXSubmissionIntent(input)',
+  'pg_advisory_xact_lock',
+  'SELECT CURRENT_TIMESTAMP AS "now"',
+  'resolveSubmissionContext',
+  'findSubmissionReplay',
+  '`randomx-dispatch:${projected.upstreamDispatchFingerprint}`',
+  'authenticatedWorkerId',
+  'randomXShareSubmissionIntent.create',
+  'createRandomXAcceptedShareEvent',
+  'outboxEvent.create',
+  'randomXUpstreamShareDecision.create',
+])
+  requireText(randomXSubmissionRepository, expected, 'RandomX submission repository');
+
+const randomXSubmissionCoordinator = await text(
+  'apps/randomx-gateway/src/submission-coordinator.ts',
+);
+for (const expected of [
+  'RandomXSubmissionUncertainError',
+  'resolveAuthenticatedWorker',
+  'resolveSubmissionContext',
+  'findSubmissionReplay',
+  'recordPreparedSubmission',
+  'findDecisionByIntent',
+  'getJob(request.submission.jobId, validationTime)',
+  'randomXJobFingerprint(job)',
+  'randomXTargetDifficulty(parseRandomXTarget(job.target))',
+  'randomx-upstream-share-decision-v2',
+  'upstream.submit(',
+  'JOB_UNAVAILABLE',
+  'ahead of authoritative database time',
+  'automatic resubmission is blocked',
+  'recordDecision',
+])
+  requireText(randomXSubmissionCoordinator, expected, 'RandomX submission coordinator');
+
+const randomXPoolAdapter = await text('packages/upstream-stratum/src/randomx-pool-adapter.ts');
+for (const expected of [
+  'RandomXSubmissionNotDispatchedError',
+  'function cloneJob',
+  "return this.state === 'ACTIVE' ? this.sessionId : undefined",
+  'if (this.startOperation) return this.startOperation',
+  'expectedSessionId: string',
+  'expectedJobFingerprint: string',
+  'randomXJobFingerprint(job) !== expectedJobFingerprint',
+  'this.deferredJobNotifications.push(message.params)',
+  'if (this.socket !== socket) return',
+  'return cloneJob(job)',
+  'onJob?.(cloneJob(storedJob))',
+])
+  requireText(randomXPoolAdapter, expected, 'RandomX authoritative job snapshot isolation');
+
+const randomXProtocol = await text('packages/upstream-stratum/src/randomx-protocol.ts');
+requireText(
+  randomXProtocol,
+  'receivedAt: new Date(receivedAt.getTime())',
+  'RandomX protocol clock snapshot isolation',
+);
+
+const randomXMigrationVerifier = await text('scripts/verify-v030-alpha8-migration.mjs');
+for (const expected of [
+  "const latestMigration = '20260827020000_randomx_accounting_path'",
+  "'alpha8-upgrade-randomx-intent'",
+  '"upstreamDispatchFingerprint" = "shareFingerprint"',
+  'schema-v19 RandomX intent was not safely backfilled to v20',
+  'schema-v21 did not backfill exact RandomX contribution hand-off',
+  'intentional RandomX dispatch migration failure',
+  'failed v20 migration left immutability disabled',
+])
+  requireText(randomXMigrationVerifier, expected, 'Schema-v21 migration verifier');
+
+const scheduler = await text('apps/scheduler/src/runtime.ts');
+requireText(
+  scheduler,
+  'randomXUpstreamDecision: null',
+  'RandomX accepted outbox retention protection',
+);
 
 const stepUp = await text('apps/api/src/modules/auth/step-up.service.ts');
 for (const expected of [
@@ -145,8 +552,11 @@ for (const expected of [
   'addressFingerprint',
   'serializableTransaction',
   'PAYOUT_ROUTE_NOT_ACTIVE',
-  'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED',
-  'GLOBAL_PAYOUT_GATE_DISABLED',
+  'PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_SIGNING_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_BROADCAST_ENVIRONMENT_GATE_DISABLED',
+  'PAYOUT_CONTROL_NOT_CONFIGURED',
+  'AUTO_WITHDRAWAL_REQUIRES_ACTIVE_ROUTE',
 ])
   requireText(payoutService, expected, 'Payout service');
 requireText(
@@ -176,6 +586,15 @@ for (const expected of [
   'assert.equal(await prisma.payout.count',
 ])
   requireText(integration, expected, 'Payout-control integration');
+
+const payoutExecutionIntegration = await text('apps/api/src/payout-execution.integration.test.ts');
+for (const expected of [
+  'prisma.payoutControl.upsert',
+  "where: { code: 'BTC-REWARD-CLEARING' }",
+  "type: 'CLEARING'",
+  'Integration fixture is fail-closed',
+])
+  requireText(payoutExecutionIntegration, expected, 'Payout-execution integration');
 
 const authIntegration = await text('apps/api/src/auth.integration.test.ts');
 for (const expected of [
@@ -243,8 +662,8 @@ for (const expected of [
   'pnpm typecheck',
   'pnpm test',
   'pnpm test:integration:payout-control',
-  'pnpm verify:migration:v030-alpha7:fresh',
-  'pnpm verify:migration:v030-alpha7:upgrade',
+  'pnpm verify:migration:v030-alpha8:fresh',
+  'pnpm verify:migration:v030-alpha8:upgrade',
   'pnpm build',
 ])
   requireText(workflow, expected, 'GitHub CI');
@@ -258,6 +677,29 @@ if (activeWorkflow) {
   requireText(dockerWorkflow, 'docker compose', 'GitHub Docker E2E workflow');
 } else {
   requireText(workflow, 'docker compose', 'Packaged GitHub CI');
+}
+
+const packagedRegtestWorkflow = await text('.github/workflows/native-bitcoin-regtest.yml');
+const activeRegtestWorkflow = await parentWorkflow('native-bitcoin-regtest.yml');
+const regtestWorkflow = activeRegtestWorkflow ?? packagedRegtestWorkflow;
+if (activeRegtestWorkflow) {
+  requireText(
+    activeRegtestWorkflow,
+    'working-directory: MiningPlatform',
+    'Active native Bitcoin regtest workflow',
+  );
+}
+for (const expected of [
+  'pnpm --filter @mining/bitcoin-template... build',
+  'up -d --build --wait bitcoin-core-regtest bitcoin-core-fork-regtest',
+  'pnpm test:integration:native-bitcoin-regtest',
+  'restart bitcoin-core-regtest',
+  'before_tip=',
+  'after_tip=',
+  'down -v --rmi local --remove-orphans',
+]) {
+  requireText(regtestWorkflow, expected, 'Active native Bitcoin regtest workflow');
+  requireText(packagedRegtestWorkflow, expected, 'Packaged native Bitcoin regtest workflow');
 }
 
 process.stdout.write('v0.3.0-alpha.7 static payout-control checks passed.\n');

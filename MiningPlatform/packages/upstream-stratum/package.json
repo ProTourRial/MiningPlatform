@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@mining/mining-core": "workspace:*",
+    "@mining/randomx": "workspace:*",
     "@mining/stratum-protocol": "workspace:*"
   },
   "devDependencies": {

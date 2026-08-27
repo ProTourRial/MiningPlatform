@@ -1,0 +1,27 @@
+{
+  "name": "@mining/transaction-signer",
+  "version": "0.3.0-alpha.7",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@mining/blockchain-adapters": "workspace:*",
+    "@mining/build-info": "workspace:*",
+    "@mining/logger": "workspace:*",
+    "@mining/signer-protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.0.0",
+    "eslint": "9.39.5",
+    "tsx": "4.19.0",
+    "typescript": "5.6.3"
+  },
+  "author": "Abia Nugrahanto"
+}

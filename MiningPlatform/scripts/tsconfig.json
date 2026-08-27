@@ -7,6 +7,8 @@
     "baseUrl": "..",
     "paths": {
       "@mining/event-bus": ["packages/event-bus/src/index.ts"],
+      "@mining/bitcoin-template": ["packages/bitcoin-template/src/index.ts"],
+      "@mining/blockchain-adapters": ["packages/blockchain-adapters/src/index.ts"],
       "@mining/ledger": ["packages/ledger/src/index.ts"],
       "@mining/mining-core": ["packages/mining-core/src/index.ts"],
       "@mining/database": ["packages/database/src/index.ts"],

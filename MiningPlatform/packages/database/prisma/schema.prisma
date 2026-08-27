@@ -182,6 +182,11 @@ enum RewardStatus {
   FAILED
 }
 
+enum ContributionSourceType {
+  STRATUM_SHARE
+  RANDOMX_ACCEPTED_SHARE
+}
+
 enum ReconciliationStatus {
   PENDING
   MATCHED
@@ -220,6 +225,76 @@ enum PayoutStatus {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+enum PayoutTrigger {
+  MANUAL
+  AUTO_WITHDRAWAL
+}
+
+enum BalanceReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+}
+
+enum PayoutApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum SigningRequestStatus {
+  PENDING
+  SUBMITTED
+  SIGNED
+  REJECTED
+  FAILED
+}
+
+enum BroadcastAttemptStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  UNKNOWN
+}
+
+enum ChainObservationStatus {
+  MEMPOOL
+  CONFIRMED
+  REORGED
+  DROPPED
+}
+
+enum NativeBitcoinChain {
+  MAIN
+  TEST
+  TESTNET4
+  SIGNET
+  REGTEST
+}
+
+enum NativeBitcoinProposalStatus {
+  VALID
+  REJECTED
+}
+
+enum NativeBitcoinSubmissionStatus {
+  ACCEPTED
+  DUPLICATE
+  INCONCLUSIVE
+  REJECTED
+}
+
+enum NativeBitcoinRecoveryObservationStatus {
+  ACTIVE_CHAIN
+  STALE_CHAIN
+  NOT_FOUND
+}
+
+enum PayoutReconciliationStatus {
+  PENDING
+  MATCHED
+  EXCEPTION
 }
 
 enum StepUpScope {
@@ -342,6 +417,9 @@ model User {
   requestedReconciliationResolutions ReconciliationResolution[] @relation("ReconciliationResolutionRequester")
   decidedReconciliationResolutions   ReconciliationResolution[] @relation("ReconciliationResolutionDecider")
   createdPayoutRoutes                PayoutRoute[]              @relation("PayoutRouteCreator")
+  payoutApprovals                    PayoutApproval[]           @relation("PayoutApprovalActor")
+  payoutControlChanges               PayoutControl[]            @relation("PayoutControlUpdater")
+  balanceReservations                BalanceReservation[]
 
   @@index([status])
 }
@@ -500,59 +578,70 @@ model CompanyProfile {
 }
 
 model Asset {
-  id                    String                   @id @default(cuid())
-  symbol                String                   @unique
-  name                  String
-  algorithm             String
-  decimals              Int
-  enabled               Boolean                  @default(false)
-  minimumPayout         Decimal                  @db.Decimal(36, 18)
-  requiredConfirmations Int                      @default(3)
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  miningAccounts        MiningAccount[]
-  shares                Share[]
-  rewardPeriods         RewardPeriod[]
-  ledgerAccounts        LedgerAccount[]
-  journalLines          JournalLine[]
-  payoutAddresses       PayoutAddress[]
-  payouts               Payout[]
-  wallets               Wallet[]
-  walletTransactions    WalletTransaction[]
-  upstreamPools         UpstreamPool[]
-  reconciliations       UpstreamReconciliation[]
-  stratumJobs           StratumJob[]
-  feePolicies           MiningFeePolicy[]
-  contributionFacts     ContributionFact[]
-  networks              AssetNetwork[]
+  id                       String                         @id @default(cuid())
+  symbol                   String                         @unique
+  name                     String
+  algorithm                String
+  decimals                 Int
+  enabled                  Boolean                        @default(false)
+  minimumPayout            Decimal                        @db.Decimal(36, 18)
+  requiredConfirmations    Int                            @default(3)
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  miningAccounts           MiningAccount[]
+  shares                   Share[]
+  rewardPeriods            RewardPeriod[]
+  ledgerAccounts           LedgerAccount[]
+  journalLines             JournalLine[]
+  payoutAddresses          PayoutAddress[]
+  payouts                  Payout[]
+  wallets                  Wallet[]
+  walletTransactions       WalletTransaction[]
+  upstreamPools            UpstreamPool[]
+  reconciliations          UpstreamReconciliation[]
+  stratumJobs              StratumJob[]
+  feePolicies              MiningFeePolicy[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXJobEvidence       RandomXUpstreamJobEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
+  networks                 AssetNetwork[]
+  balanceReservations      BalanceReservation[]
+  payoutControls           PayoutControl[]
 }
 
 model MiningAccount {
-  id                    String                     @id @default(cuid())
-  userId                String
-  assetId               String
-  feePolicyId           String
-  username              String                     @unique
-  rewardMethod          RewardMethod               @default(FOLLOW_UPSTREAM)
-  platformFeePercent    Decimal                    @db.Decimal(7, 4)
-  autoWithdrawalEnabled Boolean                    @default(false)
-  enabled               Boolean                    @default(true)
-  createdAt             DateTime                   @default(now())
-  updatedAt             DateTime                   @updatedAt
-  deletedAt             DateTime?
-  user                  User                       @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset                 Asset                      @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  feePolicy             MiningFeePolicy            @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
-  scopedFeePolicies     MiningFeePolicy[]          @relation("ScopedMiningAccountFeePolicy")
-  workers               Worker[]
-  rewardAllocations     RewardAllocation[]
-  contributionFacts     ContributionFact[]
-  periodContributions   RewardPeriodContribution[]
-  referralAttribution   ReferralAttribution?
+  id                       String                         @id @default(cuid())
+  userId                   String
+  assetId                  String
+  feePolicyId              String
+  username                 String                         @unique
+  rewardMethod             RewardMethod                   @default(FOLLOW_UPSTREAM)
+  platformFeePercent       Decimal                        @db.Decimal(7, 4)
+  autoWithdrawalEnabled    Boolean                        @default(false)
+  selectedPayoutAddressId  String?
+  enabled                  Boolean                        @default(true)
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  deletedAt                DateTime?
+  user                     User                           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset                    Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  feePolicy                MiningFeePolicy                @relation("AssignedFeePolicy", fields: [feePolicyId], references: [id], onDelete: Restrict)
+  scopedFeePolicies        MiningFeePolicy[]              @relation("ScopedMiningAccountFeePolicy")
+  workers                  Worker[]
+  rewardAllocations        RewardAllocation[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
+  periodContributions      RewardPeriodContribution[]
+  referralAttribution      ReferralAttribution?
+  selectedPayoutAddress    PayoutAddress?                 @relation("MiningAccountPayoutDestination", fields: [selectedPayoutAddressId], references: [id], onDelete: Restrict)
+  payouts                  Payout[]
 
   @@unique([userId, assetId])
   @@index([assetId, enabled])
   @@index([feePolicyId])
+  @@index([selectedPayoutAddressId])
 }
 
 model MiningFeePolicy {
@@ -918,25 +1007,141 @@ model Share {
 }
 
 model ContributionFact {
-  id                 String        @id @default(cuid())
-  sourceEventId      String        @unique
-  shareId            String        @unique
+  id                 String                        @id @default(cuid())
+  sourceEventId      String                        @unique
+  sourceType         ContributionSourceType        @default(STRATUM_SHARE)
+  shareId            String?                       @unique
+  randomXEvidenceId  String?                       @unique
   miningAccountId    String
   assetId            String
   upstreamPoolId     String
   rewardPeriodId     String?
-  acceptedDifficulty Decimal       @db.Decimal(38, 12)
+  acceptedDifficulty Decimal                       @db.Decimal(38, 12)
   acceptedAt         DateTime
   correlationId      String
-  createdAt          DateTime      @default(now())
-  share              Share         @relation(fields: [shareId], references: [id], onDelete: Restrict)
-  miningAccount      MiningAccount @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
-  asset              Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool       UpstreamPool  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
-  rewardPeriod       RewardPeriod? @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                      @default(now())
+  share              Share?                        @relation(fields: [shareId], references: [id], onDelete: Restrict)
+  randomXEvidence    RandomXAcceptedShareEvidence? @relation(fields: [randomXEvidenceId], references: [id], onDelete: Restrict)
+  miningAccount      MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset              Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool       UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  rewardPeriod       RewardPeriod?                 @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
 
   @@index([assetId, upstreamPoolId, acceptedAt])
   @@index([rewardPeriodId, miningAccountId])
+}
+
+model RandomXAcceptedShareEvidence {
+  id                     String            @id @default(cuid())
+  evidenceVersion        Int               @default(1)
+  sourceDigest           String            @unique
+  shareFingerprint       String            @unique
+  algorithm              String
+  miningAccountId        String
+  assetId                String
+  upstreamPoolId         String
+  upstreamSessionId      String
+  upstreamJobId          String
+  upstreamClientId       String
+  workerName             String
+  seedHash               String
+  targetHex              String
+  target                 Decimal           @db.Decimal(20, 0)
+  nonce                  String
+  submittedResult        String
+  computedResult         String
+  acceptedDifficulty     Decimal           @db.Decimal(38, 12)
+  jobReceivedAt          DateTime
+  jobExpiresAt           DateTime
+  submittedAt            DateTime
+  acceptedAt             DateTime
+  correlationId          String
+  validationDigest       String
+  upstreamDecisionDigest String
+  createdAt              DateTime          @default(now())
+  miningAccount          MiningAccount     @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset                  Asset             @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool           UpstreamPool      @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  contributionFact       ContributionFact?
+
+  @@index([assetId, upstreamPoolId, acceptedAt])
+  @@index([miningAccountId, acceptedAt])
+  @@index([upstreamPoolId, upstreamSessionId, upstreamJobId])
+}
+
+model RandomXUpstreamJobEvidence {
+  id                String                         @id @default(cuid())
+  sourceDigest      String                         @unique
+  algorithm         String
+  assetId           String
+  upstreamPoolId    String
+  upstreamSessionId String
+  upstreamJobId     String
+  upstreamClientId  String
+  jobBlob           String                         @db.Text
+  seedHash          String
+  targetHex         String
+  height            Decimal                        @db.Decimal(20, 0)
+  receivedAt        DateTime
+  expiresAt         DateTime
+  createdAt         DateTime                       @default(now())
+  asset             Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool      UpstreamPool                   @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  submissionIntents RandomXShareSubmissionIntent[]
+
+  @@unique([upstreamPoolId, upstreamSessionId, upstreamJobId])
+  @@index([assetId, upstreamPoolId, receivedAt])
+  @@index([upstreamPoolId, expiresAt])
+}
+
+model RandomXShareSubmissionIntent {
+  id                          String                        @id @default(cuid())
+  idempotencyKey              String                        @unique
+  sourceDigest                String                        @unique
+  shareFingerprint            String                        @unique
+  upstreamDispatchFingerprint String                        @unique
+  jobEvidenceId               String
+  miningAccountId             String
+  assetId                     String
+  upstreamPoolId              String
+  workerName                  String
+  nonce                       String
+  submittedResult             String
+  computedResult              String
+  localTarget                 Decimal                       @db.Decimal(20, 0)
+  acceptedDifficulty          Decimal                       @db.Decimal(38, 12)
+  submittedAt                 DateTime
+  correlationId               String
+  validationDigest            String
+  createdAt                   DateTime                      @default(now())
+  jobEvidence                 RandomXUpstreamJobEvidence    @relation(fields: [jobEvidenceId], references: [id], onDelete: Restrict)
+  miningAccount               MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset                       Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool                UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  decision                    RandomXUpstreamShareDecision?
+
+  @@unique([jobEvidenceId, sourceDigest])
+  @@index([miningAccountId, submittedAt])
+  @@index([assetId, upstreamPoolId, submittedAt])
+  @@index([jobEvidenceId, submittedAt])
+}
+
+model RandomXUpstreamShareDecision {
+  id                 String                       @id @default(cuid())
+  idempotencyKey     String                       @unique
+  submissionIntentId String                       @unique
+  accepted           Boolean
+  errorCode          Int?
+  errorMessage       String?
+  sourceDigest       String                       @unique
+  decidedAt          DateTime
+  outboxEventId      String?                      @unique
+  createdAt          DateTime                     @default(now())
+  submissionIntent   RandomXShareSubmissionIntent @relation(fields: [submissionIntentId], references: [id], onDelete: Restrict)
+  outboxEvent        OutboxEvent?                 @relation(fields: [outboxEventId], references: [id], onDelete: Restrict)
+
+  @@index([accepted, decidedAt])
+  @@index([submissionIntentId, decidedAt])
 }
 
 model HashrateBucket {
@@ -1078,44 +1283,48 @@ model RewardAllocation {
 }
 
 model LedgerAccount {
-  id            String            @id @default(cuid())
-  code          String            @unique
-  name          String
-  type          LedgerAccountType
-  userId        String?
-  assetId       String
-  systemAccount Boolean           @default(false)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  user          User?             @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset         Asset             @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  journalLines  JournalLine[]
+  id                    String               @id @default(cuid())
+  code                  String               @unique
+  name                  String
+  type                  LedgerAccountType
+  userId                String?
+  assetId               String
+  systemAccount         Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  user                  User?                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset                 Asset                @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  journalLines          JournalLine[]
+  availableReservations BalanceReservation[] @relation("ReservationAvailableAccount")
+  reservedReservations  BalanceReservation[] @relation("ReservationReservedAccount")
 
   @@unique([userId, assetId, name])
   @@index([assetId, type])
 }
 
 model JournalEntry {
-  id               String             @id @default(cuid())
-  idempotencyKey   String             @unique
-  referenceType    String
-  referenceId      String
-  description      String
-  correlationId    String
-  causationId      String?
-  entryVersion     Int                @default(1)
-  status           JournalEntryStatus @default(PENDING)
-  effectiveAt      DateTime
-  postedAt         DateTime?
-  reversedEntryId  String?            @unique
-  reversalReason   String?
-  reversedAt       DateTime?
-  createdAt        DateTime           @default(now())
-  lines            JournalLine[]
-  rewardAllocation RewardAllocation?
-  payout           Payout?
-  reversedEntry    JournalEntry?      @relation("JournalReversal", fields: [reversedEntryId], references: [id])
-  reversalOf       JournalEntry?      @relation("JournalReversal")
+  id                         String              @id @default(cuid())
+  idempotencyKey             String              @unique
+  referenceType              String
+  referenceId                String
+  description                String
+  correlationId              String
+  causationId                String?
+  entryVersion               Int                 @default(1)
+  status                     JournalEntryStatus  @default(PENDING)
+  effectiveAt                DateTime
+  postedAt                   DateTime?
+  reversedEntryId            String?             @unique
+  reversalReason             String?
+  reversedAt                 DateTime?
+  createdAt                  DateTime            @default(now())
+  lines                      JournalLine[]
+  rewardAllocation           RewardAllocation?
+  payout                     Payout?
+  reservationJournal         BalanceReservation? @relation("ReservationJournal")
+  reservationReversalJournal BalanceReservation? @relation("ReservationReversalJournal")
+  reversedEntry              JournalEntry?       @relation("JournalReversal", fields: [reversedEntryId], references: [id])
+  reversalOf                 JournalEntry?       @relation("JournalReversal")
 
   @@index([referenceType, referenceId])
   @@index([status, effectiveAt])
@@ -1161,6 +1370,7 @@ model AssetNetwork {
 model PayoutRoute {
   id                     String            @id @default(cuid())
   assetNetworkId         String
+  payoutWalletId         String?
   routeKey               String
   version                Int
   status                 PayoutRouteStatus @default(DISABLED)
@@ -1176,37 +1386,40 @@ model PayoutRoute {
   createdByUserId        String?
   createdAt              DateTime          @default(now())
   assetNetwork           AssetNetwork      @relation(fields: [assetNetworkId], references: [id], onDelete: Restrict)
+  payoutWallet           Wallet?           @relation(fields: [payoutWalletId], references: [id], onDelete: Restrict)
   createdBy              User?             @relation("PayoutRouteCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   payoutAddresses        PayoutAddress[]
   payouts                Payout[]
 
   @@unique([assetNetworkId, routeKey, version])
   @@index([status, effectiveFrom, effectiveUntil])
+  @@index([payoutWalletId, status])
 }
 
 model PayoutAddress {
-  id             String              @id @default(cuid())
-  userId         String
-  assetId        String
-  assetNetworkId String
-  payoutRouteId  String
-  address        String
-  addressHash    String
-  label          String?
-  status         PayoutAddressStatus @default(COOLDOWN)
-  verified       Boolean             @default(false)
-  verifiedAt     DateTime?
-  active         Boolean             @default(false)
-  cooldownUntil  DateTime
-  activatedAt    DateTime?
-  disabledAt     DateTime?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  user           User                @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset          Asset               @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  assetNetwork   AssetNetwork        @relation(fields: [assetNetworkId], references: [id], onDelete: Restrict)
-  payoutRoute    PayoutRoute         @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
-  payouts        Payout[]
+  id                       String              @id @default(cuid())
+  userId                   String
+  assetId                  String
+  assetNetworkId           String
+  payoutRouteId            String
+  address                  String
+  addressHash              String
+  label                    String?
+  status                   PayoutAddressStatus @default(COOLDOWN)
+  verified                 Boolean             @default(false)
+  verifiedAt               DateTime?
+  active                   Boolean             @default(false)
+  cooldownUntil            DateTime
+  activatedAt              DateTime?
+  disabledAt               DateTime?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+  user                     User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset                    Asset               @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  assetNetwork             AssetNetwork        @relation(fields: [assetNetworkId], references: [id], onDelete: Restrict)
+  payoutRoute              PayoutRoute         @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
+  payouts                  Payout[]
+  selectedByMiningAccounts MiningAccount[]     @relation("MiningAccountPayoutDestination")
 
   @@unique([assetNetworkId, addressHash])
   @@index([userId, payoutRouteId, status])
@@ -1214,49 +1427,254 @@ model PayoutAddress {
 }
 
 model Payout {
-  id              String        @id @default(cuid())
-  idempotencyKey  String        @unique
-  userId          String
-  assetId         String
-  payoutAddressId String
-  payoutRouteId   String
-  journalEntryId  String?       @unique
-  amount          Decimal       @db.Decimal(36, 18)
-  networkFee      Decimal       @default(0) @db.Decimal(36, 18)
-  status          PayoutStatus  @default(QUEUED)
-  transactionId   String?
-  failureCode     String?
-  failureMessage  String?
-  scheduledAt     DateTime
-  broadcastAt     DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  asset           Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  payoutAddress   PayoutAddress @relation(fields: [payoutAddressId], references: [id], onDelete: Restrict)
-  payoutRoute     PayoutRoute   @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
-  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+  id                String                 @id @default(cuid())
+  idempotencyKey    String                 @unique
+  userId            String
+  miningAccountId   String?
+  assetId           String
+  payoutAddressId   String
+  payoutRouteId     String
+  journalEntryId    String?                @unique
+  amount            Decimal                @db.Decimal(36, 18)
+  networkFee        Decimal                @default(0) @db.Decimal(36, 18)
+  amountAtomic      BigInt?
+  networkFeeAtomic  BigInt                 @default(0)
+  requestSource     PayoutTrigger          @default(MANUAL)
+  executionVersion  Int                    @default(2)
+  status            PayoutStatus           @default(QUEUED)
+  transactionId     String?
+  failureCode       String?
+  failureMessage    String?
+  scheduledAt       DateTime
+  requestedAt       DateTime               @default(now())
+  approvedAt        DateTime?
+  signingAt         DateTime?
+  broadcastAt       DateTime?
+  confirmingAt      DateTime?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  cancelledAt       DateTime?
+  rowVersion        Int                    @default(1)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  miningAccount     MiningAccount?         @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset             Asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  payoutAddress     PayoutAddress          @relation(fields: [payoutAddressId], references: [id], onDelete: Restrict)
+  payoutRoute       PayoutRoute            @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
+  journalEntry      JournalEntry?          @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+  eligibility       PayoutEligibility?
+  reservation       BalanceReservation?
+  approvals         PayoutApproval[]
+  signingRequest    SigningRequest?
+  broadcastAttempts BroadcastAttempt[]
+  chainObservations ChainObservation[]
+  reconciliations   PayoutReconciliation[]
 
   @@index([status, scheduledAt])
   @@index([userId, createdAt])
   @@index([payoutRouteId, status])
+  @@index([miningAccountId, status, createdAt])
+}
+
+model PayoutEligibility {
+  id                      String   @id @default(cuid())
+  payoutId                String   @unique
+  availableBalanceAtomic  BigInt
+  reservationAmountAtomic BigInt
+  minimumPayoutAtomic     BigInt
+  maximumPayoutAtomic     BigInt?
+  routeVersion            Int
+  addressFingerprint      String
+  walletHealthRequired    Boolean  @default(true)
+  manualApprovalRequired  Boolean  @default(true)
+  blockers                String[]
+  eligible                Boolean
+  evaluatedAt             DateTime @default(now())
+  payout                  Payout   @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+}
+
+model BalanceReservation {
+  id                       String                   @id @default(cuid())
+  idempotencyKey           String                   @unique
+  payoutId                 String                   @unique
+  userId                   String
+  assetId                  String
+  availableLedgerAccountId String
+  reservedLedgerAccountId  String
+  journalEntryId           String                   @unique
+  reversalJournalEntryId   String?                  @unique
+  amountAtomic             BigInt
+  status                   BalanceReservationStatus @default(ACTIVE)
+  createdAt                DateTime                 @default(now())
+  consumedAt               DateTime?
+  releasedAt               DateTime?
+  payout                   Payout                   @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  user                     User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  asset                    Asset                    @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  availableLedgerAccount   LedgerAccount            @relation("ReservationAvailableAccount", fields: [availableLedgerAccountId], references: [id], onDelete: Restrict)
+  reservedLedgerAccount    LedgerAccount            @relation("ReservationReservedAccount", fields: [reservedLedgerAccountId], references: [id], onDelete: Restrict)
+  journalEntry             JournalEntry             @relation("ReservationJournal", fields: [journalEntryId], references: [id], onDelete: Restrict)
+  reversalJournalEntry     JournalEntry?            @relation("ReservationReversalJournal", fields: [reversalJournalEntryId], references: [id], onDelete: Restrict)
+
+  @@index([userId, assetId, status])
+  @@index([status, createdAt])
+}
+
+model PayoutApproval {
+  id             String                 @id @default(cuid())
+  idempotencyKey String                 @unique
+  payoutId       String
+  actorUserId    String
+  decision       PayoutApprovalDecision
+  reason         String
+  evidenceDigest String
+  createdAt      DateTime               @default(now())
+  payout         Payout                 @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  actor          User                   @relation("PayoutApprovalActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([payoutId])
+  @@index([actorUserId, createdAt])
+}
+
+model SigningRequest {
+  id                        String               @id @default(cuid())
+  idempotencyKey            String               @unique
+  payoutId                  String               @unique
+  signerKeyReference        String
+  manifest                  Json
+  manifestDigest            String
+  status                    SigningRequestStatus @default(PENDING)
+  unsignedTransactionDigest String?
+  signedTransactionDigest   String?
+  signedArtifactReference   String?
+  attemptCount              Int                  @default(0)
+  submittedAt               DateTime?
+  signedAt                  DateTime?
+  failedAt                  DateTime?
+  failureCode               String?
+  failureMessage            String?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  payout                    Payout               @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  broadcastAttempts         BroadcastAttempt[]
+}
+
+model BroadcastAttempt {
+  id               String                 @id @default(cuid())
+  idempotencyKey   String                 @unique
+  payoutId         String
+  signingRequestId String
+  provider         String
+  requestDigest    String
+  responseDigest   String?
+  transactionId    String?
+  status           BroadcastAttemptStatus @default(PENDING)
+  failureCode      String?
+  failureMessage   String?
+  attemptedAt      DateTime               @default(now())
+  completedAt      DateTime?
+  payout           Payout                 @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  signingRequest   SigningRequest         @relation(fields: [signingRequestId], references: [id], onDelete: Restrict)
+
+  @@index([payoutId, attemptedAt])
+  @@index([status, attemptedAt])
+}
+
+model ChainObservation {
+  id             String                 @id @default(cuid())
+  idempotencyKey String                 @unique
+  payoutId       String
+  transactionId  String
+  status         ChainObservationStatus
+  confirmations  Int                    @default(0)
+  blockHeight    BigInt?
+  blockHash      String?
+  observedAt     DateTime               @default(now())
+  rawDigest      String
+  payout         Payout                 @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([payoutId, observedAt])
+  @@index([transactionId, observedAt])
+}
+
+model PayoutReconciliation {
+  id                        String                     @id @default(cuid())
+  idempotencyKey            String                     @unique
+  payoutId                  String
+  status                    PayoutReconciliationStatus @default(PENDING)
+  expectedReservedAtomic    BigInt
+  destinationAmountAtomic   BigInt
+  networkFeeAtomic          BigInt
+  walletAssetDecreaseAtomic BigInt
+  varianceAtomic            BigInt
+  evidenceDigest            String
+  exceptionCode             String?
+  exceptionMessage          String?
+  reconciledAt              DateTime                   @default(now())
+  payout                    Payout                     @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([payoutId, reconciledAt])
+  @@index([status, reconciledAt])
 }
 
 model Wallet {
-  id               String              @id @default(cuid())
-  assetId          String
-  type             WalletType
-  name             String
-  rpcWalletName    String?
-  addressReference String?
-  enabled          Boolean             @default(false)
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  asset            Asset               @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  transactions     WalletTransaction[]
+  id                        String                 @id @default(cuid())
+  assetId                   String
+  type                      WalletType
+  name                      String
+  rpcWalletName             String?
+  addressReference          String?
+  enabled                   Boolean                @default(false)
+  signerKeyReference        String?
+  maximumSinglePayoutAtomic BigInt?
+  dailyPayoutLimitAtomic    BigInt?
+  minimumReserveAtomic      BigInt                 @default(0)
+  lastReconciledAt          DateTime?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  asset                     Asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  transactions              WalletTransaction[]
+  reconciliations           WalletReconciliation[]
+  payoutRoutes              PayoutRoute[]
 
   @@unique([assetId, type, name])
+}
+
+model PayoutControl {
+  id               String   @id @default(cuid())
+  assetId          String   @unique
+  requestsEnabled  Boolean  @default(false)
+  signingEnabled   Boolean  @default(false)
+  broadcastEnabled Boolean  @default(false)
+  paused           Boolean  @default(true)
+  pauseReason      String
+  updatedByUserId  String?
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  asset            Asset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  updatedBy        User?    @relation("PayoutControlUpdater", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+}
+
+model WalletReconciliation {
+  id                      String                     @id @default(cuid())
+  idempotencyKey          String                     @unique
+  walletId                String
+  status                  PayoutReconciliationStatus @default(PENDING)
+  nodeBalanceAtomic       BigInt
+  ledgerAssetAtomic       BigInt
+  activeReservationAtomic BigInt
+  pendingBroadcastAtomic  BigInt
+  varianceAtomic          BigInt
+  chainHeight             BigInt?
+  chainTipHash            String?
+  evidenceDigest          String
+  reconciledAt            DateTime                   @default(now())
+  wallet                  Wallet                     @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([walletId, reconciledAt])
+  @@index([status, reconciledAt])
 }
 
 model WalletTransaction {
@@ -1281,36 +1699,144 @@ model WalletTransaction {
   @@index([status, detectedAt])
 }
 
+model NativeBitcoinCandidate {
+  id                   String                           @id @default(cuid())
+  idempotencyKey       String                           @unique
+  chain                NativeBitcoinChain
+  jobId                String
+  templateSourceDigest String
+  coinbasePolicyDigest String
+  blockHash            String
+  headerHex            String
+  rawBlockDigest       String
+  reconstructedAt      DateTime
+  createdAt            DateTime                         @default(now())
+  proposals            NativeBitcoinProposalEvidence[]
+  submissionIntents    NativeBitcoinSubmissionIntent[]
+  submissions          NativeBitcoinSubmissionAttempt[]
+
+  @@unique([chain, blockHash])
+  @@unique([chain, rawBlockDigest])
+  @@index([chain, reconstructedAt])
+  @@index([jobId, reconstructedAt])
+}
+
+model NativeBitcoinProposalEvidence {
+  id                String                           @id @default(cuid())
+  idempotencyKey    String                           @unique
+  candidateId       String
+  status            NativeBitcoinProposalStatus
+  reason            String?
+  rawBlockDigest    String
+  sourceDigest      String
+  observedAt        DateTime
+  validUntil        DateTime
+  createdAt         DateTime                         @default(now())
+  candidate         NativeBitcoinCandidate           @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  submissionIntents NativeBitcoinSubmissionIntent[]
+  submissions       NativeBitcoinSubmissionAttempt[]
+
+  @@unique([candidateId, sourceDigest])
+  @@index([candidateId, observedAt])
+  @@index([status, validUntil])
+}
+
+model NativeBitcoinSubmissionIntent {
+  id                   String                                       @id @default(cuid())
+  idempotencyKey       String                                       @unique
+  candidateId          String
+  proposalEvidenceId   String
+  rawBlockDigest       String
+  workId               String?
+  sourceDigest         String
+  createdAt            DateTime                                     @default(now())
+  candidate            NativeBitcoinCandidate                       @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  proposalEvidence     NativeBitcoinProposalEvidence                @relation(fields: [proposalEvidenceId], references: [id], onDelete: Restrict)
+  submission           NativeBitcoinSubmissionAttempt?
+  recoveryObservations NativeBitcoinSubmissionRecoveryObservation[]
+
+  @@unique([candidateId, sourceDigest])
+  @@index([candidateId, createdAt])
+  @@index([proposalEvidenceId, createdAt])
+}
+
+model NativeBitcoinSubmissionRecoveryObservation {
+  id                 String                                 @id @default(cuid())
+  idempotencyKey     String                                 @unique
+  submissionIntentId String
+  status             NativeBitcoinRecoveryObservationStatus
+  blockHash          String
+  confirmations      Int
+  blockHeight        Int?
+  transactionCount   Int?
+  chainTipHash       String
+  chainHeight        Int
+  sourceDigest       String
+  observedAt         DateTime
+  createdAt          DateTime                               @default(now())
+  submissionIntent   NativeBitcoinSubmissionIntent          @relation(fields: [submissionIntentId], references: [id], onDelete: Restrict)
+
+  @@unique([submissionIntentId, sourceDigest])
+  @@index([submissionIntentId, observedAt])
+  @@index([status, observedAt])
+}
+
+model NativeBitcoinSubmissionAttempt {
+  id                 String                        @id @default(cuid())
+  idempotencyKey     String                        @unique
+  candidateId        String
+  proposalEvidenceId String
+  submissionIntentId String                        @unique
+  status             NativeBitcoinSubmissionStatus
+  reason             String?
+  rawBlockDigest     String
+  workId             String?
+  sourceDigest       String
+  observedAt         DateTime
+  createdAt          DateTime                      @default(now())
+  candidate          NativeBitcoinCandidate        @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  proposalEvidence   NativeBitcoinProposalEvidence @relation(fields: [proposalEvidenceId], references: [id], onDelete: Restrict)
+  submissionIntent   NativeBitcoinSubmissionIntent @relation(fields: [submissionIntentId], references: [id], onDelete: Restrict)
+
+  @@unique([candidateId, sourceDigest])
+  @@index([candidateId, observedAt])
+  @@index([submissionIntentId, observedAt])
+  @@index([status, observedAt])
+}
+
 model UpstreamPool {
-  id                    String                   @id @default(cuid())
-  assetId               String
-  poolKey               String
-  name                  String
-  host                  String
-  port                  Int
-  tls                   Boolean                  @default(false)
-  rewardMethod          RewardMethod
-  status                UpstreamStatus           @default(SETUP)
-  priority              Int                      @default(100)
-  weight                Int                      @default(100)
-  failureThreshold      Int                      @default(3)
-  recoveryTimeoutMs     Int                      @default(30000)
-  consecutiveFailures   Int                      @default(0)
-  successfulConnections Int                      @default(0)
-  lastConnectedAt       DateTime?
-  lastFailureAt         DateTime?
-  circuitOpenedUntil    DateTime?
-  lastError             String?
-  capabilities          Json?
-  encryptedCredential   String?
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  asset                 Asset                    @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  rewardPeriods         RewardPeriod[]
-  reconciliations       UpstreamReconciliation[]
-  upstreamSessions      UpstreamSession[]
-  stratumJobs           StratumJob[]
-  contributionFacts     ContributionFact[]
+  id                       String                         @id @default(cuid())
+  assetId                  String
+  poolKey                  String
+  name                     String
+  host                     String
+  port                     Int
+  tls                      Boolean                        @default(false)
+  rewardMethod             RewardMethod
+  status                   UpstreamStatus                 @default(SETUP)
+  priority                 Int                            @default(100)
+  weight                   Int                            @default(100)
+  failureThreshold         Int                            @default(3)
+  recoveryTimeoutMs        Int                            @default(30000)
+  consecutiveFailures      Int                            @default(0)
+  successfulConnections    Int                            @default(0)
+  lastConnectedAt          DateTime?
+  lastFailureAt            DateTime?
+  circuitOpenedUntil       DateTime?
+  lastError                String?
+  capabilities             Json?
+  encryptedCredential      String?
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  asset                    Asset                          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  rewardPeriods            RewardPeriod[]
+  reconciliations          UpstreamReconciliation[]
+  upstreamSessions         UpstreamSession[]
+  stratumJobs              StratumJob[]
+  contributionFacts        ContributionFact[]
+  randomXShareEvidence     RandomXAcceptedShareEvidence[]
+  randomXJobEvidence       RandomXUpstreamJobEvidence[]
+  randomXSubmissionIntents RandomXShareSubmissionIntent[]
 
   @@unique([assetId, name])
   @@unique([assetId, poolKey])
@@ -1434,25 +1960,26 @@ model SystemSetting {
 }
 
 model OutboxEvent {
-  id             String            @id @default(cuid())
-  eventId        String            @unique
-  eventName      String
-  eventVersion   Int               @default(1)
-  producer       String
-  aggregateType  String
-  aggregateId    String
-  correlationId  String
-  causationId    String?
-  idempotencyKey String            @unique
-  payload        Json
-  occurredAt     DateTime
-  status         OutboxEventStatus @default(PENDING)
-  availableAt    DateTime          @default(now())
-  publishedAt    DateTime?
-  attempts       Int               @default(0)
-  lastError      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                      String                        @id @default(cuid())
+  eventId                 String                        @unique
+  eventName               String
+  eventVersion            Int                           @default(1)
+  producer                String
+  aggregateType           String
+  aggregateId             String
+  correlationId           String
+  causationId             String?
+  idempotencyKey          String                        @unique
+  payload                 Json
+  occurredAt              DateTime
+  status                  OutboxEventStatus             @default(PENDING)
+  availableAt             DateTime                      @default(now())
+  publishedAt             DateTime?
+  attempts                Int                           @default(0)
+  lastError               String?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  randomXUpstreamDecision RandomXUpstreamShareDecision?
 
   @@index([status, availableAt])
   @@index([aggregateType, aggregateId, createdAt])
