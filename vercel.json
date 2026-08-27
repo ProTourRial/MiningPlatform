@@ -1,0 +1,5 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd MiningPlatform && pnpm install --frozen-lockfile",
+  "buildCommand": "cd MiningPlatform && pnpm --filter @mining/web build"
+}
