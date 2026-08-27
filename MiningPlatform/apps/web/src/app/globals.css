@@ -1,25 +1,25 @@
-/*
- * MiningPlatform
- * Author: Abia Nugrahanto
- * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
- */
-
 @import "tailwindcss";
 
 :root {
-  --background: #06111f;
-  --surface: #0a1628;
-  --surface-muted: #122238;
-  --foreground: #f5fbff;
-  --muted: #aebfcb;
-  --border: rgba(219, 232, 244, 0.1);
-  --accent: #d7ff63;
-  --accent-strong: #c6f044;
-  --signal: #98f5ff;
-  --danger: #fb7185;
-  --font-display: "Space Grotesk", "Aptos Display", "Segoe UI", Arial, sans-serif;
-  --font-body: Inter, Aptos, "Segoe UI", Arial, sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --background: #0a0d0b;
+  --surface: #111613;
+  --surface-raised: #171d19;
+  --surface-soft: #1c241f;
+  --foreground: #f3f5ef;
+  --muted: #9aa69d;
+  --muted-strong: #c1cbc2;
+  --border: rgba(222, 235, 220, 0.12);
+  --border-strong: rgba(222, 235, 220, 0.2);
+  --accent: #d5ef68;
+  --accent-strong: #c0df4d;
+  --signal: #83d7c3;
+  --warning: #f1c27d;
+  --danger: #fb8e86;
+  --ink: #0a0d0b;
+  --font-display: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 * {
@@ -34,8 +34,8 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at 82% 6%, rgba(152, 245, 255, 0.045), transparent 24rem),
+  background: radial-gradient(circle at 82% -5%, rgba(131, 215, 195, 0.09), transparent 28rem),
+    radial-gradient(circle at 5% 34%, rgba(213, 239, 104, 0.045), transparent 34rem),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
@@ -51,89 +51,85 @@ select,
 textarea {
   font: inherit;
 }
-
 a {
   color: inherit;
   text-decoration: none;
 }
-
 ::selection {
   background: var(--accent);
-  color: #04110c;
+  color: var(--ink);
 }
 
 ::-webkit-scrollbar {
-  width: 9px;
+  width: 10px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #071320;
+  background: #0a0d0b;
 }
-
 ::-webkit-scrollbar-thumb {
-  border: 2px solid #071320;
+  border: 3px solid #0a0d0b;
   border-radius: 999px;
-  background: #29485d;
+  background: #334238;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a7087;
+  background: #526557;
 }
 
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: 4px;
 }
-
 input,
 select,
 textarea {
   color-scheme: dark;
 }
 
-.dashboard-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #29485d transparent;
-}
-
-.dashboard-card {
-  border: 1px solid rgba(219, 232, 244, 0.09);
-  background: linear-gradient(145deg, rgba(15, 33, 52, 0.88), rgba(8, 23, 39, 0.94));
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-inset {
-  border: 1px solid rgba(219, 232, 244, 0.075);
-  background: rgba(255, 255, 255, 0.022);
-}
-
 .display-font {
   font-family: var(--font-display);
 }
-
 .mono-font {
   font-family: var(--font-mono);
 }
 
-.landing-hero {
-  background:
-    linear-gradient(180deg, rgba(6, 17, 31, 0.15), rgba(6, 17, 31, 0.92)),
-    #06111f;
+/* Shared surfaces make the app feel like one product across public and private routes. */
+.dashboard-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, rgba(28, 36, 31, 0.92), rgba(14, 19, 16, 0.94));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+.dashboard-inset {
+  border: 1px solid rgba(222, 235, 220, 0.09);
+  background: rgba(255, 255, 255, 0.035);
+}
+.dashboard-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3b4d40 transparent;
 }
 
+.landing-hero {
+  background: linear-gradient(180deg, rgba(10, 13, 11, 0.12), rgba(10, 13, 11, 0.98)), #0a0d0b;
+}
 .landing-grid {
-  background-image:
-    linear-gradient(rgba(219, 232, 244, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(219, 232, 244, 0.045) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, transparent, black 13%, black 85%, transparent);
+  background-image: linear-gradient(rgba(222, 235, 220, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(222, 235, 220, 0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 84%, transparent);
+}
+.eyebrow {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-
   *,
   *::before,
   *::after {
