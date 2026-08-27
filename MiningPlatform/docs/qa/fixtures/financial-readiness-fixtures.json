@@ -1,0 +1,282 @@
+{
+  "fixtureVersion": "financial-readiness-v1",
+  "sourceBaseline": {
+    "branch": "main",
+    "commit": "770e38c5e119102635aefa97893cdcbdbc345da9"
+  },
+  "defaults": {
+    "asset": "BTC",
+    "network": "BTC",
+    "decimals": 8,
+    "accountId": "acct-fixture-001",
+    "miningAccountId": "mine-fixture-001",
+    "policyVersion": "fee-policy-v1",
+    "standardPlatformFeeBasisPoints": 50,
+    "referredMinerFeeBasisPoints": 37.5,
+    "referralBeneficiaryPartsPerMillion": 1250,
+    "referralCode": "MP05",
+    "beneficiaryType": "SITE_DONATION_WALLET"
+  },
+  "cases": [
+    {
+      "id": "FF-IMMATURE-001",
+      "scenario": "reward immature",
+      "input": {
+        "rewardId": "reward-immature-001",
+        "rewardPeriodId": "period-001",
+        "sourceBlockHeight": 1000,
+        "currentConfirmations": 2,
+        "requiredConfirmations": 3,
+        "amountAtomic": "1000000",
+        "sourceStatus": "IMMATURE"
+      },
+      "expected": {
+        "status": "IMMATURE",
+        "spendable": false,
+        "payoutEligible": false,
+        "blockers": ["PENDING_MATURITY"],
+        "journalSideEffect": false
+      }
+    },
+    {
+      "id": "FF-MATURE-001",
+      "scenario": "reward mature",
+      "input": {
+        "rewardId": "reward-mature-001",
+        "rewardPeriodId": "period-002",
+        "sourceBlockHeight": 1000,
+        "currentConfirmations": 3,
+        "requiredConfirmations": 3,
+        "amountAtomic": "1000000",
+        "sourceStatus": "MATURE"
+      },
+      "expected": {
+        "status": "MATURE",
+        "spendable": false,
+        "nextState": "ALLOCATED",
+        "payoutEligible": false,
+        "journalSideEffect": "only_after_deterministic_allocation"
+      }
+    },
+    {
+      "id": "FF-ORPHAN-001",
+      "scenario": "orphan block",
+      "input": {
+        "blockId": "block-orphan-001",
+        "blockHash": "0000000000000000000000000000000000000000000000000000000000000001",
+        "state": "CONFIRMED",
+        "rewardPeriodId": "period-003",
+        "affectedAmountAtomic": "1000000",
+        "reason": "ORPHAN"
+      },
+      "expected": {
+        "nextState": "ORPHANED_REORGED",
+        "rewardAction": "REVIEW_OR_REVERSE",
+        "originalFactImmutable": true,
+        "payoutPauseScope": "AFFECTED_ASSET_PERIOD",
+        "auditEvent": "BLOCK_ORPHANED_REORGED"
+      }
+    },
+    {
+      "id": "FF-REORG-001",
+      "scenario": "reorg after allocation",
+      "input": {
+        "blockId": "block-reorg-001",
+        "rewardAllocationId": "allocation-reorg-001",
+        "oldChainTip": "old-tip-001",
+        "newChainTip": "new-tip-001",
+        "originalJournalAmountAtomic": "996250",
+        "state": "ALLOCATED"
+      },
+      "expected": {
+        "rewardAction": "POST_EQUAL_AND_OPPOSITE_REVERSAL_OR_ADJUSTMENT",
+        "originalJournalEdited": false,
+        "payoutEligibilityReevaluated": true,
+        "reconciliationException": true
+      }
+    },
+    {
+      "id": "FF-RESERVATION-001",
+      "scenario": "payout reservation succeeds",
+      "input": {
+        "payoutId": "payout-reservation-001",
+        "availableReconciledAtomic": "250000",
+        "minimumPayoutAtomic": "100000",
+        "requestedAtomic": "125000",
+        "destinationState": "ACTIVE",
+        "routeState": "ACTIVE",
+        "payoutGate": "OPEN_FOR_CONTROLLED_PILOT",
+        "idempotencyKey": "idem-reservation-001"
+      },
+      "expected": {
+        "status": "RESERVED",
+        "reservationAmountAtomic": "125000",
+        "remainingAvailableAtomic": "125000",
+        "reservationCount": 1,
+        "auditEvent": "PAYOUT_RESERVED"
+      }
+    },
+    {
+      "id": "FF-RESERVATION-CONFLICT-001",
+      "scenario": "payout reservation exceeds balance",
+      "input": {
+        "payoutId": "payout-reservation-conflict-001",
+        "availableReconciledAtomic": "100000",
+        "requestedAtomic": "100001",
+        "destinationState": "ACTIVE",
+        "routeState": "ACTIVE",
+        "idempotencyKey": "idem-reservation-conflict-001"
+      },
+      "expected": {
+        "status": "REJECTED",
+        "errorCode": "INSUFFICIENT_RECONCILED_BALANCE",
+        "journalSideEffect": false,
+        "reservationCount": 0
+      }
+    },
+    {
+      "id": "FF-DUPLICATE-RETRY-001",
+      "scenario": "duplicate retry after timeout",
+      "input": {
+        "commandId": "cmd-retry-001",
+        "idempotencyKey": "idem-retry-001",
+        "rewardAllocationAmountAtomic": "996250",
+        "firstAttemptOutcome": "COMMITTED_BUT_RESPONSE_TIMEOUT",
+        "retryCount": 2
+      },
+      "expected": {
+        "firstResult": "COMMITTED_ONCE",
+        "retryResult": "ORIGINAL_RESULT_WITH_IDEMPOTENT_REPLAY",
+        "allocationCount": 1,
+        "creditCount": 1,
+        "errorForDifferentPayload": "IDEMPOTENCY_CONFLICT"
+      }
+    },
+    {
+      "id": "FF-BROADCAST-FAILURE-001",
+      "scenario": "failed or ambiguous broadcast",
+      "input": {
+        "payoutId": "payout-broadcast-001",
+        "state": "SIGNING",
+        "providerResponse": "TIMEOUT_AFTER_SUBMIT",
+        "rawTransactionKnown": true,
+        "idempotencyKey": "idem-broadcast-001"
+      },
+      "expected": {
+        "nextState": "BROADCAST_OR_RECONCILIATION_PENDING",
+        "blindRetry": false,
+        "duplicateBroadcast": false,
+        "requiresNodeAndProviderLookup": true,
+        "auditEvent": "PAYOUT_BROADCAST_AMBIGUOUS"
+      }
+    },
+    {
+      "id": "FF-RECON-MATCH-001",
+      "scenario": "reconciliation source matches",
+      "input": {
+        "sourceChecksum": "sha256:recon-match-001",
+        "internalChecksum": "sha256:recon-match-001",
+        "sourceGrossAtomic": "1000000",
+        "internalGrossAtomic": "1000000",
+        "sourceFeeAtomic": "5000",
+        "internalFeeAtomic": "5000",
+        "sourceLiabilityAtomic": "995000",
+        "internalLiabilityAtomic": "995000"
+      },
+      "expected": {
+        "status": "MATCHED",
+        "exceptionCreated": false,
+        "periodClosed": true,
+        "payoutPause": false
+      }
+    },
+    {
+      "id": "FF-RECON-MISMATCH-001",
+      "scenario": "reconciliation mismatch",
+      "input": {
+        "sourceChecksum": "sha256:recon-source-001",
+        "internalChecksum": "sha256:recon-internal-001",
+        "sourceGrossAtomic": "1000000",
+        "internalGrossAtomic": "999999",
+        "sourceFeeAtomic": "5000",
+        "internalFeeAtomic": "5000"
+      },
+      "expected": {
+        "status": "MISMATCH",
+        "exceptionCreated": true,
+        "periodClosed": false,
+        "payoutPause": true,
+        "manualRounding": false,
+        "correction": "APPROVED_REVERSAL_OR_ADJUSTMENT_ONLY"
+      }
+    },
+    {
+      "id": "FF-FEE-STANDARD-001",
+      "scenario": "standard platform fee",
+      "input": {
+        "grossAtomic": "1000000",
+        "referralCode": null,
+        "settlementStatus": "SETTLED"
+      },
+      "expected": {
+        "platformFeeBasisPoints": 50,
+        "platformFeeAtomic": "5000",
+        "beneficiaryAtomic": "0",
+        "userNetAtomic": "995000",
+        "beneficiaryType": null
+      }
+    },
+    {
+      "id": "FF-FEE-REFERRAL-MP05-001",
+      "scenario": "referral fee and MP05 donation beneficiary",
+      "input": {
+        "grossAtomic": "1000000",
+        "referralCode": "MP05",
+        "settlementStatus": "SETTLED"
+      },
+      "expected": {
+        "referredMinerFeeBasisPoints": 37.5,
+        "beneficiaryPartsPerMillion": 1250,
+        "platformFeeAtomic": "3750",
+        "beneficiaryAtomic": "1250",
+        "userNetAtomic": "996250",
+        "beneficiaryType": "SITE_DONATION_WALLET",
+        "userPayoutFallback": false
+      }
+    },
+    {
+      "id": "FF-AUTOWITHDRAWAL-OFF-001",
+      "scenario": "auto-withdrawal OFF",
+      "input": {
+        "miningAccountId": "mine-fixture-001",
+        "enabled": false,
+        "availableReconciledAtomic": "250000",
+        "routeState": "ACTIVE"
+      },
+      "expected": {
+        "preference": false,
+        "effective": false,
+        "schedulerCreatesPayout": false,
+        "auditEvent": "AUTO_WITHDRAWAL_DISABLED"
+      }
+    },
+    {
+      "id": "FF-AUTOWITHDRAWAL-ON-GATED-001",
+      "scenario": "auto-withdrawal ON but executor gated",
+      "input": {
+        "miningAccountId": "mine-fixture-001",
+        "enabled": true,
+        "availableReconciledAtomic": "250000",
+        "routeState": "ADDRESS_REGISTRATION",
+        "executorState": "NOT_IMPLEMENTED"
+      },
+      "expected": {
+        "preference": true,
+        "effective": false,
+        "schedulerCreatesPayout": false,
+        "blockers": ["AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED", "ROUTE_UNAVAILABLE"],
+        "auditEvent": "AUTO_WITHDRAWAL_ENABLED"
+      }
+    }
+  ]
+}
