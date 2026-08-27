@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "p2-e2e-cases.v1",
+  "description": "Safe synthetic smoke cases. Authenticated mutations and payout flows require a separate disposable fixture harness.",
+  "cases": [
+    {
+      "id": "health-ready",
+      "method": "GET",
+      "path": "/api/v1/health/ready",
+      "expectedStatuses": [200]
+    },
+    {
+      "id": "version-public",
+      "method": "GET",
+      "path": "/api/v1/version",
+      "expectedStatuses": [200, 401, 403]
+    },
+    {
+      "id": "transparency-status",
+      "method": "GET",
+      "path": "/api/v1/transparency/status",
+      "expectedStatuses": [200, 401, 403]
+    },
+    {
+      "id": "wallet-status",
+      "method": "GET",
+      "path": "/api/v1/wallets/status",
+      "expectedStatuses": [200, 401, 403]
+    },
+    {
+      "id": "payout-status",
+      "method": "GET",
+      "path": "/api/v1/payouts/status",
+      "expectedStatuses": [200, 401, 403]
+    },
+    {
+      "id": "worker-status",
+      "method": "GET",
+      "path": "/api/v1/workers/status",
+      "expectedStatuses": [200, 401, 403]
+    },
+    {
+      "id": "reward-status",
+      "method": "GET",
+      "path": "/api/v1/rewards/status",
+      "expectedStatuses": [200, 401, 403]
+    }
+  ]
+}
