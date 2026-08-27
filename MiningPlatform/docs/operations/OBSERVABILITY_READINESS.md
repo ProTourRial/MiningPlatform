@@ -145,6 +145,45 @@ RandomX metrics are documented here for cross-service observability only. This b
 
 Algorithm-specific instrumentation must follow the same ID propagation and redaction rules. Do not introduce high-cardinality labels simply because the RandomX gateway has many workers.
 
+### 3.5 Required dashboard metric contract
+
+Nama canonical berikut wajib tersedia sebagai metric family setelah instrumentation diimplementasikan. Prefix `miningplatform_` adalah namespace wajib; nama pendek di kolom pertama adalah business alias untuk dashboard/query review.
+
+| Business alias | Canonical metric name | Type | Required labels | Meaning |
+|---|---|---|---|---|
+| `payout_eligibility_failures` | `miningplatform_payout_eligibility_failures_total` | Counter | `asset`, `network`, `reason` | Eligibility checks yang gagal; reason harus allowlisted |
+| `payout_reservation_conflicts` | `miningplatform_payout_reservation_conflicts_total` | Counter | `asset`, `network`, `reason` | Concurrent/duplicate/insufficient reservation conflict |
+| `payout_broadcast_failures` | `miningplatform_payout_broadcast_failures_total` | Counter | `asset`, `network`, `provider`, `reason` | Broadcast failure yang diklasifikasikan safe |
+| `ledger_reconciliation_delta` | `miningplatform_ledger_reconciliation_delta_atomic` | Gauge | `asset`, `network`, `source` | Selisih internal versus source dalam atomic units; target normal `0` |
+| `randomx_validation_latency` | `miningplatform_randomx_validation_latency_seconds` | Histogram | `result`, `region` | Latency validasi RandomX tanpa worker/request ID label |
+| `template_age_seconds` | `miningplatform_template_age_seconds` | Gauge | `algorithm`, `region`, `source` | Umur template/job terbaru |
+| `stratum_share_rejection_rate` | `miningplatform_stratum_share_rejection_rate` | Gauge | `algorithm`, `region` | `rejected / total` pada measurement window |
+| `wallet_balance_variance` | `miningplatform_wallet_balance_variance_atomic` | Gauge | `wallet_class`, `asset`, `network` | Selisih wallet/node versus expected internal balance |
+
+Rules tambahan:
+
+- Counter memakai suffix `_total`; duration memakai `_seconds`; amount memakai `_atomic`.
+- Dashboard wajib menampilkan measurement window, `last updated`, dan data source.
+- Metric label tidak boleh berisi user ID, payout ID, address, tx hash, request ID, correlation ID, atau audit ID.
+- `ledger_reconciliation_delta_atomic` dan `wallet_balance_variance_atomic` harus memicu financial alert bila non-zero tanpa approved exception.
+- `stratum_share_rejection_rate` harus dibaca bersama accepted/stale/duplicate rate dan baseline, bukan sebagai satu-satunya indikator kesehatan.
+- RandomX metric definition di sini bersifat observability contract; branch ini tidak mengubah gateway/validator.
+
+### 3.6 Required alert mapping
+
+| Metric/condition | Warning | Critical | Action |
+|---|---:|---:|---|
+| `payout_eligibility_failures` | >1% dari checks/10m | >5%/10m atau `reason` financial/risk spike | Inspect route/policy/ledger; page owner bila financial |
+| `payout_reservation_conflicts` | >10/10m | >50/10m atau conflict berulang pada account scope | Pause reservation scope; inspect idempotency/concurrency |
+| `payout_broadcast_failures` | >1%/15m | >5%/15m atau any ambiguous broadcast | Pause broadcast; reconcile node/provider; no blind retry |
+| `ledger_reconciliation_delta` | Any non-zero 1 evaluation | Any non-zero unexplained | Sev-1; freeze affected financial scope |
+| `randomx_validation_latency` | p95 >1s/10m | p95 >3s/10m atau error rate spike | Inspect validator capacity/gateway; no direct code change from this branch |
+| `template_age_seconds` | >60s | >120s | Mark mining degraded; inspect template/upstream |
+| `stratum_share_rejection_rate` | >2× 30-day baseline/10m | >5% and >2× baseline/10m | Inspect difficulty/job/provider; notify affected region |
+| `wallet_balance_variance` | Any non-zero pending review | Any non-zero unexplained | Pause payout; reconcile wallet/node/ledger |
+
+Thresholds are initial defaults and must be calibrated after baseline collection; an approved exception must include owner, reason, expiry, and audit ID.
+
 ## 4. Alert thresholds
 
 Thresholds are initial internal defaults and require calibration from baseline data. They are not public SLA commitments until approved in the product readiness decision log.
