@@ -56,6 +56,7 @@ const requiredFiles = [
   'packages/randomx/src/submission-intent.test.ts',
   'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
   'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
+  'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
   'apps/randomx-gateway/src/submission-repository.ts',
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
@@ -118,6 +119,7 @@ for (const expected of [
   'model RandomXUpstreamJobEvidence',
   'model RandomXShareSubmissionIntent',
   'model RandomXUpstreamShareDecision',
+  'upstreamDispatchFingerprint',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
 ])
@@ -315,6 +317,10 @@ requireText(
 const randomXValidator = await text('packages/randomx/src/validator.ts');
 for (const expected of [
   'randomx-share-fingerprint-v2',
+  'randomx-job-fingerprint-v1',
+  'randomx-upstream-dispatch-v1',
+  'randomXUpstreamDispatchFingerprint',
+  'randomXTargetDifficulty',
   'job.blob',
   'job.target',
   "job.height?.toString() ?? ''",
@@ -328,6 +334,9 @@ for (const expected of [
   'randomx-upstream-job-evidence-v1',
   'randomx-share-submission-intent-v1',
   'randomx-local-validation-v1',
+  'input.job.clientId !== upstreamSessionId',
+  'randomXUpstreamDispatchFingerprint',
+  'idempotencyKey: `randomx-intent:${upstreamDispatchFingerprint}`',
   'Object.freeze',
 ])
   requireText(randomXSubmissionIntent, expected, 'RandomX submission-intent projector');
@@ -345,11 +354,26 @@ for (const expected of [
 ])
   requireText(randomXSubmissionMigration, expected, 'RandomX submission/outbox migration');
 
+const randomXDispatchMigration = await text(
+  'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
+);
+for (const expected of [
+  'ADD COLUMN "upstreamDispatchFingerprint" TEXT',
+  'SET "upstreamDispatchFingerprint" = "shareFingerprint"',
+  'RandomXShareSubmissionIntent_dispatch_fingerprint_check',
+  'RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key',
+])
+  requireText(randomXDispatchMigration, expected, 'RandomX authoritative-dispatch migration');
+
 const randomXSubmissionRepository = await text('apps/randomx-gateway/src/submission-repository.ts');
 for (const expected of [
   'projectRandomXSubmissionIntent(input)',
   'pg_advisory_xact_lock',
   'SELECT CURRENT_TIMESTAMP AS "now"',
+  'resolveSubmissionContext',
+  'findSubmissionReplay',
+  '`randomx-dispatch:${projected.upstreamDispatchFingerprint}`',
+  'authenticatedWorkerId',
   'randomXShareSubmissionIntent.create',
   'createRandomXAcceptedShareEvent',
   'outboxEvent.create',
@@ -362,13 +386,54 @@ const randomXSubmissionCoordinator = await text(
 );
 for (const expected of [
   'RandomXSubmissionUncertainError',
+  'resolveAuthenticatedWorker',
+  'resolveSubmissionContext',
+  'findSubmissionReplay',
   'recordPreparedSubmission',
   'findDecisionByIntent',
+  'getJob(request.submission.jobId, validationTime)',
+  'randomXJobFingerprint(job)',
+  'randomXTargetDifficulty(parseRandomXTarget(job.target))',
+  'randomx-upstream-share-decision-v2',
+  'upstream.submit(',
+  'JOB_UNAVAILABLE',
   'ahead of authoritative database time',
   'automatic resubmission is blocked',
   'recordDecision',
 ])
   requireText(randomXSubmissionCoordinator, expected, 'RandomX submission coordinator');
+
+const randomXPoolAdapter = await text('packages/upstream-stratum/src/randomx-pool-adapter.ts');
+for (const expected of [
+  'RandomXSubmissionNotDispatchedError',
+  'function cloneJob',
+  "return this.state === 'ACTIVE' ? this.sessionId : undefined",
+  'if (this.startOperation) return this.startOperation',
+  'expectedSessionId: string',
+  'expectedJobFingerprint: string',
+  'randomXJobFingerprint(job) !== expectedJobFingerprint',
+  'this.deferredJobNotifications.push(message.params)',
+  'if (this.socket !== socket) return',
+  'return cloneJob(job)',
+  'onJob?.(cloneJob(storedJob))',
+])
+  requireText(randomXPoolAdapter, expected, 'RandomX authoritative job snapshot isolation');
+
+const randomXProtocol = await text('packages/upstream-stratum/src/randomx-protocol.ts');
+requireText(
+  randomXProtocol,
+  'receivedAt: new Date(receivedAt.getTime())',
+  'RandomX protocol clock snapshot isolation',
+);
+
+const randomXMigrationVerifier = await text('scripts/verify-v030-alpha8-migration.mjs');
+for (const expected of [
+  "const latestMigration = '20260827010000_randomx_authoritative_dispatch_binding'",
+  "'alpha8-upgrade-randomx-intent'",
+  '"upstreamDispatchFingerprint" = "shareFingerprint"',
+  'schema-v19 RandomX intent was not safely backfilled to v20',
+])
+  requireText(randomXMigrationVerifier, expected, 'Schema-v20 migration verifier');
 
 const scheduler = await text('apps/scheduler/src/runtime.ts');
 requireText(

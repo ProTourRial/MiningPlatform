@@ -17,13 +17,72 @@ const CRYPTONOTE_NONCE_BYTES = 4;
 const MAX_XMRIG_BLOB_BYTES = 407;
 const MAX_UINT32 = 0xffff_ffffn;
 const MAX_UINT64 = 0xffff_ffff_ffff_ffffn;
+const DIFFICULTY_DECIMAL_SCALE = 1_000_000_000_000n;
+
+function digestNormalizedParts(parts: readonly string[]): string {
+  const hash = createHash('sha256');
+  for (const value of parts) {
+    const normalized = value.toLowerCase();
+    hash.update(String(Buffer.byteLength(normalized, 'utf8')));
+    hash.update(':');
+    hash.update(normalized);
+    hash.update(';');
+  }
+  return hash.digest('hex');
+}
+
+export function randomXJobFingerprint(job: RandomXJob): string {
+  if (
+    !(job.receivedAt instanceof Date) ||
+    Number.isNaN(job.receivedAt.getTime()) ||
+    !(job.expiresAt instanceof Date) ||
+    Number.isNaN(job.expiresAt.getTime())
+  ) {
+    throw new Error('RandomX job fingerprint time is invalid');
+  }
+  return digestNormalizedParts([
+    'randomx-job-fingerprint-v1',
+    job.algorithm,
+    job.clientId,
+    job.id,
+    job.blob,
+    job.seedHash,
+    job.target,
+    job.height?.toString() ?? '',
+    job.receivedAt.toISOString(),
+    job.expiresAt.toISOString(),
+  ]);
+}
+
+export function randomXUpstreamDispatchFingerprint(
+  upstreamPoolId: string,
+  job: RandomXJob,
+  submission: RandomXShareSubmission,
+): string {
+  if (!upstreamPoolId.trim() || upstreamPoolId.length > 256) {
+    throw new Error('RandomX upstream dispatch pool id is invalid');
+  }
+  return digestNormalizedParts([
+    'randomx-upstream-dispatch-v1',
+    upstreamPoolId,
+    job.algorithm,
+    job.clientId,
+    job.id,
+    job.blob,
+    job.seedHash,
+    job.target,
+    job.height?.toString() ?? '',
+    submission.jobId,
+    submission.nonce,
+    submission.result,
+  ]);
+}
 
 export function randomXShareFingerprint(
   job: RandomXJob,
   submission: RandomXShareSubmission,
 ): string {
-  const hash = createHash('sha256');
-  for (const value of [
+  return digestNormalizedParts([
     'randomx-share-fingerprint-v2',
     job.algorithm,
     job.clientId,
@@ -35,14 +94,7 @@ export function randomXShareFingerprint(
     submission.workerName,
     submission.nonce,
     submission.result,
-  ]) {
-    const normalized = value.toLowerCase();
-    hash.update(String(Buffer.byteLength(normalized, 'utf8')));
-    hash.update(':');
-    hash.update(normalized);
-    hash.update(';');
-  }
-  return hash.digest('hex');
+  ]);
 }
 
 function readLittleEndian(hex: string): bigint {
@@ -65,6 +117,19 @@ export function parseRandomXTarget(targetHex: string): bigint {
   const divisor = MAX_UINT32 / rawTarget;
   if (divisor === 0n) throw new Error('RandomX compact target is invalid');
   return MAX_UINT64 / divisor;
+}
+
+export function randomXTargetDifficulty(target: bigint): string {
+  if (target <= 0n || target > MAX_UINT64) {
+    throw new Error('RandomX difficulty target is outside uint64');
+  }
+  const scaled = (MAX_UINT64 * DIFFICULTY_DECIMAL_SCALE) / target;
+  const whole = scaled / DIFFICULTY_DECIMAL_SCALE;
+  const fraction = (scaled % DIFFICULTY_DECIMAL_SCALE)
+    .toString()
+    .padStart(12, '0')
+    .replace(/0+$/, '');
+  return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
 export function applyRandomXNonce(blobHex: string, nonceHex: string): string {

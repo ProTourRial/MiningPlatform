@@ -5,23 +5,23 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto';
-import type {
-  RandomXAccountingProjectionInput,
-  RandomXJob,
-  RandomXShareSubmission,
-  RandomXValidationResult,
+import {
+  parseRandomXTarget,
+  randomXJobFingerprint,
+  randomXTargetDifficulty,
+  type RandomXAccountingProjectionInput,
+  type RandomXJob,
+  type RandomXShareSubmission,
+  type RandomXValidationResult,
 } from '@mining/randomx';
-import { RandomXSubmissionRepository } from './submission-repository.js';
-
-const MAXIMUM_SUBMISSION_CLOCK_SKEW_MILLISECONDS = 5_000;
+import {
+  RandomXSubmissionRepository,
+  type ReplayedRandomXSubmission,
+} from './submission-repository.js';
 
 export type RandomXGatewaySubmission = {
-  miningAccountId: string;
-  assetId: string;
-  upstreamPoolId: string;
+  connectionId: string;
   correlationId: string;
-  acceptedDifficulty: string;
-  job: RandomXJob;
   submission: RandomXShareSubmission;
 };
 
@@ -40,11 +40,30 @@ export interface RandomXGatewayValidator {
 }
 
 export interface RandomXGatewayUpstream {
+  readonly id: string;
   readonly activeSessionId: string | undefined;
-  submit(submission: RandomXShareSubmission): Promise<RandomXUpstreamSubmissionResult>;
+  getJob(jobId: string, at?: Date): RandomXJob | undefined;
+  submit(
+    submission: RandomXShareSubmission,
+    expectedSessionId: string,
+    expectedJobFingerprint: string,
+  ): Promise<RandomXUpstreamSubmissionResult>;
+}
+
+export interface RandomXGatewayIdentityResolver {
+  resolveAuthenticatedWorker(connectionId: string): Promise<{
+    workerId: string;
+    workerName: string;
+    miningAccountId: string;
+  }>;
 }
 
 export type RandomXSubmissionOutcome =
+  | {
+      status: 'JOB_UNAVAILABLE';
+      reason: 'UNKNOWN_OR_STALE_JOB';
+      replayed: false;
+    }
   | {
       status: 'LOCAL_REJECTED';
       validation: RandomXValidationResult;
@@ -80,6 +99,7 @@ export class RandomXSubmissionUncertainError extends Error {
 type RandomXSubmissionCoordinatorOptions = {
   validator: RandomXGatewayValidator;
   upstream: RandomXGatewayUpstream;
+  identityResolver: RandomXGatewayIdentityResolver;
   repository?: RandomXSubmissionRepository;
   createId?: () => string;
 };
@@ -93,6 +113,42 @@ function digestParts(parts: readonly string[]): string {
     hash.update(';');
   }
   return hash.digest('hex');
+}
+
+function isBoundedIdentifier(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= 256 &&
+    value === value.trim() &&
+    ![...value].some((character) => character.charCodeAt(0) < 0x20)
+  );
+}
+
+function snapshotSubmission(input: RandomXGatewaySubmission): RandomXGatewaySubmission {
+  if (!isBoundedIdentifier(input.connectionId)) {
+    throw new Error('RandomX authenticated connection id is invalid');
+  }
+  const submittedAt = input.submission.submittedAt;
+  if (!(submittedAt instanceof Date) || Number.isNaN(submittedAt.getTime())) {
+    throw new Error('RandomX submission time is invalid');
+  }
+  return {
+    connectionId: input.connectionId,
+    correlationId: input.correlationId,
+    submission: {
+      ...input.submission,
+      submittedAt: new Date(submittedAt.getTime()),
+    },
+  };
+}
+
+function snapshotJob(job: RandomXJob): RandomXJob {
+  return {
+    ...job,
+    receivedAt: new Date(job.receivedAt.getTime()),
+    expiresAt: new Date(job.expiresAt.getTime()),
+  };
 }
 
 function normalizeUpstreamResult(value: RandomXUpstreamSubmissionResult): {
@@ -127,22 +183,50 @@ function normalizeUpstreamResult(value: RandomXUpstreamSubmissionResult): {
 function decisionDigest(input: {
   upstreamPoolId: string;
   upstreamSessionId: string;
-  shareFingerprint: string;
+  upstreamDispatchFingerprint: string;
   accepted: boolean;
   errorCode: number | undefined;
   errorMessage: string | undefined;
   decidedAt: Date;
 }): string {
   return digestParts([
-    'randomx-upstream-share-decision-v1',
+    'randomx-upstream-share-decision-v2',
     input.upstreamPoolId,
     input.upstreamSessionId,
-    input.shareFingerprint,
+    input.upstreamDispatchFingerprint,
     String(input.accepted),
     input.errorCode === undefined ? '' : String(input.errorCode),
     input.errorMessage ?? '',
     input.decidedAt.toISOString(),
   ]);
+}
+
+function replayOutcome(replay: ReplayedRandomXSubmission): RandomXSubmissionOutcome {
+  const existing = replay.decision;
+  if (!existing) throw new RandomXSubmissionUncertainError(replay.intent.id);
+  if (existing.accepted) {
+    if (!existing.outboxEventId) {
+      throw new RandomXSubmissionUncertainError(
+        replay.intent.id,
+        'RandomX accepted decision is missing its durable outbox evidence',
+      );
+    }
+    return {
+      status: 'ACCEPTED_ENQUEUED',
+      intentId: replay.intent.id,
+      decisionId: existing.id,
+      outboxEventId: existing.outboxEventId,
+      replayed: true,
+    };
+  }
+  return {
+    status: 'UPSTREAM_REJECTED',
+    intentId: replay.intent.id,
+    decisionId: existing.id,
+    errorCode: existing.errorCode,
+    errorMessage: existing.errorMessage ?? 'RandomX upstream rejected share',
+    replayed: true,
+  };
 }
 
 export class RandomXSubmissionCoordinator {
@@ -155,70 +239,105 @@ export class RandomXSubmissionCoordinator {
   }
 
   async submit(input: RandomXGatewaySubmission): Promise<RandomXSubmissionOutcome> {
-    const upstreamSessionId = this.options.upstream.activeSessionId;
-    if (!upstreamSessionId || upstreamSessionId !== input.job.clientId) {
-      throw new Error('RandomX job is not bound to the active upstream session');
+    const request = snapshotSubmission(input);
+    const authenticatedWorker = await this.options.identityResolver.resolveAuthenticatedWorker(
+      request.connectionId,
+    );
+    if (
+      !authenticatedWorker ||
+      !isBoundedIdentifier(authenticatedWorker.workerId) ||
+      !isBoundedIdentifier(authenticatedWorker.workerName) ||
+      !isBoundedIdentifier(authenticatedWorker.miningAccountId)
+    ) {
+      throw new Error('RandomX authenticated worker principal is invalid');
+    }
+    if (authenticatedWorker.workerName !== request.submission.workerName) {
+      throw new Error('RandomX submission worker does not match the authenticated connection');
+    }
+    const context = await this.repository.resolveSubmissionContext(
+      authenticatedWorker.workerId,
+      authenticatedWorker.miningAccountId,
+      this.options.upstream.id,
+    );
+    const durableReplay = await this.repository.findSubmissionReplay({
+      upstreamPoolId: context.upstreamPoolId,
+      submission: request.submission,
+    });
+    if (durableReplay) {
+      if (durableReplay.intent.miningAccountId !== context.miningAccountId) {
+        throw new Error('RandomX upstream proof already belongs to another mining account');
+      }
+      return replayOutcome(durableReplay);
     }
 
+    const upstreamSessionId = this.options.upstream.activeSessionId;
+    if (!upstreamSessionId) throw new Error('RandomX upstream session is not active');
     const validationTime = await this.repository.currentDatabaseTime();
-    if (
-      input.submission.submittedAt.getTime() >
-      validationTime.getTime() + MAXIMUM_SUBMISSION_CLOCK_SKEW_MILLISECONDS
-    ) {
+    if (request.submission.submittedAt.getTime() > validationTime.getTime()) {
       throw new Error('RandomX submission timestamp is ahead of authoritative database time');
     }
+    const availableJob = this.options.upstream.getJob(request.submission.jobId, validationTime);
+    if (!availableJob) {
+      return { status: 'JOB_UNAVAILABLE', reason: 'UNKNOWN_OR_STALE_JOB', replayed: false };
+    }
+    const job = snapshotJob(availableJob);
+    const jobFingerprint = randomXJobFingerprint(job);
+    if (job.clientId !== upstreamSessionId) {
+      throw new Error('RandomX authoritative job is not bound to the active upstream session');
+    }
+    if (job.receivedAt.getTime() > validationTime.getTime()) {
+      return { status: 'JOB_UNAVAILABLE', reason: 'UNKNOWN_OR_STALE_JOB', replayed: false };
+    }
     const validation = await this.options.validator.validate(
-      input.job,
-      input.submission,
-      validationTime,
+      snapshotJob(job),
+      snapshotSubmission(request).submission,
+      new Date(validationTime.getTime()),
     );
     if (!validation.accepted || validation.reason !== 'ACCEPTED') {
       return { status: 'LOCAL_REJECTED', validation, replayed: false };
     }
 
+    const revalidatedWorker = await this.options.identityResolver.resolveAuthenticatedWorker(
+      request.connectionId,
+    );
+    if (
+      !revalidatedWorker ||
+      revalidatedWorker.workerId !== authenticatedWorker.workerId ||
+      revalidatedWorker.workerName !== authenticatedWorker.workerName ||
+      revalidatedWorker.miningAccountId !== authenticatedWorker.miningAccountId
+    ) {
+      throw new Error('RandomX authenticated connection changed during validation');
+    }
+
+    const acceptedDifficulty = randomXTargetDifficulty(parseRandomXTarget(job.target));
     const prepared = await this.repository.recordPreparedSubmission({
-      miningAccountId: input.miningAccountId,
-      assetId: input.assetId,
-      upstreamPoolId: input.upstreamPoolId,
+      authenticatedWorkerId: context.workerId,
+      miningAccountId: context.miningAccountId,
+      assetId: context.assetId,
+      upstreamPoolId: context.upstreamPoolId,
       upstreamSessionId,
-      correlationId: input.correlationId,
-      acceptedDifficulty: input.acceptedDifficulty,
-      job: input.job,
-      submission: input.submission,
+      correlationId: request.correlationId,
+      acceptedDifficulty,
+      job,
+      submission: request.submission,
       validation,
     });
 
     if (!prepared.created) {
-      const existing = await this.repository.findDecisionByIntent(prepared.intent.id);
-      if (!existing) throw new RandomXSubmissionUncertainError(prepared.intent.id);
-      if (existing.accepted) {
-        if (!existing.outboxEventId) {
-          throw new RandomXSubmissionUncertainError(
-            prepared.intent.id,
-            'RandomX accepted decision is missing its durable outbox evidence',
-          );
-        }
-        return {
-          status: 'ACCEPTED_ENQUEUED',
-          intentId: prepared.intent.id,
-          decisionId: existing.id,
-          outboxEventId: existing.outboxEventId,
-          replayed: true,
-        };
+      if (prepared.intent.miningAccountId !== context.miningAccountId) {
+        throw new Error('RandomX upstream proof already belongs to another mining account');
       }
-      return {
-        status: 'UPSTREAM_REJECTED',
-        intentId: prepared.intent.id,
-        decisionId: existing.id,
-        errorCode: existing.errorCode,
-        errorMessage: existing.errorMessage ?? 'RandomX upstream rejected share',
-        replayed: true,
-      };
+      const existing = await this.repository.findDecisionByIntent(prepared.intent.id);
+      return replayOutcome({ intent: prepared.intent, decision: existing });
     }
 
     let upstreamResult: RandomXUpstreamSubmissionResult;
     try {
-      upstreamResult = await this.options.upstream.submit(input.submission);
+      upstreamResult = await this.options.upstream.submit(
+        snapshotSubmission(request).submission,
+        upstreamSessionId,
+        jobFingerprint,
+      );
     } catch (error) {
       throw new RandomXSubmissionUncertainError(
         prepared.intent.id,
@@ -240,9 +359,9 @@ export class RandomXSubmissionCoordinator {
       );
     }
     const sourceDigest = decisionDigest({
-      upstreamPoolId: input.upstreamPoolId,
+      upstreamPoolId: context.upstreamPoolId,
       upstreamSessionId,
-      shareFingerprint: prepared.projection.shareFingerprint,
+      upstreamDispatchFingerprint: prepared.projection.upstreamDispatchFingerprint,
       ...normalized,
       decidedAt,
     });
@@ -250,16 +369,16 @@ export class RandomXSubmissionCoordinator {
     const eventId = normalized.accepted ? this.createId() : undefined;
     const accounting: RandomXAccountingProjectionInput | undefined = normalized.accepted
       ? {
-          miningAccountId: input.miningAccountId,
-          assetId: input.assetId,
-          correlationId: input.correlationId,
-          acceptedDifficulty: input.acceptedDifficulty,
-          job: input.job,
-          submission: input.submission,
+          miningAccountId: context.miningAccountId,
+          assetId: context.assetId,
+          correlationId: request.correlationId,
+          acceptedDifficulty,
+          job,
+          submission: request.submission,
           validation,
           upstream: {
             accepted: true,
-            upstreamPoolId: input.upstreamPoolId,
+            upstreamPoolId: context.upstreamPoolId,
             upstreamSessionId,
             decidedAt,
             sourceDigest,

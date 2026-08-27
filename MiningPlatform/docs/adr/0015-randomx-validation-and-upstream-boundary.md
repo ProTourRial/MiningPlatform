@@ -60,13 +60,30 @@ in application JavaScript is outside the platform's security and correctness bou
 11. A side-effect-free factory is the canonical producer-side representation of that event. It invokes
     the accounting projector again, requires a bounded CryptoNote blob and uint64 height, normalizes
     every payload/envelope field, and returns a frozen object. It does not publish.
-12. Schema v19 and the dormant RandomX gateway persist bounded upstream-job evidence and a locally
-    validated share-submission intent before the upstream RPC. A unique share fingerprint plus
-    PostgreSQL transaction advisory locks serialize duplicate work. A timeout, lost transport, malformed
-    response, or post-RPC persistence failure leaves the intent unresolved and blocks automatic
-    resubmission. An upstream acceptance writes its immutable decision and the canonical accepted-share
-    event to the transactional outbox in one database transaction; rejection writes no accepted event.
-13. Database triggers bind job/account/asset/pool/time evidence, require exact decision-to-event envelope
+12. Schema v19 and the dormant RandomX gateway resolve the worker and mining account from the
+    authenticated connection, correlate that principal to an enabled RandomX asset and the adapter's
+    configured upstream pool, and recheck the same authorization after hashing and inside the intent
+    transaction. The gateway retrieves the still-active job at authoritative database time, derives
+    accepted difficulty from its target, and persists bounded job evidence plus a locally validated
+    share-submission intent before RPC. Callers cannot provide account, asset, pool, difficulty, job
+    blob, seed, target, height, or session evidence.
+13. Schema v20 adds one unique upstream-dispatch fingerprint over the exact pool, session/client, job
+    identity, blob, seed, target, height, nonce, and result. It deliberately excludes local worker
+    attribution, request correlation, and receipt timestamp so the same wire proof cannot be submitted
+    under a second worker and a decided retry can be replayed after live-job eviction. Existing v19
+    rows are backfilled with their already unique share fingerprint; historical rows remain immutable.
+    New decisions use the versioned `randomx-upstream-share-decision-v2` digest domain because their
+    canonical proof identity is the dispatch fingerprint; historical v1 decision digests are not
+    recomputed.
+14. The adapter returns isolated job snapshots and requires the expected active session plus the full
+    immutable job fingerprint immediately before the socket write. Concurrent starts share one login,
+    a valid job notification arriving beside the login response is deferred until authorization,
+    replaced-socket callbacks are ignored, and disconnect clears all session/job state. Only an
+    explicit upstream JSON-RPC error is terminal rejection. Timeout, lost transport, malformed or
+    ambiguous response, or post-RPC persistence failure leaves the durable intent unresolved and
+    blocks automatic resubmission. An acceptance writes its immutable decision and the canonical event
+    to the transactional outbox atomically; rejection writes no accepted event.
+15. Database triggers bind job/account/asset/pool/time evidence, require exact decision-to-event envelope
     and payload correlation, reject evidence mutation, and protect a correlated outbox envelope while
     allowing delivery status updates. Retention excludes accepted RandomX outbox evidence. These records
     remain evidence only and cannot create a contribution, reward, journal, balance, or payout.
@@ -76,9 +93,9 @@ in application JavaScript is outside the platform's security and correctness bou
 - Bitcoin and RandomX transports can evolve independently without optional-field ambiguity.
 - A sidecar outage reduces availability but cannot produce accepted, credited, or paid work.
 - RandomX requires additional deployment capacity and health monitoring before production activation.
-- Schema v19 and its fresh/representative-upgrade rehearsals establish immutable pre-RPC intent,
-  upstream-decision, and transactional-outbox boundaries required before miner-facing RandomX traffic
-  can be considered.
+- Schema v20 and its fresh/representative-upgrade rehearsals establish immutable pre-RPC intent,
+  authoritative dispatch identity, upstream-decision, and transactional-outbox boundaries required
+  before miner-facing RandomX traffic can be considered.
 - Accounting evidence now has deterministic projection, canonical event construction, append-only
   persistence, strict internal event consumption, and dormant durable submission/outbox orchestration.
   Miner-facing production, unresolved-intent operator recovery, contribution-fact creation,
@@ -91,12 +108,17 @@ in application JavaScript is outside the platform's security and correctness bou
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
 - Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
+- Transform or allocate miner work so replicas and workers cannot receive overlapping 32-bit RandomX
+  nonce space for the same upstream blob; prove uniqueness across reconnect, restart, and failover.
+- Enforce bounded clock skew and monitor database, gateway, sidecar, and upstream time domains before
+  accepting timestamp evidence.
 - Add the authenticated miner-facing producer and prove that only its accepted local-plus-upstream
   decisions reach the strict event consumer without bypassing the projector or database constraints.
 - Add an authenticated, bounded miner-facing transport that invokes the dormant gateway without
   bypassing its pre-RPC intent or transactional outbox.
-- Add operator-owned unresolved-intent recovery; never infer rejection or automatically resubmit from
-  an ambiguous timeout.
+- Add operator-owned unresolved-intent recovery, including explicit classification of known local
+  non-dispatch versus ambiguous write/response outcomes; never infer rejection or automatically
+  resubmit without durable evidence and an approved policy.
 - Prove duplicate/retry safety from accepted share through contribution and reward allocation.
 - Reconcile the upstream RandomX settlement source exactly before any user balance is credited.
 - Run failure-injection E2E for sidecar outage, wrong seed, stale job, upstream rejection, reconnect,

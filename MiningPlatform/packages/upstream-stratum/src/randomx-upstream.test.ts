@@ -7,10 +7,12 @@
 import assert from 'node:assert/strict';
 import net, { type Socket } from 'node:net';
 import test from 'node:test';
+import { randomXJobFingerprint, type RandomXJob } from '@mining/randomx';
 import {
   normalizeRandomXUpstreamJob,
   parseRandomXUpstreamLine,
   RandomXPoolAdapter,
+  RandomXSubmissionNotDispatchedError,
   type UpstreamEndpoint,
 } from './index.js';
 
@@ -21,6 +23,11 @@ const validJob = {
   target: 'ffffffffffffffff',
   seed_hash: '11'.repeat(32),
   height: 3_500_000,
+};
+const notifiedJob = {
+  ...validJob,
+  job_id: 'randomx-job-notification',
+  height: 3_500_001,
 };
 
 async function listen(server: net.Server): Promise<number> {
@@ -94,6 +101,7 @@ test('rejects malformed or unsupported RandomX JSON-RPC messages', () => {
 test('RandomX adapter performs login, records the seeded job, and submits the bound proof', async () => {
   const sockets = new Set<Socket>();
   const received: Record<string, unknown>[] = [];
+  let loginCount = 0;
   const server = net.createServer((socket) => {
     sockets.add(socket);
     socket.setEncoding('utf8');
@@ -108,21 +116,27 @@ test('RandomX adapter performs login, records the seeded job, and submits the bo
           const request = JSON.parse(line) as Record<string, unknown>;
           received.push(request);
           if (request.method === 'login') {
-            socket.write(
-              `${JSON.stringify({
-                id: request.id,
-                jsonrpc: '2.0',
-                error: null,
-                result: { id: 'session-1', status: 'OK', job: validJob },
-              })}\n`,
-            );
+            loginCount += 1;
+            const response = `${JSON.stringify({
+              id: request.id,
+              jsonrpc: '2.0',
+              error: null,
+              result: { id: `session-${loginCount}`, status: 'OK', job: validJob },
+            })}\n`;
+            const notification = `${JSON.stringify({
+              jsonrpc: '2.0',
+              method: 'job',
+              params: notifiedJob,
+            })}\n`;
+            socket.write(loginCount === 1 ? `${response}${notification}` : response);
           } else if (request.method === 'submit') {
+            const params = request.params as Record<string, unknown>;
             socket.write(
               `${JSON.stringify({
                 id: request.id,
                 jsonrpc: '2.0',
                 error: null,
-                result: { status: 'OK' },
+                result: params.nonce === 'ffffffff' ? null : { status: 'OK' },
               })}\n`,
             );
           }
@@ -133,32 +147,92 @@ test('RandomX adapter performs login, records the seeded job, and submits the bo
     socket.on('close', () => sockets.delete(socket));
   });
   const port = await listen(server);
-  const jobs: string[] = [];
+  const jobs: RandomXJob[] = [];
   const states: string[] = [];
+  let adapterNow = fixedNow;
+  let signalDisconnected!: () => void;
+  const disconnected = new Promise<void>((resolve) => {
+    signalDisconnected = resolve;
+  });
   const adapter = new RandomXPoolAdapter(
     'xmr-primary',
     endpoint(port),
     {
-      onJob: (job) => jobs.push(job.id),
+      onJob: (job) => jobs.push(job),
       onState: (state) => states.push(state),
+      onDisconnect: () => signalDisconnected(),
     },
-    { now: () => fixedNow, jobTtlMilliseconds: 60_000 },
+    { now: () => adapterNow, jobTtlMilliseconds: 60_000 },
   );
 
   try {
-    const login = await adapter.start();
+    const firstStart = adapter.start();
+    const concurrentStart = adapter.start();
+    assert.equal(concurrentStart, firstStart);
+    const [login, concurrentLogin] = await Promise.all([firstStart, concurrentStart]);
+    assert.deepEqual(concurrentLogin, login);
+    assert.equal(loginCount, 1, 'concurrent start calls must share one authorization RPC');
     assert.equal(login.sessionId, 'session-1');
     assert.equal(adapter.getJob(validJob.job_id)?.seedHash, validJob.seed_hash);
-    assert.deepEqual(jobs, ['randomx-job-1']);
+    assert.equal(adapter.getJob(notifiedJob.job_id)?.clientId, 'session-1');
+    assert.deepEqual(
+      jobs.map((job) => job.id),
+      ['randomx-job-1', 'randomx-job-notification'],
+    );
     assert.deepEqual(states, ['CONNECTING', 'AUTHORIZING', 'ACTIVE']);
 
-    const result = await adapter.submit({
+    login.job.seedHash = 'aa'.repeat(32);
+    login.job.receivedAt.setTime(0);
+    const callbackJob = jobs[0];
+    assert.ok(callbackJob);
+    callbackJob.seedHash = 'bb'.repeat(32);
+    callbackJob.expiresAt.setTime(0);
+    const retrievedJob = adapter.getJob(validJob.job_id);
+    assert.ok(retrievedJob);
+    retrievedJob.seedHash = 'cc'.repeat(32);
+    retrievedJob.receivedAt.setTime(0);
+    const authoritativeJob = adapter.getJob(validJob.job_id);
+    assert.ok(authoritativeJob);
+    assert.equal(authoritativeJob.seedHash, validJob.seed_hash);
+    assert.equal(authoritativeJob.receivedAt.toISOString(), fixedNow.toISOString());
+    assert.equal(
+      authoritativeJob.expiresAt.toISOString(),
+      new Date(fixedNow.getTime() + 60_000).toISOString(),
+    );
+
+    const validSubmission = {
       workerName: 'account.cpu-1',
       jobId: validJob.job_id,
       nonce: '78563412',
       result: '22'.repeat(32),
       submittedAt: fixedNow,
-    });
+    };
+    const firstFingerprint = randomXJobFingerprint(authoritativeJob);
+    await assert.rejects(
+      adapter.submit(validSubmission, 'session-2', firstFingerprint),
+      (error: unknown) => {
+        assert.ok(error instanceof RandomXSubmissionNotDispatchedError);
+        return true;
+      },
+    );
+    assert.equal(received.length, 1);
+
+    await assert.rejects(
+      adapter.submit(validSubmission, 'session-1', '00'.repeat(32)),
+      (error: unknown) => {
+        assert.ok(error instanceof RandomXSubmissionNotDispatchedError);
+        return true;
+      },
+    );
+    assert.equal(received.length, 1, 'a changed job fingerprint must not produce an upstream RPC');
+
+    await assert.rejects(
+      adapter.submit({ ...validSubmission, nonce: 'invalid' }, 'session-1', firstFingerprint),
+      /submission proof is invalid/,
+    );
+    assert.equal(received.length, 1, 'serialization failure must not produce an upstream RPC');
+
+    const result = await adapter.submit(validSubmission, 'session-1', firstFingerprint);
     assert.deepEqual(result, { accepted: true });
     assert.equal(received[0]?.method, 'login');
     assert.deepEqual(received[0]?.params, {
@@ -173,18 +247,65 @@ test('RandomX adapter performs login, records the seeded job, and submits the bo
       result: '22'.repeat(32),
     });
 
-    const stale = await adapter.submit({
-      workerName: 'account.cpu-1',
-      jobId: validJob.job_id,
-      nonce: '00000000',
-      result: '00'.repeat(32),
-      submittedAt: new Date('2026-08-22T10:32:00.000Z'),
+    await assert.rejects(
+      adapter.submit({ ...validSubmission, nonce: 'ffffffff' }, 'session-1', firstFingerprint),
+      /ambiguous submission result/,
+    );
+    assert.equal(received.length, 3);
+
+    const reconnected = await adapter.start();
+    assert.equal(reconnected.sessionId, 'session-2');
+    assert.equal(adapter.activeSessionId, 'session-2');
+    const reconnectedJob = adapter.getJob(validJob.job_id);
+    assert.ok(reconnectedJob);
+    assert.equal(reconnectedJob.clientId, 'session-2');
+    const reconnectedFingerprint = randomXJobFingerprint(reconnectedJob);
+    await assert.rejects(
+      adapter.submit(validSubmission, 'session-1', firstFingerprint),
+      (error: unknown) => {
+        assert.ok(error instanceof RandomXSubmissionNotDispatchedError);
+        return true;
+      },
+    );
+    assert.equal(received.length, 4, 'stale session must not produce an upstream RPC');
+    const reconnectedResult = await adapter.submit(
+      validSubmission,
+      'session-2',
+      reconnectedFingerprint,
+    );
+    assert.deepEqual(reconnectedResult, { accepted: true });
+    assert.equal(received.length, 5);
+    assert.deepEqual(received[4]?.params, {
+      id: 'session-2',
+      job_id: 'randomx-job-1',
+      nonce: '78563412',
+      result: '22'.repeat(32),
     });
-    assert.deepEqual(stale, {
-      accepted: false,
-      errorMessage: 'Stale or unknown RandomX job',
-    });
-    assert.equal(received.length, 2);
+
+    adapterNow = new Date('2026-08-22T10:32:00.000Z');
+    await assert.rejects(
+      adapter.submit(
+        {
+          workerName: 'account.cpu-1',
+          jobId: validJob.job_id,
+          nonce: '00000000',
+          result: '00'.repeat(32),
+          submittedAt: adapterNow,
+        },
+        'session-2',
+        reconnectedFingerprint,
+      ),
+      (error: unknown) => {
+        assert.ok(error instanceof RandomXSubmissionNotDispatchedError);
+        return true;
+      },
+    );
+    assert.equal(received.length, 5);
+
+    for (const socket of sockets) socket.destroy();
+    await disconnected;
+    assert.equal(adapter.activeSessionId, undefined);
+    assert.equal(adapter.getJob(validJob.job_id), undefined);
   } finally {
     adapter.close();
     await closeServer(server, sockets);
@@ -194,13 +315,20 @@ test('RandomX adapter performs login, records the seeded job, and submits the bo
 test('RandomX adapter rejects submission before authorization', async () => {
   const adapter = new RandomXPoolAdapter('xmr-primary', endpoint(1), {}, { now: () => fixedNow });
   await assert.rejects(
-    adapter.submit({
-      workerName: 'account.cpu-1',
-      jobId: 'missing',
-      nonce: '00000000',
-      result: '00'.repeat(32),
-      submittedAt: fixedNow,
-    }),
-    /DISCONNECTED/,
+    adapter.submit(
+      {
+        workerName: 'account.cpu-1',
+        jobId: 'missing',
+        nonce: '00000000',
+        result: '00'.repeat(32),
+        submittedAt: fixedNow,
+      },
+      'missing-session',
+      '00'.repeat(32),
+    ),
+    (error: unknown) => {
+      assert.ok(error instanceof RandomXSubmissionNotDispatchedError);
+      return true;
+    },
   );
 });

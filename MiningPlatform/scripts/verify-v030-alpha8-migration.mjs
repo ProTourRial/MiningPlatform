@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260826010000_randomx_submission_outbox';
+const latestMigration = '20260827010000_randomx_authoritative_dispatch_binding';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -314,6 +314,50 @@ try {
         repeat('e', 64), repeat('f', 64)
       );
     `);
+
+    cpSync(
+      join(migrationsRoot, '20260826010000_randomx_submission_outbox'),
+      join(temporaryMigrations, '20260826010000_randomx_submission_outbox'),
+      { recursive: true },
+    );
+    run('pnpm', [
+      '--filter',
+      '@mining/database',
+      'exec',
+      'prisma',
+      'migrate',
+      'deploy',
+      '--config',
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+    ]);
+    psql(`
+      INSERT INTO "RandomXUpstreamJobEvidence" (
+        "id", "sourceDigest", "algorithm", "assetId", "upstreamPoolId",
+        "upstreamSessionId", "upstreamJobId", "upstreamClientId", "jobBlob",
+        "seedHash", "targetHex", "height", "receivedAt", "expiresAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-job-evidence', repeat('1', 64), 'rx/0',
+        'alpha8-upgrade-randomx-asset', 'alpha8-upgrade-randomx-pool',
+        'alpha8-upgrade-randomx-session', 'alpha8-upgrade-randomx-upstream-job',
+        'alpha8-upgrade-randomx-session', repeat('0', 86), repeat('2', 64),
+        '0200000000000000', 404, NOW() - INTERVAL '2 minutes',
+        NOW() + INTERVAL '2 minutes'
+      );
+      INSERT INTO "RandomXShareSubmissionIntent" (
+        "id", "idempotencyKey", "sourceDigest", "shareFingerprint", "jobEvidenceId",
+        "miningAccountId", "assetId", "upstreamPoolId", "workerName", "nonce",
+        "submittedResult", "computedResult", "localTarget", "acceptedDifficulty",
+        "submittedAt", "correlationId", "validationDigest"
+      ) VALUES (
+        'alpha8-upgrade-randomx-intent', 'alpha8-upgrade-randomx-intent-key',
+        repeat('3', 64), repeat('4', 64), 'alpha8-upgrade-randomx-job-evidence',
+        'alpha8-upgrade-randomx-account', 'alpha8-upgrade-randomx-asset',
+        'alpha8-upgrade-randomx-pool', 'alpha8_upgrade_randomx_account.worker',
+        '78563412', repeat('5', 64), repeat('5', 64), 2, 1000.5,
+        NOW() - INTERVAL '1 minute', 'alpha8-upgrade-randomx-intent-correlation',
+        repeat('6', 64)
+      );
+    `);
   }
 
   run('pnpm', ['db:migrate:deploy']);
@@ -343,7 +387,19 @@ try {
         OR to_regclass('public."RandomXUpstreamJobEvidence"') IS NULL
         OR to_regclass('public."RandomXShareSubmissionIntent"') IS NULL
         OR to_regclass('public."RandomXUpstreamShareDecision"') IS NULL
-      THEN RAISE EXCEPTION 'required schema-19 tables are missing'; END IF;
+      THEN RAISE EXCEPTION 'required schema-20 tables are missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'RandomXShareSubmissionIntent'
+          AND column_name = 'upstreamDispatchFingerprint' AND is_nullable = 'NO'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = 'public' AND tablename = 'RandomXShareSubmissionIntent'
+          AND indexname = 'RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'RandomXShareSubmissionIntent_dispatch_fingerprint_check'
+      ) THEN RAISE EXCEPTION 'schema-v20 authoritative dispatch binding is missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
@@ -459,6 +515,13 @@ try {
           AND "shareFingerprint" = repeat('b', 64)
           AND "acceptedDifficulty" = 1000.5
       ) THEN RAISE EXCEPTION 'schema-v18 RandomX evidence was rewritten during upgrade'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1 FROM "RandomXShareSubmissionIntent"
+        WHERE "id" = 'alpha8-upgrade-randomx-intent'
+          AND "shareFingerprint" = repeat('4', 64)
+          AND "upstreamDispatchFingerprint" = "shareFingerprint"
+          AND "acceptedDifficulty" = 1000.5
+      ) THEN RAISE EXCEPTION 'schema-v19 RandomX intent was not safely backfilled to v20'; END IF;
     END $$;
   `);
 
@@ -614,7 +677,7 @@ try {
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
   run('pnpm', ['--filter', '@mining/randomx-gateway', 'test']);
   process.stdout.write(
-    `\nSchema-19 payout, native-recovery, and RandomX submission/outbox ${mode} verification passed.\n`,
+    `\nSchema-20 payout, native-recovery, and authoritative RandomX dispatch ${mode} verification passed.\n`,
   );
 } finally {
   if (

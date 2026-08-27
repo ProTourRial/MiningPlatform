@@ -21,6 +21,52 @@ import {
 } from '@mining/randomx';
 
 const HASH_PATTERN = /^[0-9a-f]{64}$/;
+const WORKER_AUTHORIZATION_SELECT = {
+  id: true,
+  userId: true,
+  miningAccountId: true,
+  status: true,
+  deletedAt: true,
+  user: { select: { status: true } },
+  miningAccount: {
+    select: {
+      id: true,
+      userId: true,
+      assetId: true,
+      enabled: true,
+      deletedAt: true,
+      asset: { select: { enabled: true, algorithm: true } },
+    },
+  },
+} satisfies Prisma.WorkerSelect;
+
+type RandomXWorkerAuthorizationRecord = Prisma.WorkerGetPayload<{
+  select: typeof WORKER_AUTHORIZATION_SELECT;
+}>;
+
+function authorizedRandomXAssetId(
+  worker: RandomXWorkerAuthorizationRecord | null,
+  workerId: string,
+  miningAccountId: string,
+): string {
+  if (
+    !worker ||
+    worker.id !== workerId ||
+    worker.miningAccountId !== miningAccountId ||
+    worker.userId !== worker.miningAccount.userId ||
+    worker.status === 'PENDING' ||
+    worker.status === 'DISABLED' ||
+    worker.deletedAt ||
+    worker.user.status !== 'ACTIVE' ||
+    !worker.miningAccount.enabled ||
+    worker.miningAccount.deletedAt ||
+    !worker.miningAccount.asset.enabled ||
+    !['RANDOMX', 'RX/0'].includes(worker.miningAccount.asset.algorithm.trim().toUpperCase())
+  ) {
+    throw new Error('RandomX authenticated worker is no longer authorized');
+  }
+  return worker.miningAccount.assetId;
+}
 
 function sameDate(stored: Date, projected: string): boolean {
   return stored.toISOString() === projected;
@@ -58,6 +104,7 @@ function assertIntentEquivalent(
     stored.idempotencyKey !== projected.idempotencyKey ||
     stored.sourceDigest !== projected.sourceDigest ||
     stored.shareFingerprint !== projected.shareFingerprint ||
+    stored.upstreamDispatchFingerprint !== projected.upstreamDispatchFingerprint ||
     stored.jobEvidenceId !== jobEvidenceId ||
     stored.miningAccountId !== projected.miningAccountId ||
     stored.assetId !== projected.assetId ||
@@ -99,6 +146,7 @@ function intentData(projected: RandomXShareSubmissionIntentProjection, jobEviden
     idempotencyKey: projected.idempotencyKey,
     sourceDigest: projected.sourceDigest,
     shareFingerprint: projected.shareFingerprint,
+    upstreamDispatchFingerprint: projected.upstreamDispatchFingerprint,
     jobEvidenceId,
     miningAccountId: projected.miningAccountId,
     assetId: projected.assetId,
@@ -144,6 +192,22 @@ export type RecordedRandomXDecision = {
   created: boolean;
 };
 
+export type RandomXResolvedSubmissionContext = {
+  workerId: string;
+  miningAccountId: string;
+  assetId: string;
+  upstreamPoolId: string;
+};
+
+export type ReplayedRandomXSubmission = {
+  intent: StoredRandomXShareSubmissionIntent;
+  decision: StoredRandomXUpstreamShareDecision | null;
+};
+
+export type RecordPreparedRandomXSubmissionInput = RandomXSubmissionIntentProjectionInput & {
+  authenticatedWorkerId: string;
+};
+
 export class RandomXSubmissionRepository {
   async currentDatabaseTime(): Promise<Date> {
     const rows = await prisma.$queryRaw<Array<{ now: Date }>>`
@@ -156,8 +220,72 @@ export class RandomXSubmissionRepository {
     return now;
   }
 
+  async resolveSubmissionContext(
+    workerId: string,
+    miningAccountId: string,
+    upstreamPoolId: string,
+  ): Promise<RandomXResolvedSubmissionContext> {
+    const [worker, pool] = await prisma.$transaction([
+      prisma.worker.findUnique({
+        where: { id: workerId },
+        select: WORKER_AUTHORIZATION_SELECT,
+      }),
+      prisma.upstreamPool.findUnique({
+        where: { id: upstreamPoolId },
+        select: { id: true, assetId: true, status: true },
+      }),
+    ]);
+    const assetId = authorizedRandomXAssetId(worker, workerId, miningAccountId);
+    if (!pool || pool.assetId !== assetId || pool.status === 'DISABLED') {
+      throw new Error('RandomX upstream adapter does not match the mining account asset');
+    }
+    return {
+      workerId,
+      miningAccountId,
+      assetId,
+      upstreamPoolId: pool.id,
+    };
+  }
+
+  async findSubmissionReplay(input: {
+    upstreamPoolId: string;
+    submission: {
+      workerName: string;
+      jobId: string;
+      nonce: string;
+      result: string;
+    };
+  }): Promise<ReplayedRandomXSubmission | null> {
+    const { submission } = input;
+    if (
+      submission.workerName.length < 1 ||
+      submission.workerName.length > 256 ||
+      submission.jobId.length < 1 ||
+      submission.jobId.length > 256 ||
+      !/^[0-9a-f]{8}$/i.test(submission.nonce) ||
+      !/^[0-9a-f]{64}$/i.test(submission.result)
+    ) {
+      return null;
+    }
+    const matches = await prisma.randomXShareSubmissionIntent.findMany({
+      where: {
+        upstreamPoolId: input.upstreamPoolId,
+        nonce: submission.nonce.toLowerCase(),
+        submittedResult: submission.result.toLowerCase(),
+        jobEvidence: { upstreamJobId: submission.jobId },
+      },
+      include: { decision: true },
+      take: 2,
+    });
+    if (matches.length > 1) {
+      throw new Error('RandomX durable replay evidence is ambiguous');
+    }
+    const intent = matches[0];
+    return intent ? { intent, decision: intent.decision } : null;
+  }
+
   async recordPreparedSubmission(
-    input: RandomXSubmissionIntentProjectionInput,
+    input: RecordPreparedRandomXSubmissionInput,
   ): Promise<PreparedRandomXSubmission> {
     const projected = projectRandomXSubmissionIntent(input);
     return prisma.$transaction(async (transaction) => {
@@ -165,7 +293,29 @@ export class RandomXSubmissionRepository {
         transaction,
         `randomx-job:${projected.job.upstreamPoolId}:${projected.job.upstreamSessionId}:${projected.job.upstreamJobId}`,
       );
-      await advisoryLock(transaction, `randomx-share:${projected.shareFingerprint}`);
+      await advisoryLock(transaction, `randomx-dispatch:${projected.upstreamDispatchFingerprint}`);
+
+      const worker = await transaction.worker.findUnique({
+        where: { id: input.authenticatedWorkerId },
+        select: WORKER_AUTHORIZATION_SELECT,
+      });
+      const assetId = authorizedRandomXAssetId(
+        worker,
+        input.authenticatedWorkerId,
+        projected.miningAccountId,
+      );
+      const pool = await transaction.upstreamPool.findUnique({
+        where: { id: projected.upstreamPoolId },
+        select: { assetId: true, status: true },
+      });
+      if (
+        assetId !== projected.assetId ||
+        !pool ||
+        pool.assetId !== projected.assetId ||
+        pool.status === 'DISABLED'
+      ) {
+        throw new Error('RandomX submission authorization changed before durable intent');
+      }
 
       let job = await transaction.randomXUpstreamJobEvidence.findFirst({
         where: {
@@ -191,10 +341,14 @@ export class RandomXSubmissionRepository {
             { idempotencyKey: projected.idempotencyKey },
             { sourceDigest: projected.sourceDigest },
             { shareFingerprint: projected.shareFingerprint },
+            { upstreamDispatchFingerprint: projected.upstreamDispatchFingerprint },
           ],
         },
       });
       if (existing) {
+        if (existing.upstreamDispatchFingerprint === projected.upstreamDispatchFingerprint) {
+          return { job, intent: existing, created: false, projection: projected };
+        }
         assertIntentEquivalent(existing, projected, job.id);
         return { job, intent: existing, created: false, projection: projected };
       }
@@ -329,7 +483,7 @@ export class RandomXSubmissionRepository {
       const decision = await transaction.randomXUpstreamShareDecision.create({
         data: {
           id: input.decisionId,
-          idempotencyKey: `randomx-decision:${intent.shareFingerprint}`,
+          idempotencyKey: `randomx-decision:${intent.upstreamDispatchFingerprint}`,
           submissionIntentId: intent.id,
           accepted: input.accepted,
           errorCode,

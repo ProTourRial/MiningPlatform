@@ -6,7 +6,12 @@
 
 import { createHash } from 'node:crypto';
 import type { RandomXJob, RandomXShareSubmission, RandomXValidationResult } from './types.js';
-import { applyRandomXNonce, parseRandomXTarget, randomXShareFingerprint } from './validator.js';
+import {
+  applyRandomXNonce,
+  parseRandomXTarget,
+  randomXShareFingerprint,
+  randomXUpstreamDispatchFingerprint,
+} from './validator.js';
 
 const HASH_PATTERN = /^[0-9a-f]{64}$/i;
 const MAXIMUM_IDENTIFIER_LENGTH = 256;
@@ -45,6 +50,7 @@ export type RandomXShareSubmissionIntentProjection = Readonly<{
   idempotencyKey: string;
   sourceDigest: string;
   shareFingerprint: string;
+  upstreamDispatchFingerprint: string;
   miningAccountId: string;
   assetId: string;
   upstreamPoolId: string;
@@ -128,6 +134,9 @@ export function projectRandomXSubmissionIntent(
   if (input.submission.jobId !== input.job.id) {
     throw new Error('RandomX submission intent is bound to another job');
   }
+  if (input.job.clientId !== upstreamSessionId) {
+    throw new Error('RandomX submission intent is bound to another upstream session');
+  }
   if (!input.validation.accepted || input.validation.reason !== 'ACCEPTED') {
     throw new Error('RandomX submission intent requires accepted local validation');
   }
@@ -166,6 +175,11 @@ export function projectRandomXSubmissionIntent(
   if (receivedAt.getTime() > submittedAt.getTime() || submittedAt.getTime() > expiresAt.getTime()) {
     throw new Error('RandomX submission intent timestamp order is invalid');
   }
+  const upstreamDispatchFingerprint = randomXUpstreamDispatchFingerprint(
+    upstreamPoolId,
+    input.job,
+    input.submission,
+  );
 
   const jobWithoutDigest = {
     algorithm: 'rx/0' as const,
@@ -200,6 +214,7 @@ export function projectRandomXSubmissionIntent(
   ]);
   const intentWithoutDigest = {
     shareFingerprint,
+    upstreamDispatchFingerprint,
     miningAccountId,
     assetId,
     upstreamPoolId,
@@ -215,12 +230,13 @@ export function projectRandomXSubmissionIntent(
     jobSourceDigest: job.sourceDigest,
   };
   return Object.freeze({
-    idempotencyKey: `randomx-intent:${shareFingerprint}`,
+    idempotencyKey: `randomx-intent:${upstreamDispatchFingerprint}`,
     sourceDigest: digestParts([
       'randomx-share-submission-intent-v1',
       ...Object.values(intentWithoutDigest).map(String),
     ]),
     shareFingerprint,
+    upstreamDispatchFingerprint,
     miningAccountId,
     assetId,
     upstreamPoolId,

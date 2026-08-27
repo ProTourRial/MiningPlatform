@@ -124,7 +124,7 @@ export function normalizeRandomXUpstreamJob(
     target: target.toLowerCase(),
     seedHash: seedHash.toLowerCase(),
     ...(height === undefined ? {} : { height }),
-    receivedAt,
+    receivedAt: new Date(receivedAt.getTime()),
     expiresAt: new Date(receivedAt.getTime() + ttlMilliseconds),
   };
 }

@@ -1086,29 +1086,30 @@ model RandomXUpstreamJobEvidence {
 }
 
 model RandomXShareSubmissionIntent {
-  id                 String                        @id @default(cuid())
-  idempotencyKey     String                        @unique
-  sourceDigest       String                        @unique
-  shareFingerprint   String                        @unique
-  jobEvidenceId      String
-  miningAccountId    String
-  assetId            String
-  upstreamPoolId     String
-  workerName         String
-  nonce              String
-  submittedResult    String
-  computedResult     String
-  localTarget        Decimal                       @db.Decimal(20, 0)
-  acceptedDifficulty Decimal                       @db.Decimal(38, 12)
-  submittedAt        DateTime
-  correlationId      String
-  validationDigest   String
-  createdAt          DateTime                      @default(now())
-  jobEvidence        RandomXUpstreamJobEvidence    @relation(fields: [jobEvidenceId], references: [id], onDelete: Restrict)
-  miningAccount      MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
-  asset              Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool       UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
-  decision           RandomXUpstreamShareDecision?
+  id                          String                        @id @default(cuid())
+  idempotencyKey              String                        @unique
+  sourceDigest                String                        @unique
+  shareFingerprint            String                        @unique
+  upstreamDispatchFingerprint String                        @unique
+  jobEvidenceId               String
+  miningAccountId             String
+  assetId                     String
+  upstreamPoolId              String
+  workerName                  String
+  nonce                       String
+  submittedResult             String
+  computedResult              String
+  localTarget                 Decimal                       @db.Decimal(20, 0)
+  acceptedDifficulty          Decimal                       @db.Decimal(38, 12)
+  submittedAt                 DateTime
+  correlationId               String
+  validationDigest            String
+  createdAt                   DateTime                      @default(now())
+  jobEvidence                 RandomXUpstreamJobEvidence    @relation(fields: [jobEvidenceId], references: [id], onDelete: Restrict)
+  miningAccount               MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset                       Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool                UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  decision                    RandomXUpstreamShareDecision?
 
   @@unique([jobEvidenceId, sourceDigest])
   @@index([miningAccountId, submittedAt])

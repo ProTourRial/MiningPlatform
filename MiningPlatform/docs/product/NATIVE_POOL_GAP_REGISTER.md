@@ -66,8 +66,8 @@ intent sebelum RPC, menolak submit untuk proposal rejected, tidak mengulang RPC 
 durable, dan mengekspos intent tanpa outcome sebagai recovery exception. Recovery coordinator hanya
 membaca `getblockheader` plus `getblockstats`: active/stale menjadi terminal evidence, sedangkan
 not-found tetap unresolved dan tidak pernah memicu resubmit. Fresh serta representative alpha.7
-upgrade rehearsal telah lulus 17 migration, termasuk backfill outcome v15, tanpa menulis ulang payout
-historis. Image non-root Bitcoin Core 31.0 sekarang dibangun dari tarball resmi dengan SHA-256 amd64
+upgrade rehearsal telah lulus 20 migration, termasuk backfill outcome v15 dan dispatch identity v19,
+tanpa menulis ulang payout historis. Image non-root Bitcoin Core 31.0 sekarang dibangun dari tarball resmi dengan SHA-256 amd64
 dan arm64 yang dipin. Compose profile disposable serta trace live membuktikan template dari node,
 coinbase ke wallet regtest, transaksi witness nyata dengan txid/wtxid berbeda, network-target
 candidate, proposal valid, `submitblock` accepted, exact transaction inclusion, dan dua confirmation.
@@ -94,6 +94,7 @@ karena itu status P0 belum selesai dan native mining tetap nonaktif.
 | P1       | Stratum belum memiliki bukti kapasitas produksi          | Miner publik dapat mengalami reject, latency, atau disconnect | Load, stress, soak, latency percentile, backpressure, reconnect, dan capacity envelope                             |
 | P1       | Extranonce belum dikoordinasikan global                  | Multi-replica dapat menduplikasi ruang kerja                  | Durable globally unique allocation/lease with restart, partition, and expiry tests                                 |
 | P1       | VarDiff produksi belum lengkap                           | Difficulty miner tidak optimal/stabil                         | Statistical retarget validation per device and algorithm with upstream/native floors                               |
+| P1       | Ruang nonce RandomX belum dialokasikan global            | Worker/replica dapat mengulang proof untuk blob upstream sama | Per-worker job transform atau lease nonce unik dengan reconnect, restart, expiry, dan failover evidence            |
 | P1       | PostgreSQL, Redis, dan node belum memiliki bukti HA      | Satu gangguan dapat menghentikan pool                         | Failover, backup/restore, PITR, measured RPO/RTO, and disaster-recovery evidence                                   |
 | P1       | DDoS dan abuse protection Stratum belum lengkap          | Endpoint TCP publik rentan disalahgunakan                     | Connection/share limits, reputation/ban controls, SYN/edge protection, and attack tests                            |
 | P2       | Belum ada pool reserve                                   | PPS/FPPS dapat menciptakan insolvency                         | Capital policy, reserve ledger, variance model, exposure limits, and stress tests                                  |
@@ -137,15 +138,33 @@ atau ledger. Repository mining-worker memanggil projector sebelum persistence, m
 identik/concurrent, dan menolak fingerprint yang dipakai ulang dengan evidence berbeda. Consumer
 `mining.randomx.share.accepted.v1` kini memvalidasi payload bounded yang exact, producer, aggregate,
 waktu acceptance, dan canonical share key, lalu menulis event-idempotency plus evidence secara atomik
-di bawah advisory lock PostgreSQL. Fingerprint juga mengikat blob job, target, dan height. Schema v19
-menambahkan dormant gateway yang menyimpan job evidence dan local-validation submission intent sebelum
-RPC upstream. Timeout atau hasil ambigu meninggalkan intent unresolved dan memblokir auto-resubmit;
+di bawah advisory lock PostgreSQL. Fingerprint lokal juga mengikat blob job, target, dan height. Schema
+v19 menambahkan dormant gateway yang mengambil identity worker/account dari koneksi terautentikasi,
+memverifikasi asset dan pool di database, mengambil job aktif langsung dari adapter upstream memakai
+waktu database authoritative, menurunkan difficulty dari target, lalu menyimpan job evidence dan
+local-validation submission intent sebelum RPC upstream. Otorisasi yang sama diperiksa ulang setelah
+hashing dan di dalam transaksi intent. Pemanggil tidak dapat memasok account, asset, pool, difficulty,
+blob, seed, target, height, atau session evidence sendiri. Adapter menyimpan dan mengembalikan snapshot
+job terisolasi agar mutasi callback atau objek `Date` tidak dapat menulis ulang state authoritative.
+
+Schema v20 menambahkan fingerprint dispatch unik yang mengikat exact upstream pool, session/client,
+job id, blob, seed, target, height, nonce, dan result tetapi sengaja tidak bergantung pada worker lokal,
+correlation ID, atau receipt timestamp. Dengan demikian proof wire yang sama tidak dapat dikirim lagi
+melalui worker berbeda, sementara retry yang sudah memiliki keputusan durable tetap dapat direplay
+setelah job live terhapus. Adapter memeriksa exact session dan fingerprint lease sekali lagi tepat
+sebelum socket write, berbagi concurrent login, menahan job notification yang tiba bersama respons
+login, mengabaikan stale-socket callback, serta menghapus job/session pada disconnect.
+
+Timeout atau hasil ambigu meninggalkan intent unresolved dan memblokir auto-resubmit;
 acceptance menulis immutable decision dan canonical event ke transactional outbox secara atomik,
 sedangkan rejection tidak membuat accepted event. Correlated outbox envelope dilindungi dari mutasi dan
-retention. Miner-facing listener, operator recovery untuk intent ambigu, pembentukan contribution fact,
-reward period, settlement, dan reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo
-yang dapat berubah. Factory producer-side yang murni tetap menjadi satu-satunya pembentuk envelope
-kanonik dan tidak dapat melakukan publish atau RPC sendiri.
+retention. Kegagalan setelah intent durable tetap unresolved bahkan ketika adapter mengetahui socket
+belum ditulis; pembedaan operator antara `NOT_DISPATCHED` dan hasil benar-benar ambigu belum durable.
+Miner-facing listener, koordinasi/transformasi nonce space 32-bit per worker dan replica, batas clock
+skew antar-domain, operator recovery, pembentukan contribution fact, reward period, settlement, dan
+reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo yang dapat berubah. Factory
+producer-side yang murni tetap menjadi satu-satunya pembentuk envelope kanonik dan tidak dapat
+melakukan publish atau RPC sendiri.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:

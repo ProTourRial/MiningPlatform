@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 611,
-  "managedFilesChecksum": "92bbadc38f5fa92f5903984405c64c7466ce284430f8bdb76f40c71e2696f780",
+  "managedFileCount": 612,
+  "managedFilesChecksum": "447be9f3dae51498ad87b05b52f3ca6f0c2f1456b2d6729b2bd5eeeea8e2138e",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -696,18 +696,18 @@
     },
     {
       "path": "apps/randomx-gateway/src/submission-coordinator.integration.test.ts",
-      "sha256": "944a993e6ff420b5d3a76951e56569c18d043e1d06cea0efc6572cdad2b590e7",
-      "size": 15080
+      "sha256": "adf69e784c5952529bd946d9b3767047a87638785f22af2bc73cc925d326c788",
+      "size": 32508
     },
     {
       "path": "apps/randomx-gateway/src/submission-coordinator.ts",
-      "sha256": "fa8c20fc5b09e05f58fc7091cd4a5426aa2962a56bc7c494dfe8f26785dc5f61",
-      "size": 9738
+      "sha256": "1e52539a0bcc38bfa2eee9f9e85dc86f43112c3fbdca497f63cbb01e02d8b9df",
+      "size": 14072
     },
     {
       "path": "apps/randomx-gateway/src/submission-repository.ts",
-      "sha256": "ab26b5d48cd5cba8b923b953a9a4821352536b9d5478870341ee62ce28bb3c9b",
-      "size": 13740
+      "sha256": "fb000318216d9aa0c545d6bbadf73a57958372908955ec82aa59319aa74b600f",
+      "size": 18647
     },
     {
       "path": "apps/randomx-gateway/tsconfig.json",
@@ -1256,8 +1256,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "c4a0955da78f3ddf0c22f0d098afedbf7af73171826a14db784edc65392bc0b1",
-      "size": 51250
+      "sha256": "f501c9b03e4096c4da559a68e26eebf4255d0bc9d6ac5eee70fcd42118d15068",
+      "size": 54125
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1361,8 +1361,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "8fc3b217004e8f068de99c71878fb25270b302622438825db2a750e76d3583f8",
-      "size": 8075
+      "sha256": "d38a2d96faf63f5ad1df86304838088507e6067548f59a946307ed5d2dcdb3d6",
+      "size": 10115
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1551,8 +1551,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "f0f9ff81235b340d37090b485eb1f61b9601ff369aabeb5f244eb073e17c9790",
-      "size": 18129
+      "sha256": "7344ea7f13196b16535c0d51a541afbbe215abb3c856d89525631a66dd0aadd2",
+      "size": 19963
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -2160,6 +2160,11 @@
       "size": 17181
     },
     {
+      "path": "packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql",
+      "sha256": "00e187dd257c0f68a1e17f7714a67dd71824f65a7b6319e1cf860ed4c73f67d3",
+      "size": 1077
+    },
+    {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
       "sha256": "9b677f26a93c15274b40945c3e021811da0c86523606ad9c47b51affe98cfa38",
       "size": 127
@@ -2171,8 +2176,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "4fba47c63e1698ac806f75faecdba8abd530bc5bb87eb69e119df92903a7bc98",
-      "size": 76146
+      "sha256": "970c722f9c422300e5d8ff3a6e3524b92ab162e97a84d4344567ba7e7c58289b",
+      "size": 76421
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -2411,18 +2416,18 @@
     },
     {
       "path": "packages/randomx/src/randomx.test.ts",
-      "sha256": "efce3dbf460f3879ed07509778074ff351dd65542cf1df75864d9bcbfcc74b73",
-      "size": 4313
+      "sha256": "feaa776242f78d8a0a75df512207cba89cac93e0af8b9eb15e481a0a86f00f9d",
+      "size": 6345
     },
     {
       "path": "packages/randomx/src/submission-intent.test.ts",
-      "sha256": "f51d1a044006d09aca681f9f62b055b68cc4e33dee7cceeaeb2177c7858ab21c",
-      "size": 4630
+      "sha256": "59b025a2a6642e31ba567a4bdd6d7bfbce98907b478decd9d72f03c2ae97f051",
+      "size": 4712
     },
     {
       "path": "packages/randomx/src/submission-intent.ts",
-      "sha256": "65a4a9ba1c090a7ab93066a16e08a7512c3a44ebe63e24df8b5e0f652f6851b9",
-      "size": 8032
+      "sha256": "1ec5d544329a4280dc6a0afdb6b752e0107b68b4e2033156b48baa379702e6a2",
+      "size": 8470
     },
     {
       "path": "packages/randomx/src/types.ts",
@@ -2431,8 +2436,8 @@
     },
     {
       "path": "packages/randomx/src/validator.ts",
-      "sha256": "8f4f21f406d90cafb59f1045e21bc6d27130b30277be0c37db36d76c58458a1b",
-      "size": 5640
+      "sha256": "b769fe73cc24d1d3c5dfc365513936cf34befc08ff19e66e91d00091845697df",
+      "size": 7456
     },
     {
       "path": "packages/randomx/tsconfig.json",
@@ -2706,18 +2711,18 @@
     },
     {
       "path": "packages/upstream-stratum/src/randomx-pool-adapter.ts",
-      "sha256": "d6c2e07a405590861f5961aa6c5a53b79be0fd956705af9fb4821c7303321f5b",
-      "size": 10887
+      "sha256": "2cf1fb7fcf9807168dcf686a5abf9e812f9d01eb2567da20cf6b1d4859c1c8ff",
+      "size": 14446
     },
     {
       "path": "packages/upstream-stratum/src/randomx-protocol.ts",
-      "sha256": "a89f35981c51aefd0c0f5903138d3719cb231425744309588999f0ca86d34e80",
-      "size": 5080
+      "sha256": "d737cf222e9431fca3bed3978800e591610489973cb9f59d0bf5a7e229c6ce17",
+      "size": 5112
     },
     {
       "path": "packages/upstream-stratum/src/randomx-upstream.test.ts",
-      "sha256": "78b86496296f27079ceb222085303e06468fd691c5b12b129bd0bfe03b48163c",
-      "size": 6222
+      "sha256": "429f37869b7ffe79a7a2d614b4fcc8ec7b67d762a6aa6533e3ce7c525c6d67f0",
+      "size": 11107
     },
     {
       "path": "packages/upstream-stratum/src/request-correlator.ts",
@@ -2881,8 +2886,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "12abb75de694d0263d4f598f7147946402aad940275bc6553c8bc2ef8213e570",
-      "size": 22289
+      "sha256": "cc2c7ed49c24b8eed77cc20170ba2a69feaa65335e58b2e99abcac3faefea074",
+      "size": 25056
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -3041,8 +3046,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "1f5395c8ab9330f74b88a0f2a1e72c759aa2a7bd4b7faf3691345a122710fd3f",
-      "size": 29883
+      "sha256": "60b24e52fa47f386c7775d857cc0d37a4e801cd92669ae090f16ea9f0dfa414d",
+      "size": 32994
     },
     {
       "path": "scripts/wait-for-http.mjs",

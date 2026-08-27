@@ -15,7 +15,7 @@ function accountingInput(): RandomXAccountingProjectionInput {
   const result = `${'00'.repeat(24)}0100000000000000`;
   const job = {
     id: 'randomx-intent-job',
-    clientId: 'randomx-intent-client',
+    clientId: 'randomx-intent-session',
     algorithm: 'rx/0' as const,
     blob: '00'.repeat(76),
     target: '0200000000000000',
@@ -70,7 +70,8 @@ test('projects deterministic pre-RPC job and local submission intent evidence', 
   });
   const accepted = projectRandomXAcceptedContribution(accounting);
 
-  assert.equal(intent.idempotencyKey, `randomx-intent:${intent.shareFingerprint}`);
+  assert.equal(intent.idempotencyKey, `randomx-intent:${intent.upstreamDispatchFingerprint}`);
+  assert.match(intent.upstreamDispatchFingerprint, /^[0-9a-f]{64}$/);
   assert.equal(intent.acceptedDifficulty, '500.25');
   assert.equal(intent.job.height, '3500001');
   assert.equal(intent.validationDigest, accepted.validationDigest);

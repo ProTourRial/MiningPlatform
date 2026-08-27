@@ -6,7 +6,11 @@
 
 import net, { type Socket } from 'node:net';
 import tls from 'node:tls';
-import type { RandomXJob, RandomXShareSubmission } from '@mining/randomx';
+import {
+  randomXJobFingerprint,
+  type RandomXJob,
+  type RandomXShareSubmission,
+} from '@mining/randomx';
 import {
   normalizeRandomXUpstreamJob,
   parseRandomXLoginResult,
@@ -45,8 +49,23 @@ type PendingRequest = {
   timer: NodeJS.Timeout;
 };
 
+export class RandomXSubmissionNotDispatchedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RandomXSubmissionNotDispatchedError';
+  }
+}
+
 function safeUpstreamError(response: RandomXJsonRpcResponse, fallback: string): string {
   return response.error ? `${fallback} (${response.error.code})` : fallback;
+}
+
+function cloneJob(job: RandomXJob): RandomXJob {
+  return {
+    ...job,
+    receivedAt: new Date(job.receivedAt.getTime()),
+    expiresAt: new Date(job.expiresAt.getTime()),
+  };
 }
 
 export class RandomXPoolAdapter {
@@ -59,6 +78,7 @@ export class RandomXPoolAdapter {
 
   private readonly pending = new Map<string, PendingRequest>();
   private readonly jobs = new Map<string, RandomXJob>();
+  private readonly deferredJobNotifications: unknown[] = [];
   private readonly jobTtlMilliseconds: number;
   private readonly maximumRetainedJobs: number;
   private readonly now: () => Date;
@@ -68,6 +88,8 @@ export class RandomXPoolAdapter {
   private adapterState: RandomXUpstreamState = 'DISCONNECTED';
   private sessionId?: string;
   private stopped = false;
+  private startOperation?: Promise<RandomXLoginResult>;
+  private lifecycleGeneration = 0;
 
   constructor(
     readonly id: string,
@@ -107,10 +129,21 @@ export class RandomXPoolAdapter {
   }
 
   get activeSessionId(): string | undefined {
-    return this.sessionId;
+    return this.state === 'ACTIVE' ? this.sessionId : undefined;
   }
 
-  async start(): Promise<RandomXLoginResult> {
+  start(): Promise<RandomXLoginResult> {
+    if (this.startOperation) return this.startOperation;
+    const operation = this.startSession();
+    const settled: Promise<RandomXLoginResult> = operation.finally(() => {
+      if (this.startOperation === settled) this.startOperation = undefined;
+    });
+    this.startOperation = settled;
+    return settled;
+  }
+
+  private async startSession(): Promise<RandomXLoginResult> {
+    const generation = ++this.lifecycleGeneration;
     this.closeSocket(new Error('RandomX upstream session replaced'), false);
     this.jobs.clear();
     this.sessionId = undefined;
@@ -118,6 +151,10 @@ export class RandomXPoolAdapter {
     this.setState('CONNECTING');
     try {
       const socket = await this.openSocket();
+      if (generation !== this.lifecycleGeneration || this.stopped) {
+        socket.destroy();
+        throw new Error('RandomX upstream start was superseded');
+      }
       this.socket = socket;
       this.bindSocket(socket);
       this.setState('AUTHORIZING');
@@ -134,14 +171,17 @@ export class RandomXPoolAdapter {
       const login = parseRandomXLoginResult(response.result, this.now(), this.jobTtlMilliseconds);
       this.sessionId = login.sessionId;
       this.recordJob(login.job);
+      this.flushDeferredJobNotifications();
       this.setState('ACTIVE');
       return login;
     } catch (error) {
       const parsed = error instanceof Error ? error : new Error(String(error));
-      this.closeSocket(parsed, false);
-      this.jobs.clear();
-      this.sessionId = undefined;
-      this.setState('DISCONNECTED');
+      if (generation === this.lifecycleGeneration) {
+        this.closeSocket(parsed, false);
+        this.jobs.clear();
+        this.sessionId = undefined;
+        if (!this.stopped) this.setState('DISCONNECTED');
+      }
       throw parsed;
     }
   }
@@ -153,30 +193,53 @@ export class RandomXPoolAdapter {
       this.jobs.delete(jobId);
       return undefined;
     }
-    return job;
+    return cloneJob(job);
   }
 
-  async submit(submission: RandomXShareSubmission): Promise<UpstreamShareResult> {
-    if (this.state !== 'ACTIVE' || !this.sessionId) {
-      throw new Error(`Cannot submit RandomX share from ${this.state}`);
+  async submit(
+    submission: RandomXShareSubmission,
+    expectedSessionId: string,
+    expectedJobFingerprint: string,
+  ): Promise<UpstreamShareResult> {
+    if (this.state !== 'ACTIVE' || !this.sessionId || this.sessionId !== expectedSessionId) {
+      throw new RandomXSubmissionNotDispatchedError(
+        'RandomX upstream session changed before dispatch',
+      );
     }
-    const job = this.getJob(submission.jobId, submission.submittedAt);
-    if (!job) return { accepted: false, errorMessage: 'Stale or unknown RandomX job' };
+    const job = this.getJob(submission.jobId, this.now());
+    if (
+      !job ||
+      job.clientId !== expectedSessionId ||
+      randomXJobFingerprint(job) !== expectedJobFingerprint
+    ) {
+      throw new RandomXSubmissionNotDispatchedError(
+        'RandomX upstream job became unavailable before dispatch',
+      );
+    }
+    if (!this.socket || this.socket.destroyed) {
+      throw new RandomXSubmissionNotDispatchedError(
+        'RandomX upstream socket closed before dispatch',
+      );
+    }
     const response = await this.request((requestId) =>
-      serializeRandomXSubmit(requestId, this.sessionId!, submission),
+      serializeRandomXSubmit(requestId, expectedSessionId, submission),
     );
-    if (response.error || !randomXSubmitWasAccepted(response.result)) {
+    if (response.error) {
       return {
         accepted: false,
-        ...(response.error ? { errorCode: response.error.code } : {}),
+        errorCode: response.error.code,
         errorMessage: safeUpstreamError(response, 'RandomX upstream rejected share'),
       };
+    }
+    if (!randomXSubmitWasAccepted(response.result)) {
+      throw new Error('RandomX upstream returned an ambiguous submission result');
     }
     return { accepted: true };
   }
 
   close(): void {
     this.stopped = true;
+    this.lifecycleGeneration += 1;
     this.closeSocket(new Error('RandomX upstream client stopped'), false);
     this.jobs.clear();
     this.sessionId = undefined;
@@ -211,13 +274,22 @@ export class RandomXPoolAdapter {
 
   private bindSocket(socket: Socket): void {
     socket.setEncoding('utf8');
-    socket.on('data', (chunk: string) => this.consume(chunk));
-    socket.on('error', (error) => this.callbacks.onError?.(error));
+    socket.on('data', (chunk: string) => {
+      if (this.socket !== socket) return;
+      this.consume(chunk);
+    });
+    socket.on('error', (error) => {
+      if (this.socket !== socket) return;
+      this.callbacks.onError?.(error);
+    });
     socket.on('close', () => {
       if (this.socket !== socket) return;
       const reason = new Error('RandomX upstream connection closed');
       this.socket = undefined;
       this.rejectPending(reason);
+      this.deferredJobNotifications.length = 0;
+      this.jobs.clear();
+      this.sessionId = undefined;
       if (!this.stopped) {
         this.setState('DISCONNECTED');
         this.callbacks.onDisconnect?.(reason);
@@ -254,7 +326,16 @@ export class RandomXPoolAdapter {
   private handleMessage(line: string): void {
     const message = parseRandomXUpstreamLine(line);
     if ('method' in message) {
-      if (!this.sessionId) throw new Error('RandomX job arrived before authorization');
+      if (!this.sessionId) {
+        if (
+          this.state !== 'AUTHORIZING' ||
+          this.deferredJobNotifications.length >= this.maximumRetainedJobs
+        ) {
+          throw new Error('RandomX job arrived before authorization');
+        }
+        this.deferredJobNotifications.push(message.params);
+        return;
+      }
       const job = normalizeRandomXUpstreamJob(
         message.params,
         this.sessionId,
@@ -271,31 +352,60 @@ export class RandomXPoolAdapter {
     pending.resolve(message);
   }
 
+  private flushDeferredJobNotifications(): void {
+    if (!this.sessionId) throw new Error('RandomX deferred jobs require an authorized session');
+    for (const params of this.deferredJobNotifications.splice(0)) {
+      this.recordJob(
+        normalizeRandomXUpstreamJob(params, this.sessionId, this.now(), this.jobTtlMilliseconds),
+      );
+    }
+  }
+
   private recordJob(job: RandomXJob): void {
-    this.jobs.set(job.id, job);
+    const storedJob = cloneJob(job);
+    this.jobs.set(storedJob.id, storedJob);
     while (this.jobs.size > this.maximumRetainedJobs) {
       const oldest = this.jobs.keys().next().value as string | undefined;
       if (oldest === undefined) break;
       this.jobs.delete(oldest);
     }
-    this.callbacks.onJob?.(job);
+    this.callbacks.onJob?.(cloneJob(storedJob));
   }
 
   private request(serializer: (requestId: number) => string): Promise<RandomXJsonRpcResponse> {
-    if (!this.socket || this.socket.destroyed) {
+    const socket = this.socket;
+    if (!socket || socket.destroyed) {
       return Promise.reject(new Error('RandomX upstream socket is not connected'));
     }
     const requestId = this.nextRequestId++;
-    const response = new Promise<RandomXJsonRpcResponse>((resolve, reject) => {
+    let serialized: string;
+    try {
+      serialized = serializer(requestId);
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+    return new Promise<RandomXJsonRpcResponse>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(String(requestId));
         reject(new Error(`RandomX upstream request ${requestId} timed out`));
       }, this.endpoint.responseTimeoutMs);
       timer.unref?.();
       this.pending.set(String(requestId), { resolve, reject, timer });
+      const rejectWrite = (error: Error): void => {
+        const pending = this.pending.get(String(requestId));
+        if (!pending) return;
+        clearTimeout(pending.timer);
+        this.pending.delete(String(requestId));
+        pending.reject(error);
+      };
+      try {
+        socket.write(serialized, (error) => {
+          if (error) rejectWrite(error);
+        });
+      } catch (error) {
+        rejectWrite(error instanceof Error ? error : new Error(String(error)));
+      }
     });
-    this.socket.write(serializer(requestId));
-    return response;
   }
 
   private failConnection(error: Error): void {
@@ -308,6 +418,9 @@ export class RandomXPoolAdapter {
     this.socket = undefined;
     this.buffer = '';
     this.rejectPending(reason);
+    this.deferredJobNotifications.length = 0;
+    this.jobs.clear();
+    this.sessionId = undefined;
     socket?.destroy();
     if (notifyDisconnect && !this.stopped) {
       this.setState('DISCONNECTED');
