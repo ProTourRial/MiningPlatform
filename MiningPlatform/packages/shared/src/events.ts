@@ -34,6 +34,7 @@ export const MiningEvents = {
   telemetryReceived: 'monitoring.telemetry.received.v1',
   telemetryAggregated: 'monitoring.telemetry.aggregated.v1',
   contributionAccepted: 'reward.contribution.accepted.v1',
+  randomXContributionAccepted: 'reward.randomx-contribution.accepted.v1',
   settlementImported: 'reward.settlement.imported.v1',
   reconciliationResolutionRequested: 'reward.reconciliation.resolution-requested.v1',
   reconciliationResolutionApproved: 'reward.reconciliation.resolution-approved.v1',
@@ -113,7 +114,7 @@ export interface ShareUpstreamDecisionPayload extends ShareUpstreamPendingPayloa
 }
 
 /**
- * Versioned hand-off from the future RandomX mining gateway into the evidence-only
+ * Versioned hand-off from the RandomX mining gateway into the immutable validation and
  * accounting boundary. Decimal integers are strings so the contract remains JSON-safe.
  */
 export interface RandomXAcceptedSharePayload {
@@ -148,6 +149,16 @@ export interface RandomXAcceptedSharePayload {
 export interface ContributionAcceptedPayload {
   sourceEventId: string;
   shareId: string;
+  miningAccountId: string;
+  assetId: string;
+  upstreamPoolId: string;
+  acceptedDifficulty: string;
+  acceptedAt: string;
+}
+
+export interface RandomXContributionAcceptedPayload {
+  sourceEventId: string;
+  randomXEvidenceId: string;
   miningAccountId: string;
   assetId: string;
   upstreamPoolId: string;

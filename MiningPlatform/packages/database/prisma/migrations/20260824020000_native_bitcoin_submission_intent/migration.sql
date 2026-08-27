@@ -3,6 +3,8 @@
 -- Durable pre-RPC intent for native Bitcoin submitblock side effects. An
 -- intent without an outcome is an explicit recovery exception, never success.
 
+BEGIN;
+
 CREATE TABLE "NativeBitcoinSubmissionIntent" (
   "id" TEXT NOT NULL,
   "idempotencyKey" TEXT NOT NULL,
@@ -136,3 +138,5 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+COMMIT;

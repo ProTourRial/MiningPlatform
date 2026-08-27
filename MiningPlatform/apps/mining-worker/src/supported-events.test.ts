@@ -27,10 +27,11 @@ test('unsupported event versions are rejected before projection', () => {
 
 test('accounting events are not claimed by the mining projection', () => {
   assert.equal(supportedMiningEvents.has(MiningEvents.contributionAccepted), false);
+  assert.equal(supportedMiningEvents.has(MiningEvents.randomXContributionAccepted), false);
   assert.equal(supportedMiningEvents.has(MiningEvents.settlementImported), false);
 });
 
-test('RandomX accepted evidence is owned by the worker but cannot silently enter BTC projection', () => {
+test('RandomX accepted evidence is owned by its dedicated accounting projection', () => {
   assert.equal(supportedMiningEvents.has(MiningEvents.randomXShareAccepted), true);
   assert.equal(supportedMiningProjectionEvents.has(MiningEvents.randomXShareAccepted), false);
   assert.throws(

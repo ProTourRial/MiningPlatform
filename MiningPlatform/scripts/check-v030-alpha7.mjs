@@ -30,6 +30,15 @@ function requireText(contents, expected, label) {
   if (!contents.includes(expected)) throw new Error(`${label} is missing: ${expected}`);
 }
 
+function requireOrderedText(contents, expectedParts, label) {
+  let previousIndex = -1;
+  for (const expected of expectedParts) {
+    const index = contents.indexOf(expected, previousIndex + 1);
+    if (index === -1) throw new Error(`${label} is missing ordered text: ${expected}`);
+    previousIndex = index;
+  }
+}
+
 const requiredFiles = [
   'PROJECT_VISION.md',
   'docs/product/PRODUCT_CONSTITUTION.md',
@@ -57,9 +66,11 @@ const requiredFiles = [
   'packages/database/prisma/migrations/20260825010000_randomx_accounting_evidence/migration.sql',
   'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
   'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
+  'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
   'apps/randomx-gateway/src/submission-repository.ts',
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
+  'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
@@ -120,6 +131,8 @@ for (const expected of [
   'model RandomXShareSubmissionIntent',
   'model RandomXUpstreamShareDecision',
   'upstreamDispatchFingerprint',
+  'enum ContributionSourceType',
+  'randomXEvidenceId',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
 ])
@@ -278,8 +291,10 @@ for (const expected of [
 const randomXEventContract = await text('packages/shared/src/events.ts');
 for (const expected of [
   "randomXShareAccepted: 'mining.randomx.share.accepted.v1'",
+  "randomXContributionAccepted: 'reward.randomx-contribution.accepted.v1'",
   "acceptedShare: 'randomx-mining-gateway'",
   'export interface RandomXAcceptedSharePayload',
+  'export interface RandomXContributionAcceptedPayload',
   'localAccepted: true',
   'upstreamAccepted: true',
 ])
@@ -292,6 +307,8 @@ for (const expected of [
   'pg_advisory_xact_lock',
   'PrismaTransactionalIdempotencyService',
   'this.repository.recordAcceptedShare(parsed.input, transaction)',
+  'ensureRandomXContributionEvent',
+  '`randomx-contribution:${evidence.id}:v1`',
   'payload shape is invalid',
 ])
   requireText(randomXEventConsumer, expected, 'RandomX accounting-event consumer');
@@ -364,6 +381,55 @@ for (const expected of [
   'RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key',
 ])
   requireText(randomXDispatchMigration, expected, 'RandomX authoritative-dispatch migration');
+requireOrderedText(
+  randomXDispatchMigration,
+  [
+    'BEGIN;',
+    'DISABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger"',
+    'ENABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger"',
+    'COMMIT;',
+  ],
+  'RandomX authoritative-dispatch migration transaction',
+);
+
+const nativeBitcoinIntentMigration = await text(
+  'packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql',
+);
+requireOrderedText(
+  nativeBitcoinIntentMigration,
+  [
+    'BEGIN;',
+    'DISABLE TRIGGER "NativeBitcoinSubmissionAttempt_immutable_trigger"',
+    'ENABLE TRIGGER "NativeBitcoinSubmissionAttempt_immutable_trigger"',
+    'COMMIT;',
+  ],
+  'Native Bitcoin submission-intent migration transaction',
+);
+
+const randomXAccountingPathMigration = await text(
+  'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
+);
+for (const expected of [
+  'ContributionSourceType',
+  'ContributionFact_randomXEvidenceId_key',
+  'ContributionFact_exact_source_check',
+  'reward.randomx-contribution.accepted.v1',
+  "'randomx-contribution:' || evidence.\"id\" || ':v1'",
+  'accepted_event."producer" = \'randomx-mining-gateway\'',
+  'accepted_event."idempotencyKey" = \'randomx-share:\' || evidence."shareFingerprint"',
+])
+  requireText(randomXAccountingPathMigration, expected, 'RandomX accounting-path migration');
+
+const randomXAccountingService = await text('apps/accounting-worker/src/accounting-service.ts');
+for (const expected of [
+  'MiningEvents.randomXContributionAccepted',
+  "sourceType: 'RANDOMX_ACCEPTED_SHARE'",
+  'randomXEvidenceId: payload.randomXEvidenceId',
+  'sourceEvent.producer !== RandomXEventProducers.acceptedShare',
+  'sourceEvent.idempotencyKey !== `randomx-share:${evidence.shareFingerprint}`',
+  'does not match immutable accepted-share evidence',
+])
+  requireText(randomXAccountingService, expected, 'RandomX accounting contribution path');
 
 const randomXSubmissionRepository = await text('apps/randomx-gateway/src/submission-repository.ts');
 for (const expected of [
@@ -428,12 +494,15 @@ requireText(
 
 const randomXMigrationVerifier = await text('scripts/verify-v030-alpha8-migration.mjs');
 for (const expected of [
-  "const latestMigration = '20260827010000_randomx_authoritative_dispatch_binding'",
+  "const latestMigration = '20260827020000_randomx_accounting_path'",
   "'alpha8-upgrade-randomx-intent'",
   '"upstreamDispatchFingerprint" = "shareFingerprint"',
   'schema-v19 RandomX intent was not safely backfilled to v20',
+  'schema-v21 did not backfill exact RandomX contribution hand-off',
+  'intentional RandomX dispatch migration failure',
+  'failed v20 migration left immutability disabled',
 ])
-  requireText(randomXMigrationVerifier, expected, 'Schema-v20 migration verifier');
+  requireText(randomXMigrationVerifier, expected, 'Schema-v21 migration verifier');
 
 const scheduler = await text('apps/scheduler/src/runtime.ts');
 requireText(

@@ -15,7 +15,9 @@ import {
 } from '@mining/reward-engine';
 import {
   MiningEvents,
+  RandomXEventProducers,
   type ContributionAcceptedPayload,
+  type RandomXContributionAcceptedPayload,
   type SettlementImportedPayload,
 } from '@mining/shared';
 import { serializableTransaction } from './serializable-transaction.js';
@@ -52,10 +54,12 @@ export function scaledIntegerToDecimal(value: bigint, scale: number): string {
   return `${digits.slice(0, -scale)}.${digits.slice(-scale)}`;
 }
 
-function sameContribution(
+function sameStratumContribution(
   existing: {
     sourceEventId: string;
-    shareId: string;
+    sourceType: string;
+    shareId: string | null;
+    randomXEvidenceId: string | null;
     miningAccountId: string;
     assetId: string;
     upstreamPoolId: string;
@@ -68,7 +72,40 @@ function sameContribution(
   const payload = event.payload;
   return (
     existing.sourceEventId === payload.sourceEventId &&
+    existing.sourceType === 'STRATUM_SHARE' &&
     existing.shareId === payload.shareId &&
+    existing.randomXEvidenceId === null &&
+    existing.miningAccountId === payload.miningAccountId &&
+    existing.assetId === payload.assetId &&
+    existing.upstreamPoolId === payload.upstreamPoolId &&
+    decimalToScaledInteger(existing.acceptedDifficulty.toString(), CONTRIBUTION_SCALE) ===
+      decimalToScaledInteger(payload.acceptedDifficulty, CONTRIBUTION_SCALE) &&
+    existing.acceptedAt.toISOString() === new Date(payload.acceptedAt).toISOString() &&
+    existing.correlationId === event.correlationId
+  );
+}
+
+function sameRandomXContribution(
+  existing: {
+    sourceEventId: string;
+    sourceType: string;
+    shareId: string | null;
+    randomXEvidenceId: string | null;
+    miningAccountId: string;
+    assetId: string;
+    upstreamPoolId: string;
+    acceptedDifficulty: { toString(): string };
+    acceptedAt: Date;
+    correlationId: string;
+  },
+  event: DomainEvent<RandomXContributionAcceptedPayload>,
+): boolean {
+  const payload = event.payload;
+  return (
+    existing.sourceEventId === payload.sourceEventId &&
+    existing.sourceType === 'RANDOMX_ACCEPTED_SHARE' &&
+    existing.shareId === null &&
+    existing.randomXEvidenceId === payload.randomXEvidenceId &&
     existing.miningAccountId === payload.miningAccountId &&
     existing.assetId === payload.assetId &&
     existing.upstreamPoolId === payload.upstreamPoolId &&
@@ -86,6 +123,11 @@ export class AccountingService {
     }
     if (event.eventName === MiningEvents.contributionAccepted) {
       return this.recordContribution(event as DomainEvent<ContributionAcceptedPayload>);
+    }
+    if (event.eventName === MiningEvents.randomXContributionAccepted) {
+      return this.recordRandomXContribution(
+        event as DomainEvent<RandomXContributionAcceptedPayload>,
+      );
     }
     if (event.eventName === MiningEvents.settlementImported) {
       return this.processSettlement(event as DomainEvent<SettlementImportedPayload>);
@@ -108,6 +150,7 @@ export class AccountingService {
         data: [
           {
             sourceEventId: payload.sourceEventId,
+            sourceType: 'STRATUM_SHARE',
             shareId: payload.shareId,
             miningAccountId: payload.miningAccountId,
             assetId: payload.assetId,
@@ -124,8 +167,111 @@ export class AccountingService {
           OR: [{ sourceEventId: payload.sourceEventId }, { shareId: payload.shareId }],
         },
       });
-      if (!sameContribution(contribution, event)) {
+      if (!sameStratumContribution(contribution, event)) {
         throw new Error(`Contribution idempotency conflict: ${payload.shareId}`);
+      }
+      return inserted.count === 1
+        ? { processed: true, resultReference: contribution.id }
+        : { processed: false, reason: 'DUPLICATE', resultReference: contribution.id };
+    });
+  }
+
+  private async recordRandomXContribution(
+    event: DomainEvent<RandomXContributionAcceptedPayload>,
+  ): Promise<AccountingResult> {
+    const payload = event.payload;
+    const acceptedAt = new Date(payload.acceptedAt);
+    if (Number.isNaN(acceptedAt.getTime()) || acceptedAt.toISOString() !== payload.acceptedAt) {
+      throw new Error('RandomX contribution acceptedAt is invalid');
+    }
+    if (decimalToScaledInteger(payload.acceptedDifficulty, CONTRIBUTION_SCALE) <= 0n) {
+      throw new Error('RandomX contribution difficulty must be greater than zero');
+    }
+    if (
+      event.eventVersion !== 1 ||
+      event.producer !== 'mining-worker' ||
+      event.aggregateType !== 'ContributionFact' ||
+      event.aggregateId !== payload.randomXEvidenceId ||
+      event.causationId !== payload.sourceEventId
+    ) {
+      throw new Error('RandomX contribution envelope is invalid');
+    }
+
+    return serializableTransaction(async (tx) => {
+      const evidence = await tx.randomXAcceptedShareEvidence.findUniqueOrThrow({
+        where: { id: payload.randomXEvidenceId },
+      });
+      const sourceEvent = await tx.outboxEvent.findUniqueOrThrow({
+        where: { eventId: payload.sourceEventId },
+      });
+      const sourcePayload =
+        typeof sourceEvent.payload === 'object' &&
+        sourceEvent.payload !== null &&
+        !Array.isArray(sourceEvent.payload)
+          ? (sourceEvent.payload as Record<string, unknown>)
+          : null;
+      const upstreamDecidedAt =
+        typeof sourcePayload?.upstreamDecidedAt === 'string'
+          ? new Date(sourcePayload.upstreamDecidedAt)
+          : undefined;
+      if (
+        evidence.miningAccountId !== payload.miningAccountId ||
+        evidence.assetId !== payload.assetId ||
+        evidence.upstreamPoolId !== payload.upstreamPoolId ||
+        decimalToScaledInteger(evidence.acceptedDifficulty.toString(), CONTRIBUTION_SCALE) !==
+          decimalToScaledInteger(payload.acceptedDifficulty, CONTRIBUTION_SCALE) ||
+        evidence.acceptedAt.getTime() !== acceptedAt.getTime() ||
+        evidence.correlationId !== event.correlationId ||
+        sourceEvent.eventName !== MiningEvents.randomXShareAccepted ||
+        sourceEvent.eventVersion !== 1 ||
+        sourceEvent.producer !== RandomXEventProducers.acceptedShare ||
+        sourceEvent.aggregateType !== 'MiningAccount' ||
+        sourceEvent.aggregateId !== payload.miningAccountId ||
+        sourceEvent.correlationId !== event.correlationId ||
+        sourceEvent.idempotencyKey !== `randomx-share:${evidence.shareFingerprint}` ||
+        sourceEvent.occurredAt.getTime() !== evidence.acceptedAt.getTime() ||
+        sourcePayload?.miningAccountId !== evidence.miningAccountId ||
+        sourcePayload?.assetId !== evidence.assetId ||
+        sourcePayload?.upstreamPoolId !== evidence.upstreamPoolId ||
+        sourcePayload?.localFingerprint !== evidence.shareFingerprint ||
+        sourcePayload?.upstreamAccepted !== true ||
+        sourcePayload?.upstreamDecisionDigest !== evidence.upstreamDecisionDigest ||
+        typeof sourcePayload?.acceptedDifficulty !== 'string' ||
+        decimalToScaledInteger(sourcePayload.acceptedDifficulty, CONTRIBUTION_SCALE) !==
+          decimalToScaledInteger(evidence.acceptedDifficulty.toString(), CONTRIBUTION_SCALE) ||
+        !upstreamDecidedAt ||
+        Number.isNaN(upstreamDecidedAt.getTime()) ||
+        upstreamDecidedAt.getTime() !== evidence.acceptedAt.getTime()
+      ) {
+        throw new Error('RandomX contribution does not match immutable accepted-share evidence');
+      }
+
+      const inserted = await tx.contributionFact.createMany({
+        data: [
+          {
+            sourceEventId: payload.sourceEventId,
+            sourceType: 'RANDOMX_ACCEPTED_SHARE',
+            randomXEvidenceId: payload.randomXEvidenceId,
+            miningAccountId: payload.miningAccountId,
+            assetId: payload.assetId,
+            upstreamPoolId: payload.upstreamPoolId,
+            acceptedDifficulty: payload.acceptedDifficulty,
+            acceptedAt,
+            correlationId: event.correlationId,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      const contribution = await tx.contributionFact.findFirstOrThrow({
+        where: {
+          OR: [
+            { sourceEventId: payload.sourceEventId },
+            { randomXEvidenceId: payload.randomXEvidenceId },
+          ],
+        },
+      });
+      if (!sameRandomXContribution(contribution, event)) {
+        throw new Error(`RandomX contribution idempotency conflict: ${payload.randomXEvidenceId}`);
       }
       return inserted.count === 1
         ? { processed: true, resultReference: contribution.id }

@@ -182,6 +182,11 @@ enum RewardStatus {
   FAILED
 }
 
+enum ContributionSourceType {
+  STRATUM_SHARE
+  RANDOMX_ACCEPTED_SHARE
+}
+
 enum ReconciliationStatus {
   PENDING
   MATCHED
@@ -1002,32 +1007,35 @@ model Share {
 }
 
 model ContributionFact {
-  id                 String        @id @default(cuid())
-  sourceEventId      String        @unique
-  shareId            String        @unique
+  id                 String                        @id @default(cuid())
+  sourceEventId      String                        @unique
+  sourceType         ContributionSourceType        @default(STRATUM_SHARE)
+  shareId            String?                       @unique
+  randomXEvidenceId  String?                       @unique
   miningAccountId    String
   assetId            String
   upstreamPoolId     String
   rewardPeriodId     String?
-  acceptedDifficulty Decimal       @db.Decimal(38, 12)
+  acceptedDifficulty Decimal                       @db.Decimal(38, 12)
   acceptedAt         DateTime
   correlationId      String
-  createdAt          DateTime      @default(now())
-  share              Share         @relation(fields: [shareId], references: [id], onDelete: Restrict)
-  miningAccount      MiningAccount @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
-  asset              Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool       UpstreamPool  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
-  rewardPeriod       RewardPeriod? @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                      @default(now())
+  share              Share?                        @relation(fields: [shareId], references: [id], onDelete: Restrict)
+  randomXEvidence    RandomXAcceptedShareEvidence? @relation(fields: [randomXEvidenceId], references: [id], onDelete: Restrict)
+  miningAccount      MiningAccount                 @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset              Asset                         @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool       UpstreamPool                  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  rewardPeriod       RewardPeriod?                 @relation(fields: [rewardPeriodId], references: [id], onDelete: Restrict)
 
   @@index([assetId, upstreamPoolId, acceptedAt])
   @@index([rewardPeriodId, miningAccountId])
 }
 
 model RandomXAcceptedShareEvidence {
-  id                     String        @id @default(cuid())
-  evidenceVersion        Int           @default(1)
-  sourceDigest           String        @unique
-  shareFingerprint       String        @unique
+  id                     String            @id @default(cuid())
+  evidenceVersion        Int               @default(1)
+  sourceDigest           String            @unique
+  shareFingerprint       String            @unique
   algorithm              String
   miningAccountId        String
   assetId                String
@@ -1038,11 +1046,11 @@ model RandomXAcceptedShareEvidence {
   workerName             String
   seedHash               String
   targetHex              String
-  target                 Decimal       @db.Decimal(20, 0)
+  target                 Decimal           @db.Decimal(20, 0)
   nonce                  String
   submittedResult        String
   computedResult         String
-  acceptedDifficulty     Decimal       @db.Decimal(38, 12)
+  acceptedDifficulty     Decimal           @db.Decimal(38, 12)
   jobReceivedAt          DateTime
   jobExpiresAt           DateTime
   submittedAt            DateTime
@@ -1050,10 +1058,11 @@ model RandomXAcceptedShareEvidence {
   correlationId          String
   validationDigest       String
   upstreamDecisionDigest String
-  createdAt              DateTime      @default(now())
-  miningAccount          MiningAccount @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
-  asset                  Asset         @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  upstreamPool           UpstreamPool  @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  createdAt              DateTime          @default(now())
+  miningAccount          MiningAccount     @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset                  Asset             @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  upstreamPool           UpstreamPool      @relation(fields: [upstreamPoolId], references: [id], onDelete: Restrict)
+  contributionFact       ContributionFact?
 
   @@index([assetId, upstreamPoolId, acceptedAt])
   @@index([miningAccountId, acceptedAt])

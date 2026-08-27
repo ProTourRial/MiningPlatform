@@ -4,14 +4,15 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { createHash } from 'node:crypto';
-import { prisma } from '@mining/database';
+import { createHash, randomUUID } from 'node:crypto';
+import { prisma, type Prisma, type RandomXAcceptedShareEvidence } from '@mining/database';
 import type { DomainEvent } from '@mining/event-bus';
 import type { RandomXAccountingProjectionInput } from '@mining/randomx';
 import {
   MiningEvents,
   RandomXEventProducers,
   type RandomXAcceptedSharePayload,
+  type RandomXContributionAcceptedPayload,
 } from '@mining/shared';
 import { PrismaTransactionalIdempotencyService } from './prisma-idempotency.js';
 import { RandomXAccountingEvidenceRepository } from './randomx-accounting-evidence.js';
@@ -21,8 +22,8 @@ const IDEMPOTENCY_TTL_MS = 30 * 24 * 60 * 60 * 1_000;
 const MAX_UINT64 = 0xffff_ffff_ffff_ffffn;
 
 export type RandomXAccountingEventResult =
-  | { processed: true; evidenceId: string }
-  | { processed: false; evidenceId: string };
+  | { processed: true; evidenceId: string; contributionEventId: string }
+  | { processed: false; evidenceId: string; contributionEventId: string };
 
 function requiredString(value: unknown, label: string, maximumLength = 256): string {
   if (typeof value !== 'string' || value.length === 0 || value.length > maximumLength) {
@@ -182,6 +183,84 @@ type ParsedRandomXAccountingEvent = {
   requestHash: string;
 };
 
+function randomXContributionPayload(
+  sourceEventId: string,
+  evidence: RandomXAcceptedShareEvidence,
+): RandomXContributionAcceptedPayload {
+  return {
+    sourceEventId,
+    randomXEvidenceId: evidence.id,
+    miningAccountId: evidence.miningAccountId,
+    assetId: evidence.assetId,
+    upstreamPoolId: evidence.upstreamPoolId,
+    acceptedDifficulty: evidence.acceptedDifficulty.toString(),
+    acceptedAt: evidence.acceptedAt.toISOString(),
+  };
+}
+
+function assertContributionEventEquivalent(
+  stored: {
+    eventName: string;
+    eventVersion: number;
+    producer: string;
+    aggregateType: string;
+    aggregateId: string;
+    correlationId: string;
+    causationId: string | null;
+    payload: unknown;
+    occurredAt: Date;
+  },
+  event: DomainEvent<unknown>,
+  evidence: RandomXAcceptedShareEvidence,
+): void {
+  const expectedPayload = randomXContributionPayload(event.eventId, evidence);
+  const storedPayload = payloadRecord(stored.payload);
+  if (
+    stored.eventName !== MiningEvents.randomXContributionAccepted ||
+    stored.eventVersion !== 1 ||
+    stored.producer !== 'mining-worker' ||
+    stored.aggregateType !== 'ContributionFact' ||
+    stored.aggregateId !== evidence.id ||
+    stored.correlationId !== event.correlationId ||
+    stored.causationId !== event.eventId ||
+    stored.occurredAt.getTime() !== evidence.acceptedAt.getTime() ||
+    Object.keys(storedPayload).length !== Object.keys(expectedPayload).length ||
+    Object.entries(expectedPayload).some(([key, value]) => storedPayload[key] !== value)
+  ) {
+    throw new Error('RandomX contribution event idempotency conflict');
+  }
+}
+
+async function ensureRandomXContributionEvent(
+  transaction: Prisma.TransactionClient,
+  sourceEvent: DomainEvent<unknown>,
+  evidence: RandomXAcceptedShareEvidence,
+): Promise<string> {
+  const idempotencyKey = `randomx-contribution:${evidence.id}:v1`;
+  const existing = await transaction.outboxEvent.findUnique({ where: { idempotencyKey } });
+  if (existing) {
+    assertContributionEventEquivalent(existing, sourceEvent, evidence);
+    return existing.eventId;
+  }
+  const eventId = randomUUID();
+  const created = await transaction.outboxEvent.create({
+    data: {
+      eventId,
+      eventName: MiningEvents.randomXContributionAccepted,
+      eventVersion: 1,
+      producer: 'mining-worker',
+      aggregateType: 'ContributionFact',
+      aggregateId: evidence.id,
+      correlationId: sourceEvent.correlationId,
+      causationId: sourceEvent.eventId,
+      idempotencyKey,
+      payload: { ...randomXContributionPayload(sourceEvent.eventId, evidence) },
+      occurredAt: evidence.acceptedAt,
+    },
+  });
+  return created.eventId;
+}
+
 export function parseRandomXAccountingEvent(
   event: DomainEvent<unknown>,
 ): ParsedRandomXAccountingEvent {
@@ -314,18 +393,38 @@ export class RandomXAccountingEventConsumer {
       });
       if (!acquired.acquired) {
         if (acquired.reason === 'COMPLETED' && acquired.record.resultReference) {
-          return { processed: false, evidenceId: acquired.record.resultReference };
+          const evidence = await transaction.randomXAcceptedShareEvidence.findUnique({
+            where: { id: acquired.record.resultReference },
+          });
+          if (!evidence) {
+            throw new Error('RandomX accounting idempotency references missing evidence');
+          }
+          const contributionEventId = await ensureRandomXContributionEvent(
+            transaction,
+            event,
+            evidence,
+          );
+          return {
+            processed: false,
+            evidenceId: evidence.id,
+            contributionEventId,
+          };
         }
         throw new Error(`RandomX accounting event idempotency ${acquired.reason.toLowerCase()}`);
       }
 
       const evidence = await this.repository.recordAcceptedShare(parsed.input, transaction);
+      const contributionEventId = await ensureRandomXContributionEvent(
+        transaction,
+        event,
+        evidence,
+      );
       await this.idempotency.complete(transaction, {
         key: parsed.idempotencyKey,
         owner: RANDOMX_ACCOUNTING_OWNER,
         resultReference: evidence.id,
       });
-      return { processed: true, evidenceId: evidence.id };
+      return { processed: true, evidenceId: evidence.id, contributionEventId };
     });
   }
 }

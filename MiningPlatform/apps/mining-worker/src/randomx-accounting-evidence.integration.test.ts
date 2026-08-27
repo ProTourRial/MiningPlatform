@@ -170,8 +170,11 @@ test('consumes RandomX evidence events atomically across retries, conflicts, and
 
   assert.equal(results.filter((result) => result.processed).length, 1);
   assert.equal(new Set(results.map((result) => result.evidenceId)).size, 1);
+  assert.equal(new Set(results.map((result) => result.contributionEventId)).size, 1);
   const evidenceId = results[0]?.evidenceId;
+  const contributionEventId = results[0]?.contributionEventId;
   assert.ok(evidenceId);
+  assert.ok(contributionEventId);
   assert.equal(
     await prisma.randomXAcceptedShareEvidence.count({
       where: { shareFingerprint: input.validation.fingerprint },
@@ -182,6 +185,29 @@ test('consumes RandomX evidence events atomically across retries, conflicts, and
   const idempotency = await prisma.idempotencyRecord.findUnique({ where: { key: recordKey } });
   assert.equal(idempotency?.status, 'COMPLETED');
   assert.equal(idempotency?.resultReference, evidenceId);
+  const contributionEvent = await prisma.outboxEvent.findUniqueOrThrow({
+    where: { eventId: contributionEventId },
+  });
+  assert.equal(contributionEvent.eventName, 'reward.randomx-contribution.accepted.v1');
+  assert.equal(contributionEvent.producer, 'mining-worker');
+  assert.equal(contributionEvent.aggregateType, 'ContributionFact');
+  assert.equal(contributionEvent.aggregateId, evidenceId);
+  assert.equal(contributionEvent.causationId, event.eventId);
+  assert.equal(contributionEvent.idempotencyKey, `randomx-contribution:${evidenceId}:v1`);
+  assert.deepEqual(contributionEvent.payload, {
+    sourceEventId: event.eventId,
+    randomXEvidenceId: evidenceId,
+    miningAccountId,
+    assetId,
+    upstreamPoolId,
+    acceptedDifficulty: '1000.5',
+    acceptedAt: input.upstream.decidedAt.toISOString(),
+  });
+  assert.equal(
+    await prisma.contributionFact.count({ where: { randomXEvidenceId: evidenceId } }),
+    0,
+    'the mining worker must hand off contribution posting to the accounting worker',
+  );
 
   const alteredEvent = {
     ...event,
@@ -221,5 +247,10 @@ test('consumes RandomX evidence events atomically across retries, conflicts, and
       where: { shareFingerprint: rollbackInput.validation.fingerprint },
     }),
     0,
+  );
+  assert.equal(
+    await prisma.outboxEvent.count({ where: { causationId: rollbackEvent.eventId } }),
+    0,
+    'a rolled-back evidence transaction must not leak a contribution hand-off',
   );
 });

@@ -4,6 +4,8 @@
 -- from local worker attribution and receipt metadata. Existing schema-v19 rows
 -- retain their unique local fingerprint as a collision-safe legacy key.
 
+BEGIN;
+
 ALTER TABLE "RandomXShareSubmissionIntent"
   ADD COLUMN "upstreamDispatchFingerprint" TEXT;
 
@@ -23,3 +25,5 @@ ALTER TABLE "RandomXShareSubmissionIntent"
 
 CREATE UNIQUE INDEX "RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key"
   ON "RandomXShareSubmissionIntent"("upstreamDispatchFingerprint");
+
+COMMIT;

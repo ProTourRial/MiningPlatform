@@ -4,7 +4,7 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260827010000_randomx_authoritative_dispatch_binding';
+const latestMigration = '20260827020000_randomx_accounting_path';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -52,16 +52,16 @@ function run(command, args, options = {}) {
   if (result.status !== 0) throw new Error(`${command} exited with status ${result.status ?? 1}`);
 }
 
-function psql(command) {
+function psqlInvocation(command) {
   if (!psqlContainer) {
-    run('psql', [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', '--command', command], {
-      redactArgs: true,
-    });
-    return;
+    return {
+      command: 'psql',
+      args: [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', '--command', command],
+    };
   }
-  run(
-    'docker',
-    [
+  return {
+    command: 'docker',
+    args: [
       'exec',
       '--env',
       `PGPASSWORD=${decodeURIComponent(psqlUrl.password)}`,
@@ -76,8 +76,35 @@ function psql(command) {
       '--command',
       command,
     ],
-    { redactArgs: true },
-  );
+  };
+}
+
+function psql(command) {
+  const invocation = psqlInvocation(command);
+  run(invocation.command, invocation.args, { redactArgs: true });
+}
+
+function psqlExpectFailure(command, expectedMessage) {
+  const invocation = psqlInvocation(command);
+  process.stdout.write(`\n> ${invocation.command} [arguments redacted; failure expected]\n`);
+  const result = spawnSync(invocation.command, invocation.args, {
+    cwd: root,
+    encoding: 'utf8',
+    shell: false,
+    env: process.env,
+  });
+  if (result.error) throw result.error;
+  if (result.status === 0) {
+    throw new Error('The intentionally failed migration unexpectedly succeeded');
+  }
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  if (!output.includes(expectedMessage)) {
+    const redactedOutput = output
+      .replaceAll(decodeURIComponent(psqlUrl.password), '[redacted]')
+      .slice(-2_000);
+    throw new Error(`Migration failed for an unexpected reason:\n${redactedOutput}`);
+  }
+  process.stdout.write('Expected migration failure observed; verifying transaction rollback.\n');
 }
 
 // Never reset a caller-supplied database. The verifier only accepts a newly
@@ -358,6 +385,97 @@ try {
         repeat('6', 64)
       );
     `);
+
+    const randomXDispatchMigrationPath = join(
+      migrationsRoot,
+      '20260827010000_randomx_authoritative_dispatch_binding',
+      'migration.sql',
+    );
+    const randomXDispatchMigration = readFileSync(randomXDispatchMigrationPath, 'utf8');
+    const enableIntentTrigger = `ALTER TABLE "RandomXShareSubmissionIntent"
+  ENABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger";`;
+    const failureMessage = 'intentional RandomX dispatch migration failure';
+    if (!randomXDispatchMigration.includes(enableIntentTrigger)) {
+      throw new Error('RandomX dispatch migration failure-injection point is missing');
+    }
+    const failingRandomXDispatchMigration = randomXDispatchMigration.replace(
+      enableIntentTrigger,
+      () => `DO $$ BEGIN RAISE EXCEPTION '${failureMessage}'; END $$;\n\n${enableIntentTrigger}`,
+    );
+    psqlExpectFailure(failingRandomXDispatchMigration, failureMessage);
+    psql(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = 'RandomXShareSubmissionIntent'
+            AND column_name = 'upstreamDispatchFingerprint'
+        ) THEN RAISE EXCEPTION 'failed v20 migration leaked its new column'; END IF;
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_trigger trigger
+          JOIN pg_class relation ON relation.oid = trigger.tgrelid
+          WHERE relation.relname = 'RandomXShareSubmissionIntent'
+            AND trigger.tgname = 'RandomXShareSubmissionIntent_immutable_trigger'
+            AND trigger.tgenabled = 'O'
+            AND NOT trigger.tgisinternal
+        ) THEN RAISE EXCEPTION 'failed v20 migration left immutability disabled'; END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM "RandomXShareSubmissionIntent"
+          WHERE "id" = 'alpha8-upgrade-randomx-intent'
+            AND "shareFingerprint" = repeat('4', 64)
+            AND "acceptedDifficulty" = 1000.5
+        ) THEN RAISE EXCEPTION 'failed v20 migration mutated historical intent data'; END IF;
+      END $$;
+    `);
+
+    cpSync(
+      join(migrationsRoot, '20260827010000_randomx_authoritative_dispatch_binding'),
+      join(temporaryMigrations, '20260827010000_randomx_authoritative_dispatch_binding'),
+      { recursive: true },
+    );
+    run('pnpm', [
+      '--filter',
+      '@mining/database',
+      'exec',
+      'prisma',
+      'migrate',
+      'deploy',
+      '--config',
+      join(temporaryPrismaRoot, 'prisma.config.ts'),
+    ]);
+    psql(`
+      INSERT INTO "OutboxEvent" (
+        "id", "eventId", "eventName", "eventVersion", "producer", "aggregateType",
+        "aggregateId", "correlationId", "idempotencyKey", "payload", "occurredAt",
+        "updatedAt"
+      ) VALUES (
+        'alpha8-upgrade-randomx-accepted-outbox',
+        'alpha8-upgrade-randomx-accepted-event',
+        'mining.randomx.share.accepted.v1', 1, 'randomx-mining-gateway',
+        'MiningAccount', 'alpha8-upgrade-randomx-account',
+        'alpha8-upgrade-randomx-correlation',
+        'randomx-share:' || repeat('b', 64),
+        jsonb_build_object(
+          'miningAccountId', 'alpha8-upgrade-randomx-account',
+          'assetId', 'alpha8-upgrade-randomx-asset',
+          'upstreamPoolId', 'alpha8-upgrade-randomx-pool',
+          'localFingerprint', repeat('b', 64),
+          'acceptedDifficulty', '1000.5',
+          'upstreamAccepted', true,
+          'upstreamDecisionDigest', repeat('f', 64),
+          'upstreamDecidedAt', (
+            SELECT to_char("acceptedAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+            FROM "RandomXAcceptedShareEvidence"
+            WHERE "id" = 'alpha8-upgrade-randomx-evidence'
+          )
+        ),
+        (SELECT "acceptedAt" FROM "RandomXAcceptedShareEvidence"
+          WHERE "id" = 'alpha8-upgrade-randomx-evidence'),
+        NOW()
+      );
+    `);
   }
 
   run('pnpm', ['db:migrate:deploy']);
@@ -387,7 +505,7 @@ try {
         OR to_regclass('public."RandomXUpstreamJobEvidence"') IS NULL
         OR to_regclass('public."RandomXShareSubmissionIntent"') IS NULL
         OR to_regclass('public."RandomXUpstreamShareDecision"') IS NULL
-      THEN RAISE EXCEPTION 'required schema-20 tables are missing'; END IF;
+      THEN RAISE EXCEPTION 'required schema-21 tables are missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'RandomXShareSubmissionIntent'
@@ -400,6 +518,22 @@ try {
         SELECT 1 FROM pg_constraint
         WHERE conname = 'RandomXShareSubmissionIntent_dispatch_fingerprint_check'
       ) THEN RAISE EXCEPTION 'schema-v20 authoritative dispatch binding is missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'ContributionFact'
+          AND column_name = 'sourceType' AND is_nullable = 'NO'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'ContributionFact'
+          AND column_name = 'randomXEvidenceId' AND is_nullable = 'YES'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'ContributionFact_exact_source_check'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = 'public' AND tablename = 'ContributionFact'
+          AND indexname = 'ContributionFact_randomXEvidenceId_key'
+      ) THEN RAISE EXCEPTION 'schema-v21 RandomX contribution source binding is missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
@@ -522,6 +656,18 @@ try {
           AND "upstreamDispatchFingerprint" = "shareFingerprint"
           AND "acceptedDifficulty" = 1000.5
       ) THEN RAISE EXCEPTION 'schema-v19 RandomX intent was not safely backfilled to v20'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1 FROM "OutboxEvent"
+        WHERE "idempotencyKey" = 'randomx-contribution:alpha8-upgrade-randomx-evidence:v1'
+          AND "eventName" = 'reward.randomx-contribution.accepted.v1'
+          AND "producer" = 'mining-worker'
+          AND "aggregateType" = 'ContributionFact'
+          AND "aggregateId" = 'alpha8-upgrade-randomx-evidence'
+          AND "causationId" = 'alpha8-upgrade-randomx-accepted-event'
+          AND "payload"->>'sourceEventId' = 'alpha8-upgrade-randomx-accepted-event'
+          AND "payload"->>'randomXEvidenceId' = 'alpha8-upgrade-randomx-evidence'
+          AND "payload"->>'acceptedDifficulty' = '1000.5'
+      ) THEN RAISE EXCEPTION 'schema-v21 did not backfill exact RandomX contribution hand-off'; END IF;
     END $$;
   `);
 
@@ -675,9 +821,10 @@ try {
     'src/payout-execution.integration.test.ts',
   ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
+  run('pnpm', ['--filter', '@mining/accounting-worker', 'test']);
   run('pnpm', ['--filter', '@mining/randomx-gateway', 'test']);
   process.stdout.write(
-    `\nSchema-20 payout, native-recovery, and authoritative RandomX dispatch ${mode} verification passed.\n`,
+    `\nSchema-21 payout, native-recovery, and RandomX contribution ${mode} verification passed.\n`,
   );
 } finally {
   if (

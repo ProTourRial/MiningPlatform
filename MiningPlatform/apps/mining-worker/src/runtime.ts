@@ -89,11 +89,12 @@ try {
           eventId: event.eventId,
           eventName: event.eventName,
           evidenceId: result.evidenceId,
+          contributionEventId: result.contributionEventId,
           processed: result.processed,
         },
         result.processed
-          ? 'RandomX accepted-share evidence persisted'
-          : 'duplicate RandomX accepted-share event skipped',
+          ? 'RandomX accepted-share evidence and contribution event persisted'
+          : 'duplicate RandomX accepted-share contribution reconciled',
       );
       return;
     }

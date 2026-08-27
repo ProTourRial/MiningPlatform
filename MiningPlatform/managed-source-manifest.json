@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 612,
-  "managedFilesChecksum": "447be9f3dae51498ad87b05b52f3ca6f0c2f1456b2d6729b2bd5eeeea8e2138e",
+  "managedFileCount": 614,
+  "managedFilesChecksum": "bca2e32bd5d46af866c752c3fc13a11492b84588796a77d1f271d93667a8ce9e",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -86,13 +86,18 @@
     },
     {
       "path": "apps/accounting-worker/src/accounting-service.ts",
-      "sha256": "bcdbe90e1dfb48c9f74837f9dbb54ad511f1a289380f5ddcfd307497f739e802",
-      "size": 29949
+      "sha256": "b5be1c240d33982aab70356ce28ccd51b5b5a790c8adb0c94b094559101af4eb",
+      "size": 36364
     },
     {
       "path": "apps/accounting-worker/src/main.ts",
       "sha256": "3cb26ddf4a52367bcb6a8b7de99113349bc589735b15e6f123453e4451c8494f",
       "size": 144
+    },
+    {
+      "path": "apps/accounting-worker/src/randomx-contribution.integration.test.ts",
+      "sha256": "8349b419d8f11e5ac5fa7c5eec7fed21531c8aab62edab9d14e8fc6ea248ea87",
+      "size": 6775
     },
     {
       "path": "apps/accounting-worker/src/reconciliation-resolution-service.test.ts",
@@ -106,8 +111,8 @@
     },
     {
       "path": "apps/accounting-worker/src/runtime.ts",
-      "sha256": "3277870f638039938978180cf6ff2433dd76e2a18d9d002a408b0500f00517bb",
-      "size": 1653
+      "sha256": "045bde21c40a2ea8adac347ed672fea7ef2d0f0bb8419cb4df6d1a1c2aef771b",
+      "size": 1697
     },
     {
       "path": "apps/accounting-worker/src/serializable-transaction.ts",
@@ -601,13 +606,13 @@
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-event.ts",
-      "sha256": "cf69907dcfcf0d4bd6be5eaa01b8e1b744f74a88646f1eedfb973a2cc5cd839e",
-      "size": 12277
+      "sha256": "76eecb077722f782f8940a1d8dbe525abad44e7c5166fadaf698a25b99215e37",
+      "size": 15759
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.integration.test.ts",
-      "sha256": "beaf45ca961b65bf753a8eec3b3b0527e71e6577b629deb76467fe2e4bdd5deb",
-      "size": 7260
+      "sha256": "351ec8c04faa4a8a0bfc911c0227480ef73538957c960473f9b3b8c0250f4ebf",
+      "size": 8659
     },
     {
       "path": "apps/mining-worker/src/randomx-accounting-evidence.ts",
@@ -616,13 +621,13 @@
     },
     {
       "path": "apps/mining-worker/src/runtime.ts",
-      "sha256": "e9295e8ae3f1d81c6483847e659b0782d3167f3c5fce3075044bcf4e8b7c4eb0",
-      "size": 4388
+      "sha256": "0048805b968643d810b314815beea2ff31da8fec84201be889102656f0dd00c0",
+      "size": 4480
     },
     {
       "path": "apps/mining-worker/src/supported-events.test.ts",
-      "sha256": "55d4099f0213bf6a583ccbfd0dfb7ab4d3a4906ce96435d9a70bfb3c38ee05d1",
-      "size": 2029
+      "sha256": "337209bfea22c60cfcce145ace40b6d6238f3bc53af4f7465e13215704302f37",
+      "size": 2105
     },
     {
       "path": "apps/mining-worker/src/supported-events.ts",
@@ -1256,8 +1261,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f501c9b03e4096c4da559a68e26eebf4255d0bc9d6ac5eee70fcd42118d15068",
-      "size": 54125
+      "sha256": "b1a04f7ee45ba458602ccdcb3f4ed45426cecba144e0b6a4356722e9c856b7a6",
+      "size": 55563
     },
     {
       "path": "DELETE_FILES.txt",
@@ -2141,8 +2146,8 @@
     },
     {
       "path": "packages/database/prisma/migrations/20260824020000_native_bitcoin_submission_intent/migration.sql",
-      "sha256": "45d8d202e9326f9266a896e803093ecbc3ce530b4e737f96d370de4eaa6b52b4",
-      "size": 6299
+      "sha256": "263b72648592016b2483c1d8a142f5a2e0559c3a110263291b075b0ef8d1b97a",
+      "size": 6316
     },
     {
       "path": "packages/database/prisma/migrations/20260824030000_native_bitcoin_submission_recovery_observation/migration.sql",
@@ -2161,8 +2166,13 @@
     },
     {
       "path": "packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql",
-      "sha256": "00e187dd257c0f68a1e17f7714a67dd71824f65a7b6319e1cf860ed4c73f67d3",
-      "size": 1077
+      "sha256": "73961c994e2aafe4cfec1c86c366a407875346d0e800ad25a2b518ece130bd75",
+      "size": 1094
+    },
+    {
+      "path": "packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql",
+      "sha256": "11cc548850da17b1942db46057251ce49ccbff181ef901748b8205c9522568fd",
+      "size": 4889
     },
     {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
@@ -2176,8 +2186,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "970c722f9c422300e5d8ff3a6e3524b92ab162e97a84d4344567ba7e7c58289b",
-      "size": 76421
+      "sha256": "51c7302b35b67365a5a6c360d8b34bf6ffdd6751001aec5c5d3ca0d04a8dbf2b",
+      "size": 77000
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -2566,8 +2576,8 @@
     },
     {
       "path": "packages/shared/src/events.ts",
-      "sha256": "dd6fba58e370855cf052caaa225338f6ba64edaa7a8fc6b54a3ecd13d3fd3ae5",
-      "size": 9635
+      "sha256": "5eee90ccb319ba2337cd813b17315f27cce2520f190f00c5e65d9d396395ffc4",
+      "size": 9948
     },
     {
       "path": "packages/shared/src/index.ts",
@@ -2886,8 +2896,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "cc2c7ed49c24b8eed77cc20170ba2a69feaa65335e58b2e99abcac3faefea074",
-      "size": 25056
+      "sha256": "26f31e18090eb9f9bd967ea3093feb3bb2ea116f0bc40b438d9b857a8557a919",
+      "size": 27907
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -3046,8 +3056,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "60b24e52fa47f386c7775d857cc0d37a4e801cd92669ae090f16ea9f0dfa414d",
-      "size": 32994
+      "sha256": "cb7122a1316e629de73e73feec3f4df0b7669e9ef4b2022082c59392ed2c7e02",
+      "size": 39604
     },
     {
       "path": "scripts/wait-for-http.mjs",
