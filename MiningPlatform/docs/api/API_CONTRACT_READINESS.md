@@ -22,7 +22,7 @@ Response JSON di bawah ini adalah contoh shape yang disarankan. Field `id`, time
 
 - **Contract version:** `v1.0.0-draft`.
 - **Path version:** `/api/v1`.
-- **Source commit dokumen ini:** `4061e2ab0193d7508807a655f9d52201c8d09bfb` sebelum metadata drift update; commit baru setelah update harus dicatat pada PR.
+- **Source commit dokumen ini:** `2c4801c59f296c15d2cf91abb5c1e4d8ef237501` (metadata drift update).
 - **Runtime source baseline:** `main` pada `770e38c5e119102635aefa97893cdcbdbc345da9`.
 - **Readiness reference commit:** `feat/product-readiness-planning` pada `96417739824585dd7861d37b3a0d6cfa387fac10`.
 - **Baseline date:** 27 Agustus 2026.
