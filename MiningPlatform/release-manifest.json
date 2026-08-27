@@ -14,9 +14,9 @@
     "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "a765e18b9d519a97a592f42063574b64216250a0ccb67b646bb84a76e7ef5ff3",
+  "payloadChecksum": "ddfd8d3d9e3bfd0af46d99db25ddedf670571b0e082cd45794876cc2d1ed3892",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 615,
+  "payloadFileCount": 672,
   "buildDate": "2026-08-22T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"

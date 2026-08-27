@@ -4,6 +4,9 @@
 
 ### Added
 
+- Integrated production-readiness corpus covering API contracts, financial state machines, wallet/network policy, fee and reward decisions, payout acceptance, observability, Stratum/VarDiff readiness, HA/backup/DR, legal/compliance, release evidence, manual QA, safe E2E, and bounded load-test plans.
+- Professional graphite-mineral frontend redesign across the landing page, public transparency board, authentication shell, and responsive dashboard navigation, with accessible status presentation and repository-root Vercel build support.
+- Reusable observability-contract and VarDiff-policy packages plus wallet-network validators and executable financial state-machine guards, each with focused unit coverage.
 - Controlled payout execution foundation with database-backed eligibility snapshots, exact journal balance reservation, append-only approval evidence, user-owned selected payout destinations, cancellation/rejection reversal journals, and fail-closed request/signing/broadcast controls.
 - Schema v14 evidence records for signing requests, broadcast attempts, chain observations, payout reconciliation, wallet reconciliation, and per-asset emergency payout controls; historical alpha.7 payouts remain preserved as execution version 1.
 - Schema v15 append-only native Bitcoin candidate, proposal, and submission-attempt evidence with exact template, coinbase-policy, raw-block, job, and source-digest correlation; only bounded hashes and the block header are retained, never raw block bytes.
@@ -47,6 +50,7 @@
 
 ### Changed
 
+- Vercel delivery retains the patched Next.js 16.3.2 runtime while adopting the redesign's aligned Tailwind CSS 4.3.3 and PostCSS configuration; the workspace lockfile is regenerated from the combined package graph.
 - RandomX submission validation now resolves worker, mining account, asset, and upstream pool from the authenticated connection and database, rechecks that authorization after hashing and inside the intent transaction, derives difficulty from the authoritative target, and retrieves the still-active job directly from the upstream adapter at authoritative database time. Callers can no longer supply account, asset, pool, difficulty, job blob, seed, target, height, or session evidence.
 - RandomX durable replay now identifies the actual upstream proof independently from request correlation, receipt time, or local worker attribution; a second worker cannot dispatch the same pool/session/job/nonce/result under a different local identity, while a decided network retry can still replay after the live job has expired or been evicted.
 - RandomX upstream dispatch now requires the exact active session and immutable job-lease fingerprint immediately before socket write. Session replacement, disconnect, job mutation/expiry, invalid serialization, and stale sockets fail closed without writing a share request.

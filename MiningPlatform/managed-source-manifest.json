@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 614,
-  "managedFilesChecksum": "bca2e32bd5d46af866c752c3fc13a11492b84588796a77d1f271d93667a8ce9e",
+  "managedFileCount": 671,
+  "managedFilesChecksum": "a5097bb79cdcdbe34b9db5ade350271ceaf98b25eec70b3016e66531401c3159",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -951,8 +951,8 @@
     },
     {
       "path": "apps/web/package.json",
-      "sha256": "bb3ccb9edee200e017639e977846620a18f5866fb41912df357326752b855e00",
-      "size": 1053
+      "sha256": "6f40aa1e4743b1040bb2220ad976627512708cbafd35da517bd074d7bd6e234b",
+      "size": 1054
     },
     {
       "path": "apps/web/postcss.config.mjs",
@@ -1041,8 +1041,8 @@
     },
     {
       "path": "apps/web/src/app/globals.css",
-      "sha256": "22e8d1b40907993794c0cd5ef7589a815161069b98c34f7309aa2ee42d07bd6c",
-      "size": 2847
+      "sha256": "f5fefe3119471a1c47a0b8a46e402f88c8b9a99fc978f23332ef85a1733d8bb1",
+      "size": 3223
     },
     {
       "path": "apps/web/src/app/layout.tsx",
@@ -1071,8 +1071,8 @@
     },
     {
       "path": "apps/web/src/app/transparency/page.tsx",
-      "sha256": "44e1f76e5704296d22d7e239c06208c602de3965649a592471f0b96f62ab21a5",
-      "size": 1055
+      "sha256": "5cd5cfbbf5fd2013b958d1b4db808c812e48cd440ea0065744c471037f15c79b",
+      "size": 4131
     },
     {
       "path": "apps/web/src/app/verify-email/page.tsx",
@@ -1146,8 +1146,8 @@
     },
     {
       "path": "apps/web/src/components/dashboard/dashboard-frame.tsx",
-      "sha256": "6e9b00f82f57a3d771f8c2010edb643e1f4c7f12148fe27ec6c804bea3c58dd0",
-      "size": 11127
+      "sha256": "c16a6fdbbf5d6693c8c8b58141cb5820bce20951419b4a426067d889db7d9cdd",
+      "size": 12085
     },
     {
       "path": "apps/web/src/components/dashboard/financial-readiness-panel.tsx",
@@ -1206,23 +1206,23 @@
     },
     {
       "path": "apps/web/src/components/landing/footer.tsx",
-      "sha256": "adc21e209a22de99dbd14c229a0ec0b1efafa6708e2bdcaf1933e3d61905baea",
-      "size": 1940
+      "sha256": "3c3c26be50ad17ee1bab34f40d19706864be6afd14df1971958848fedb95fb9f",
+      "size": 3650
     },
     {
       "path": "apps/web/src/components/landing/hero.tsx",
-      "sha256": "74535400131fcaaa61309023c6db42a1fbf51126d7487c85b86d835cde929671",
-      "size": 8341
+      "sha256": "bcc9e98f9a5d4d2736992f901a59fc5d4b468f10234c42c4dd7c6fd77b177426",
+      "size": 8823
     },
     {
       "path": "apps/web/src/components/landing/navbar.tsx",
-      "sha256": "16a41759cfb238425867de5c4968d4a99dde96eaaec6ba075ad3ec5e5c3cd173",
-      "size": 5263
+      "sha256": "c51b651222c8061334f0a1752e2c4318d20eaefa33e439616d639c9430638d2c",
+      "size": 5408
     },
     {
       "path": "apps/web/src/components/landing/sections.tsx",
-      "sha256": "4ecf7f6adaf2d92259b2d0f8d5855d00070a0362e91b53ea7bac21312dd55a0a",
-      "size": 29142
+      "sha256": "6cd549e67a3106d761dab14cca5324ad24d49feb0cf53f589734c340c02ba10e",
+      "size": 28982
     },
     {
       "path": "apps/web/src/components/providers/app-providers.tsx",
@@ -1231,8 +1231,8 @@
     },
     {
       "path": "apps/web/src/components/ui/auth-card.tsx",
-      "sha256": "0834d9894f7eb7d4135090f6b1be9229eaf8bdbc17d77f0c3fca779855e34297",
-      "size": 4121
+      "sha256": "c1acf13ed5354e55406e66addbf5748f583542cc15378fae34d61ffdb1977087",
+      "size": 4599
     },
     {
       "path": "apps/web/src/services/api-client.test.ts",
@@ -1261,8 +1261,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "b1a04f7ee45ba458602ccdcb3f4ed45426cecba144e0b6a4356722e9c856b7a6",
-      "size": 55563
+      "sha256": "096b044a965d67768bb527aae32808bb16acfe483a2a2c6ac614021899aad2eb",
+      "size": 56492
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1378,6 +1378,11 @@
       "path": "docs/adr/README.md",
       "sha256": "30a8838101e2b3c070663ce5c90a84392c8cc288a512c90453c44650d075c79c",
       "size": 1869
+    },
+    {
+      "path": "docs/api/API_CONTRACT_READINESS.md",
+      "sha256": "8f071110e2a1ec57e23570702afc42c4a1446c56738feac2e0f68783a679503b",
+      "size": 35033
     },
     {
       "path": "docs/api/event-contracts.md",
@@ -1520,9 +1525,64 @@
       "size": 481
     },
     {
+      "path": "docs/governance/P0_READINESS_INDEX.md",
+      "sha256": "8c1fa604fbb47d270bd40b68703b02513a718bd03a2b5fc077c7ca7e0f5006dc",
+      "size": 7345
+    },
+    {
+      "path": "docs/governance/PRODUCT_GOVERNANCE.md",
+      "sha256": "fed89464b5f432eca5cd3210a11e13afbad2a9fcb34c3b6732380530f4dabff0",
+      "size": 9279
+    },
+    {
+      "path": "docs/governance/RELEASE_EVIDENCE_INDEX.md",
+      "sha256": "f38ae9af1179f5dd09da1387966755e69f0b1477e213e09b6b2ab1e6314c38ce",
+      "size": 3942
+    },
+    {
+      "path": "docs/governance/RELEASE_GOVERNANCE_EXECUTION.md",
+      "sha256": "360a92add5fa23eec9260f4a9a3236b8cbe886476b75a695cb8f56e95d093141",
+      "size": 6351
+    },
+    {
+      "path": "docs/governance/RELEASE_GOVERNANCE.md",
+      "sha256": "2a6b9b6f39374e5a7895f8c3d2489ec51c10537d3ac1b7276039510cb8bb6b4a",
+      "size": 13333
+    },
+    {
+      "path": "docs/legal/LEGAL_READINESS_DRAFT.md",
+      "sha256": "4f42eaf06781f0f5f1a23b5afe0722ae8e6f87458a3edd9cc17ab5829e0ee030",
+      "size": 5125
+    },
+    {
+      "path": "docs/operations/BACKUP_DR_RUNBOOK.md",
+      "sha256": "3661e8954c8d5065d4000b21bbef39b434db6873f2c4e4c21698b3d096ab61b0",
+      "size": 5034
+    },
+    {
+      "path": "docs/operations/DATA_HA_READINESS.md",
+      "sha256": "102dcac5a5022f66135fa2cc4573d6eb998bad291360881c66e038e028bcb741",
+      "size": 4403
+    },
+    {
       "path": "docs/operations/database-backup-and-rollback.md",
       "sha256": "324efec7452ec83e9be1edd9c807b1c9b04a3d8486b93b16b049865b855ce8ad",
       "size": 1763
+    },
+    {
+      "path": "docs/operations/DEPLOYMENT_ENVIRONMENT_MATRIX.md",
+      "sha256": "0430e56f6a97871f708701397dea3f75b5eae2c75f2bd9d42fd99955051f4bc3",
+      "size": 4385
+    },
+    {
+      "path": "docs/operations/DEPLOYMENT_OPERATIONS_READINESS.md",
+      "sha256": "c067016617cd020ccf90244f270149d828b4cc285ef43cb3de292055e8da7290",
+      "size": 19167
+    },
+    {
+      "path": "docs/operations/DEPLOYMENT_SMOKE_TESTS.md",
+      "sha256": "87db082ded9154a464ab856986b5b156df274e940f889f24186a3c48ab82b0a2",
+      "size": 4319
     },
     {
       "path": "docs/operations/distributed-upstream-health.md",
@@ -1540,9 +1600,24 @@
       "size": 3654
     },
     {
+      "path": "docs/operations/OBSERVABILITY_READINESS.md",
+      "sha256": "24bf8a07c43f6dd5d0269aa3b2cce9fd984405e6f70f5f96c3d86339cc390e1a",
+      "size": 26685
+    },
+    {
+      "path": "docs/operations/PAYOUT_OPERATIONS.md",
+      "sha256": "a0d8292fd5814ea55ca3929f0d065789c8e34f642ff0d3d20fdd64a8a592a669",
+      "size": 4395
+    },
+    {
       "path": "docs/operations/payout-runbook.md",
       "sha256": "4a31136ff6c05e7a6df88197dd339d44032a1434e3f2f8ff487b92f85b012534",
       "size": 4672
+    },
+    {
+      "path": "docs/operations/POOL_INCIDENT_RUNBOOK.md",
+      "sha256": "deed31e450fce59f716aea5fcf274f17a7bf610940c9eafad65d7fde0f39ee74",
+      "size": 17216
     },
     {
       "path": "docs/operations/README.md",
@@ -1550,14 +1625,49 @@
       "size": 58
     },
     {
+      "path": "docs/operations/RECONCILIATION_RUNBOOK.md",
+      "sha256": "ea6eccdfbb650fdcd41aa54988ebc2e67137f8b7e00e4d9592d8fe9df7537269",
+      "size": 4752
+    },
+    {
       "path": "docs/operations/scheduler-boundaries.md",
       "sha256": "cdefcc3b7eafb9742abac597772252f8b1554ac6bbb3333b186f682e8fcd775f",
       "size": 1393
     },
     {
+      "path": "docs/operations/STRATUM_PRODUCTION_READINESS.md",
+      "sha256": "23deda6ebe8932743c8727c1fcdefc5b175ee6dac16ecd3e0b0fc8790e73a819",
+      "size": 5635
+    },
+    {
+      "path": "docs/product/BLOCK_LIFECYCLE_POLICY.md",
+      "sha256": "3dcc997538e28d2bc22e66656e8264d9101e437bef114a7344bddb377b267bf2",
+      "size": 5344
+    },
+    {
+      "path": "docs/product/FEE_POLICY_READINESS.md",
+      "sha256": "f5a7175412b637ae1edc21859d8045f4af3756a3498dedd4fa47a0464da6536e",
+      "size": 6367
+    },
+    {
+      "path": "docs/product/FINANCIAL_STATE_MACHINES.md",
+      "sha256": "c811eee4f2927af7033e357e24a65e601c3a65175415e566d37bc6a651f0ed30",
+      "size": 15447
+    },
+    {
+      "path": "docs/product/FRONTEND_CONTENT_PACK.md",
+      "sha256": "86614c047a8610d8415418da329d8f04c99d01e9289ad98e77adb1e9a4d48ae7",
+      "size": 19860
+    },
+    {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
       "sha256": "7344ea7f13196b16535c0d51a541afbbe215abb3c856d89525631a66dd0aadd2",
       "size": 19963
+    },
+    {
+      "path": "docs/product/POOL_PRODUCTION_READINESS.md",
+      "sha256": "95c0c43753aa3a53019065fe14de742999acf2d12bc9833f51f6f87438fe12c1",
+      "size": 62098
     },
     {
       "path": "docs/product/PRODUCT_CONSTITUTION.md",
@@ -1568,6 +1678,71 @@
       "path": "docs/product/PRODUCTION_GAP_REGISTER.md",
       "sha256": "a8fae3991b0a10d40037b5c43b9f51b0d6b8c124e50fa08fd19e93457e474523",
       "size": 22249
+    },
+    {
+      "path": "docs/product/REWARD_SCHEME_DECISION.md",
+      "sha256": "ebd99e67c98020a395049053c2e73f0af56976356db5719cfbfeeeafd45a285f",
+      "size": 6035
+    },
+    {
+      "path": "docs/product/VARDIFF_POLICY.md",
+      "sha256": "57b1efc045cd17d1ff3cfd3d5f9265222d8bf4b6a577dc6691d5f7c6da3eea1d",
+      "size": 5074
+    },
+    {
+      "path": "docs/product/WALLET_NETWORK_POLICY.md",
+      "sha256": "ec47f769ba84328ee0bd021bee22013afca71111607259c340bd45744df5fdcc",
+      "size": 14193
+    },
+    {
+      "path": "docs/qa/API_INTEGRATION_TEST_PLAN.md",
+      "sha256": "6df4b5a7416fdd349ede7eaba060ce96a75857c72114583c488090d9f417b702",
+      "size": 3640
+    },
+    {
+      "path": "docs/qa/FINANCIAL_FIXTURES.md",
+      "sha256": "81e40cc55f7b3234eb3579b87a4d235b4834d2de6066065e7fa52739a33f3841",
+      "size": 7633
+    },
+    {
+      "path": "docs/qa/FINANCIAL_INVARIANT_TEST_VECTORS.md",
+      "sha256": "2db68bec8ce632d386538324bd204334c34a3dc5c7c55c09d846fecb544a0357",
+      "size": 13278
+    },
+    {
+      "path": "docs/qa/fixtures/financial-readiness-fixtures.json",
+      "sha256": "9d68b3c86a472ab2f00f443b61214acaf5d81566f46cc1279bcee71a32b050d1",
+      "size": 8668
+    },
+    {
+      "path": "docs/qa/MANUAL_QA_CHECKLISTS.md",
+      "sha256": "47129875e8bb7825a0c7b53dc3312f70a2158b3833c6a93119892d381d4df473",
+      "size": 28121
+    },
+    {
+      "path": "docs/qa/P2_E2E_INTEGRATION_TEST_PLAN.md",
+      "sha256": "3107a7a1e9bea625d34d28183dcf6107a1601a9903e8684c79e849d2ab7c8433",
+      "size": 3864
+    },
+    {
+      "path": "docs/qa/P2_POOL_LOAD_TEST_PLAN.md",
+      "sha256": "bc18fd31adfb8b5b8604b6de238bbddae07e1397cf62d8b973805d8c28c7a47b",
+      "size": 3879
+    },
+    {
+      "path": "docs/qa/PAYOUT_ACCEPTANCE.md",
+      "sha256": "54864b21328c085522d54d3915c1ce1bb3955c92c0ab50f5c07d065ed5b9d33a",
+      "size": 5620
+    },
+    {
+      "path": "docs/qa/RELEASE_USER_ACCEPTANCE.md",
+      "sha256": "55b586d20a0b6b6ee400f8a2d979673d58b04e9ed19535126585661e97dac152",
+      "size": 5809
+    },
+    {
+      "path": "docs/qa/USER_ACCEPTANCE_SCENARIOS.md",
+      "sha256": "79dd9c142fc89588ad6df70c1c139fc8927a9dda1005ae3ecc79f1c9c726369b",
+      "size": 14607
     },
     {
       "path": "docs/releases/landing-v1-validation.md",
@@ -1770,9 +1945,29 @@
       "size": 10794
     },
     {
+      "path": "docs/security/COMPLIANCE_READINESS.md",
+      "sha256": "7647b2282b2eff4810ed28ea240f69cc7f590a8ec90a62f802061471ff042575",
+      "size": 5725
+    },
+    {
+      "path": "docs/security/SECURITY_COMPLIANCE_READINESS.md",
+      "sha256": "b3fac299b4f1be5f1a95040e33d6c60e02710478598623053622c592da2e1f80",
+      "size": 18778
+    },
+    {
+      "path": "docs/security/THREAT_MODEL_READINESS.md",
+      "sha256": "46b9d04e7fa1cefe2ee611ae680005dc3a5839f7c2b3d3b0c4ad84842545d469",
+      "size": 6967
+    },
+    {
       "path": "docs/security/threat-model-v1.md",
       "sha256": "379a0cd607202a1b3f0f009a4f0ce3e74660c87799164e6be13d366a6485cc36",
       "size": 927
+    },
+    {
+      "path": "docs/security/WALLET_SAFETY_POLICY.md",
+      "sha256": "fe50e1f546c005da3cfe334924f2dd3ad495e7be5bf17659ae59af8a3456576b",
+      "size": 7255
     },
     {
       "path": "docs/security/worker-credential-management.md",
@@ -2390,6 +2585,26 @@
       "size": 145
     },
     {
+      "path": "packages/observability-contract/package.json",
+      "sha256": "62ce8bdaf276b2ce416b5e9b978547c5422bc86744066da3b6831fa99ae849e2",
+      "size": 665
+    },
+    {
+      "path": "packages/observability-contract/src/index.test.ts",
+      "sha256": "735cf4ee67c64542992406beaed7f155edc5235867036b45753384d75a14bf7a",
+      "size": 3067
+    },
+    {
+      "path": "packages/observability-contract/src/index.ts",
+      "sha256": "438b79437e627f787c95c33ba45708b74c4fbdd9114b6780b7e42a3b59bfa755",
+      "size": 7901
+    },
+    {
+      "path": "packages/observability-contract/tsconfig.json",
+      "sha256": "b1df01c7b3ffbfde2f65f433286f600e3ff181d47db39bce8337daea3c30a2c7",
+      "size": 145
+    },
+    {
       "path": "packages/randomx/package.json",
       "sha256": "b9e4e668eb93660476eb38a0495fbae589166f6d1444c8b1a7e21173479d7e16",
       "size": 711
@@ -2625,14 +2840,24 @@
       "size": 656
     },
     {
+      "path": "packages/state-machine/src/financial-state-machines.test.ts",
+      "sha256": "f28c5395cd1a520b476d905edc5ab09d34766c4c326d265c442216fe8c4d4fc4",
+      "size": 4954
+    },
+    {
+      "path": "packages/state-machine/src/financial-state-machines.ts",
+      "sha256": "2c5a5b2b960f4286e7e051cca3daff0cb33ec4b453aa9967ab03ad54a0373874",
+      "size": 5801
+    },
+    {
       "path": "packages/state-machine/src/index.test.ts",
       "sha256": "335e47352e8a59051ba0f7c71586a65fd20cf2face717fc3e9cf706504034ef5",
       "size": 750
     },
     {
       "path": "packages/state-machine/src/index.ts",
-      "sha256": "6a044b1c4caf065a7320c5c4cf7e0f18e2820abd3d123dd5e609acba8c2fd821",
-      "size": 631
+      "sha256": "4e44f2d6bdd84e8d64177052eaefb79e5b688f3c82cb77107f9d64503414e320",
+      "size": 679
     },
     {
       "path": "packages/state-machine/tsconfig.json",
@@ -2781,13 +3006,23 @@
     },
     {
       "path": "packages/validation/package.json",
-      "sha256": "6d19ec6da7d6d8f9e2fdf966a0e4b57df4f28af33b59f4b6a9cfb976387e5234",
-      "size": 696
+      "sha256": "9ce687360817e878ff6124a8548dccd7d1423219509a0ce1ef49b231d9e43ab9",
+      "size": 776
     },
     {
       "path": "packages/validation/src/index.ts",
-      "sha256": "d9fb40cea5cd4056462b20872a9b5249d43fedc1fc6f4fffd7bd3413b4ea16c4",
-      "size": 370
+      "sha256": "1403bc7467def29ff847be4a646715758cc7eb3c8e2ff961a6b15834a88861c7",
+      "size": 408
+    },
+    {
+      "path": "packages/validation/src/wallet-network.test.ts",
+      "sha256": "7222f3a6512817b19bf3c976c0bce66558039f97c28a194a025b69391c15dbc2",
+      "size": 3128
+    },
+    {
+      "path": "packages/validation/src/wallet-network.ts",
+      "sha256": "4c631df6f88e5264a7d89c52fdf0b854255b8a09a1ec011164ae89052bdc2358",
+      "size": 4164
     },
     {
       "path": "packages/validation/tsconfig.json",
@@ -2795,14 +3030,39 @@
       "size": 135
     },
     {
+      "path": "packages/vardiff-policy/package.json",
+      "sha256": "0e5b23b7aaf31eb8216ec0da654ab86a856d824de07653c17369205bac126909",
+      "size": 657
+    },
+    {
+      "path": "packages/vardiff-policy/src/index.test.ts",
+      "sha256": "fc64e6f8ec96f106e5396121e5821906f72349119917288bb5646aee1d782c27",
+      "size": 3063
+    },
+    {
+      "path": "packages/vardiff-policy/src/index.ts",
+      "sha256": "9e28275327ca9246ce3fc68c9ecf2b1007a4bd269bcd4e6f84109fff7907db59",
+      "size": 5559
+    },
+    {
+      "path": "packages/vardiff-policy/tsconfig.json",
+      "sha256": "b1df01c7b3ffbfde2f65f433286f600e3ff181d47db39bce8337daea3c30a2c7",
+      "size": 145
+    },
+    {
       "path": "pnpm-lock.yaml",
-      "sha256": "9ff5c9684cc93ead3744e382a5741212383558ef769f0243f0819175d8156f90",
-      "size": 305385
+      "sha256": "a35f37f1599ce02c92bf6a80a70727dbef92099aac3b0ee6d2020f851f90b41e",
+      "size": 302056
     },
     {
       "path": "pnpm-workspace.yaml",
       "sha256": "671d1309007f5042751e850b589533a2573c996242cf1ffaffa21950af3f3702",
       "size": 347
+    },
+    {
+      "path": "postcss.config.mjs",
+      "sha256": "9ca55411b62b2c9cc5631a3e6c631d80c8b8171c7b9ea1e19f83400f4100e910",
+      "size": 94
     },
     {
       "path": "PROJECT_TREE.txt",
@@ -2896,8 +3156,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "26f31e18090eb9f9bd967ea3093feb3bb2ea116f0bc40b438d9b857a8557a919",
-      "size": 27907
+      "sha256": "e738008fa8d58ce8b0ce6d6713f9ef52f451ac225e3f3be4dbd6d2bb789999a2",
+      "size": 28366
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -2908,6 +3168,16 @@
       "path": "scripts/database-snapshot.mjs",
       "sha256": "775f4f9108391c98965c12b5c9abffd0b3d80b6bdee6b3b0e5b91aea9608fcb2",
       "size": 1770
+    },
+    {
+      "path": "scripts/e2e/p2-e2e-cases.json",
+      "sha256": "18640094acefa0c7556862383b17a3fa832202dd1b48669426c40219f10797bd",
+      "size": 1215
+    },
+    {
+      "path": "scripts/e2e/run-p2-e2e.mjs",
+      "sha256": "86c31b90dce46718e988a3ebbcecd76cbac88e55b17847dea431e0c7070d4df4",
+      "size": 3709
     },
     {
       "path": "scripts/financial-truth-integration.ts",
@@ -2933,6 +3203,16 @@
       "path": "scripts/lib/owner-operator.ts",
       "sha256": "ffcc7c7820dfc6c66aa022173701f043f9be4ac0100df2298a35b360bdb6ff12",
       "size": 1441
+    },
+    {
+      "path": "scripts/load/p2-load-profile.json",
+      "sha256": "d8578efac31e94dd679337515edc9c833ec1f38b08c22a376e539d2a7def93f1",
+      "size": 1491
+    },
+    {
+      "path": "scripts/load/run-p2-http-load.mjs",
+      "sha256": "df47d9d89414474bb3dfa74c14df9b11dd7d21a61571d9d03cd478802c1d3d3d",
+      "size": 5333
     },
     {
       "path": "scripts/native-bitcoin-regtest-integration.ts",
@@ -3078,6 +3358,11 @@
       "path": "turbo.json",
       "sha256": "fb925ff101cce835a3029e58a9e818c7c6f4c7d85bb239a7d9ffc3ef5ea5163c",
       "size": 971
+    },
+    {
+      "path": "vercel.json",
+      "sha256": "f399d6691ea5f1aa8aa9edb3d18f37ffd174ae84146ba0727c6935763fe2bf70",
+      "size": 135
     }
   ]
 }

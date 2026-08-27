@@ -71,6 +71,16 @@ const requiredFiles = [
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
   'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
+  'packages/observability-contract/src/index.ts',
+  'packages/observability-contract/src/index.test.ts',
+  'packages/state-machine/src/financial-state-machines.ts',
+  'packages/state-machine/src/financial-state-machines.test.ts',
+  'packages/validation/src/wallet-network.ts',
+  'packages/validation/src/wallet-network.test.ts',
+  'packages/vardiff-policy/src/index.ts',
+  'packages/vardiff-policy/src/index.test.ts',
+  'postcss.config.mjs',
+  'vercel.json',
   'apps/api/src/modules/auth/step-up.service.ts',
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
@@ -101,8 +111,8 @@ const packageFiles = [
     .filter((entry) => entry.isDirectory())
     .map((entry) => `packages/${entry.name}/package.json`),
 ];
-if (packageFiles.length !== 33)
-  throw new Error(`Expected 33 workspace package files, found ${packageFiles.length}`);
+if (packageFiles.length !== 35)
+  throw new Error(`Expected 35 workspace package files, found ${packageFiles.length}`);
 for (const path of packageFiles) {
   const parsed = JSON.parse(await text(path));
   if (parsed.version !== expectedVersion) {
