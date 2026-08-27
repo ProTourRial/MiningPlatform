@@ -10,17 +10,17 @@ All E2E runs must use a disposable or explicitly approved staging environment wi
 
 ## 2. End-to-end journey
 
-| Stage | Scenario | Required outcome |
-|---|---|---|
-| Anonymous | Landing, transparency, version, health | Safe public response and alpha/gated copy |
-| Authentication | Register/login/logout/refresh | Session lifecycle and revocation are correct |
-| Worker | Create, list, credential rotation, disable | Account scope, redaction, audit evidence |
-| Wallet | BTC/BEP20 validation and change | Network separation, ownership gate, cooldown/lock |
-| Mining | Job/worker/share path in synthetic mode | Accepted/stale/duplicate share classifications |
-| Reward | Immature to mature and allocation | State transition, fee policy, no double credit |
-| Payout | Eligibility/reservation/approval simulation | No bypass, idempotency, maker-checker evidence |
-| Reconciliation | Source snapshot versus ledger projection | Zero/approved variance and incident path |
-| Recovery | Timeout, retry, provider down, reorg simulation | Safe retry, pause, reversal, and audit trail |
+| Stage          | Scenario                                        | Required outcome                                  |
+| -------------- | ----------------------------------------------- | ------------------------------------------------- |
+| Anonymous      | Landing, transparency, version, health          | Safe public response and alpha/gated copy         |
+| Authentication | Register/login/logout/refresh                   | Session lifecycle and revocation are correct      |
+| Worker         | Create, list, credential rotation, disable      | Account scope, redaction, audit evidence          |
+| Wallet         | BTC/BEP20 validation and change                 | Network separation, ownership gate, cooldown/lock |
+| Mining         | Job/worker/share path in synthetic mode         | Accepted/stale/duplicate share classifications    |
+| Reward         | Immature to mature and allocation               | State transition, fee policy, no double credit    |
+| Payout         | Eligibility/reservation/approval simulation     | No bypass, idempotency, maker-checker evidence    |
+| Reconciliation | Source snapshot versus ledger projection        | Zero/approved variance and incident path          |
+| Recovery       | Timeout, retry, provider down, reorg simulation | Safe retry, pause, reversal, and audit trail      |
 
 ## 3. Runner contract
 

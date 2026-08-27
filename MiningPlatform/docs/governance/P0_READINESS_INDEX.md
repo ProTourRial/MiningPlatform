@@ -10,22 +10,22 @@ P0 is complete only when the pool can safely prove contribution, reward, wallet 
 
 ## 2. Workstream dependency map
 
-| Order | Workstream | Depends on | Acceptance evidence | Current posture |
-|---:|---|---|---|---|
-| 1 | Product governance/open decisions | Stakeholders | Approved decision log with owner/date/rationale | Documentation ready; approvals pending |
-| 2 | API contract | Product decisions | Endpoint contract, error/idempotency, source/runtime drift result | Documentation ready; implementation alignment pending |
-| 3 | State machines | Product/API | Legal transitions, tests, audit/idempotency evidence | Pure domain guard implemented; durable integration pending |
-| 4 | Wallet/network | API/security | BTC/BEP20 checksum/network/ownership/cooldown evidence | Validator implemented; controller/persistence integration pending |
-| 5 | Reward/block policy | Product/treasury | Scheme decision, maturity/orphan/reorg fixtures | Policy ready; native block source pending |
-| 6 | Fee/referral | Product/finance | Conservation and attribution fixtures, effective policy | Policy ready; active engine alignment pending |
-| 7 | Eligibility/reservation | Wallet/reward/ledger | No-bypass eligibility and reservation evidence | Contract ready; accounting boundary pending |
-| 8 | Payout operations | Eligibility/reservation/security | Maker-checker, signer, broadcast, confirmation, reconciliation | Runbook ready; signer/broadcast pending |
-| 9 | Reconciliation | Ledger/node/provider | Source snapshots, zero/approved variance, sign-off | Runbook ready; source integration pending |
-| 10 | Observability | All critical flows | Metric catalog, label tests, alerts, dashboard, retention | Contract/package implemented; runtime instrumentation pending |
-| 11 | Security/compliance/legal | Product/operations | Threat model, scan, jurisdiction/KYC/AML/legal approval | Drafts ready; professional approval pending |
-| 12 | HA/backup/DR | Deployment/data topology | Failover, restore, PITR, RPO/RTO, divergence evidence | Plans ready; drills pending |
-| 13 | QA/UAT/smoke | API/UI/runtime | Disposable E2E, manual QA, UAT, smoke result | Plans/checklists ready; full runtime pending |
-| 14 | Release evidence/go-no-go | All prior gates | Evidence index, signed checklist, rollback target | Governance ready; gates pending |
+| Order | Workstream                        | Depends on                       | Acceptance evidence                                               | Current posture                                                   |
+| ----: | --------------------------------- | -------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
+|     1 | Product governance/open decisions | Stakeholders                     | Approved decision log with owner/date/rationale                   | Documentation ready; approvals pending                            |
+|     2 | API contract                      | Product decisions                | Endpoint contract, error/idempotency, source/runtime drift result | Documentation ready; implementation alignment pending             |
+|     3 | State machines                    | Product/API                      | Legal transitions, tests, audit/idempotency evidence              | Pure domain guard implemented; durable integration pending        |
+|     4 | Wallet/network                    | API/security                     | BTC/BEP20 checksum/network/ownership/cooldown evidence            | Validator implemented; controller/persistence integration pending |
+|     5 | Reward/block policy               | Product/treasury                 | Scheme decision, maturity/orphan/reorg fixtures                   | Policy ready; native block source pending                         |
+|     6 | Fee/referral                      | Product/finance                  | Conservation and attribution fixtures, effective policy           | Policy ready; active engine alignment pending                     |
+|     7 | Eligibility/reservation           | Wallet/reward/ledger             | No-bypass eligibility and reservation evidence                    | Contract ready; accounting boundary pending                       |
+|     8 | Payout operations                 | Eligibility/reservation/security | Maker-checker, signer, broadcast, confirmation, reconciliation    | Runbook ready; signer/broadcast pending                           |
+|     9 | Reconciliation                    | Ledger/node/provider             | Source snapshots, zero/approved variance, sign-off                | Runbook ready; source integration pending                         |
+|    10 | Observability                     | All critical flows               | Metric catalog, label tests, alerts, dashboard, retention         | Contract/package implemented; runtime instrumentation pending     |
+|    11 | Security/compliance/legal         | Product/operations               | Threat model, scan, jurisdiction/KYC/AML/legal approval           | Drafts ready; professional approval pending                       |
+|    12 | HA/backup/DR                      | Deployment/data topology         | Failover, restore, PITR, RPO/RTO, divergence evidence             | Plans ready; drills pending                                       |
+|    13 | QA/UAT/smoke                      | API/UI/runtime                   | Disposable E2E, manual QA, UAT, smoke result                      | Plans/checklists ready; full runtime pending                      |
+|    14 | Release evidence/go-no-go         | All prior gates                  | Evidence index, signed checklist, rollback target                 | Governance ready; gates pending                                   |
 
 ## 3. P0 Definition of Done
 

@@ -47,17 +47,17 @@ stateDiagram-v2
 
 ### 2.2 Official states and guards
 
-| State | Meaning | Entry guard | Allowed next states |
-|---|---|---|---|
-| `REQUESTED` | User intent diterima tetapi belum eligible | Auth, asset/network, destination, amount, and idempotency validated | `ELIGIBLE`, `FAILED` |
-| `ELIGIBLE` | Balance settled/reconciled, threshold, maturity, route, risk, and hold checks lulus | Immutable eligibility snapshot | `RESERVED`, `FAILED` |
-| `RESERVED` | Spendable balance ditahan secara atomic | Reservation journal/record and expiry created | `APPROVED`, `FAILED` |
-| `APPROVED` | Maker-checker and policy approval selesai | Approver berbeda dari requester sesuai policy | `SIGNING`, `FAILED` |
-| `SIGNING` | Signer terisolasi menerima intent terverifikasi | Intent hash, destination fingerprint, amount, policy, and limit match | `BROADCAST`, `FAILED` |
-| `BROADCAST` | Transaction submission menghasilkan tx reference/hash | Node/provider accepts broadcast or returns unambiguous tx ID | `CONFIRMING`, `FAILED` |
-| `CONFIRMING` | Transaction dipantau sampai finality | Node quorum and confirmation policy active | `CONFIRMING`, `COMPLETED`, `FAILED` |
-| `COMPLETED` | Final confirmation/reconciliation selesai | Tx, ledger, wallet/node, and payout record match | Terminal |
-| `FAILED` | Terminal failure atau controlled release | Safe failure reason and recovery action recorded | Terminal atau explicit `RETRY_REQUESTED` workflow |
+| State        | Meaning                                                                             | Entry guard                                                           | Allowed next states                               |
+| ------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------- |
+| `REQUESTED`  | User intent diterima tetapi belum eligible                                          | Auth, asset/network, destination, amount, and idempotency validated   | `ELIGIBLE`, `FAILED`                              |
+| `ELIGIBLE`   | Balance settled/reconciled, threshold, maturity, route, risk, and hold checks lulus | Immutable eligibility snapshot                                        | `RESERVED`, `FAILED`                              |
+| `RESERVED`   | Spendable balance ditahan secara atomic                                             | Reservation journal/record and expiry created                         | `APPROVED`, `FAILED`                              |
+| `APPROVED`   | Maker-checker and policy approval selesai                                           | Approver berbeda dari requester sesuai policy                         | `SIGNING`, `FAILED`                               |
+| `SIGNING`    | Signer terisolasi menerima intent terverifikasi                                     | Intent hash, destination fingerprint, amount, policy, and limit match | `BROADCAST`, `FAILED`                             |
+| `BROADCAST`  | Transaction submission menghasilkan tx reference/hash                               | Node/provider accepts broadcast or returns unambiguous tx ID          | `CONFIRMING`, `FAILED`                            |
+| `CONFIRMING` | Transaction dipantau sampai finality                                                | Node quorum and confirmation policy active                            | `CONFIRMING`, `COMPLETED`, `FAILED`               |
+| `COMPLETED`  | Final confirmation/reconciliation selesai                                           | Tx, ledger, wallet/node, and payout record match                      | Terminal                                          |
+| `FAILED`     | Terminal failure atau controlled release                                            | Safe failure reason and recovery action recorded                      | Terminal atau explicit `RETRY_REQUESTED` workflow |
 
 ### 2.3 Payout transition requirements
 
@@ -100,13 +100,13 @@ stateDiagram-v2
 
 ### 3.2 Official states and rules
 
-| State | Meaning | Required evidence | Allowed next states |
-|---|---|---|---|
-| `IMMATURE` | Reward source exists tetapi belum melewati maturity/finality | Block/settlement reference, confirmation count, asset/network policy | `IMMATURE`, `MATURE`, `REVERSED` |
-| `MATURE` | Reward source final menurut policy | Maturity evidence and policy version | `ALLOCATED`, `REVERSED` |
-| `ALLOCATED` | Gross/net/fee/referral allocation dihitung dan journal entry dibuat | Deterministic inputs, fee snapshot, balanced journal | `ALLOCATED`, `RECONCILED`, `REVERSED` |
-| `RECONCILED` | Source upstream/provider, internal liability, ledger, and allocation cocok | Source checksum, reconciliation report, exception cleared | Terminal |
-| `REVERSED` | Koreksi equal-and-opposite telah diposting | Original reference, reason, approver, reversal journal | Terminal |
+| State        | Meaning                                                                    | Required evidence                                                    | Allowed next states                   |
+| ------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- |
+| `IMMATURE`   | Reward source exists tetapi belum melewati maturity/finality               | Block/settlement reference, confirmation count, asset/network policy | `IMMATURE`, `MATURE`, `REVERSED`      |
+| `MATURE`     | Reward source final menurut policy                                         | Maturity evidence and policy version                                 | `ALLOCATED`, `REVERSED`               |
+| `ALLOCATED`  | Gross/net/fee/referral allocation dihitung dan journal entry dibuat        | Deterministic inputs, fee snapshot, balanced journal                 | `ALLOCATED`, `RECONCILED`, `REVERSED` |
+| `RECONCILED` | Source upstream/provider, internal liability, ledger, and allocation cocok | Source checksum, reconciliation report, exception cleared            | Terminal                              |
+| `REVERSED`   | Koreksi equal-and-opposite telah diposting                                 | Original reference, reason, approver, reversal journal               | Terminal                              |
 
 Reward tidak boleh berpindah langsung dari `IMMATURE` ke spendable balance. `MATURE` juga belum berarti payout eligible; threshold, route, hold, risk, dan payout gate tetap diperiksa terpisah.
 
@@ -138,12 +138,12 @@ stateDiagram-v2
 
 ### 4.2 Official states and rules
 
-| State | Meaning | Required evidence | Allowed next states |
-|---|---|---|---|
-| `CANDIDATE` | Block candidate/claim terdeteksi tetapi belum ada submission/finality | Template, job, share/nonce, worker/session, correlation ID | `SUBMITTED`, `ORPHANED_REORGED` |
-| `SUBMITTED` | Candidate diteruskan ke upstream/node dan memiliki submission reference | Provider response, tx/block reference, timestamp | `SUBMITTED`, `CONFIRMED`, `ORPHANED_REORGED` |
-| `CONFIRMED` | Block melewati confirmation/maturity policy | Block hash/height, chain tip, confirmation count, node quorum | Terminal atau exceptional reorg review |
-| `ORPHANED_REORGED` | Candidate/block invalidated, orphaned, atau terkena reorg | Old/new chain data, reason, affected reward period | Terminal; recovery melalui reward/reconciliation workflow |
+| State              | Meaning                                                                 | Required evidence                                             | Allowed next states                                       |
+| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
+| `CANDIDATE`        | Block candidate/claim terdeteksi tetapi belum ada submission/finality   | Template, job, share/nonce, worker/session, correlation ID    | `SUBMITTED`, `ORPHANED_REORGED`                           |
+| `SUBMITTED`        | Candidate diteruskan ke upstream/node dan memiliki submission reference | Provider response, tx/block reference, timestamp              | `SUBMITTED`, `CONFIRMED`, `ORPHANED_REORGED`              |
+| `CONFIRMED`        | Block melewati confirmation/maturity policy                             | Block hash/height, chain tip, confirmation count, node quorum | Terminal atau exceptional reorg review                    |
+| `ORPHANED_REORGED` | Candidate/block invalidated, orphaned, atau terkena reorg               | Old/new chain data, reason, affected reward period            | Terminal; recovery melalui reward/reconciliation workflow |
 
 Block confirmation tidak boleh menghapus share, job, atau candidate fact. Block-level state dan reward-level state harus dapat ditelusuri melalui correlation ID.
 
@@ -186,16 +186,16 @@ Block confirmation tidak boleh menghapus share, job, atau candidate fact. Block-
 
 ### Conflict and retry behavior
 
-| Situation | Required result |
-|---|---|
-| Same command/idempotency key, same payload | Return original transition result with `idempotentReplay=true` |
-| Same key, different payload | `409 IDEMPOTENCY_CONFLICT`; no state change |
-| Expected version stale | `412 VERSION_MISMATCH`; no state change |
-| Transition not allowed | `409 INVALID_STATE_TRANSITION`; no side effect |
-| External timeout with unknown outcome | Keep recoverable pending state and run reconciliation; no blind duplicate |
-| Duplicate event delivery | Consumer acknowledges idempotently; no duplicate journal/reservation |
-| Event arrives out of order | Store/defer/reject according to version and causal ordering; never regress silently |
-| Operator emergency pause | New sensitive commands denied with `PAYOUT_PAUSED` or domain-specific code; existing state preserved |
+| Situation                                  | Required result                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Same command/idempotency key, same payload | Return original transition result with `idempotentReplay=true`                                       |
+| Same key, different payload                | `409 IDEMPOTENCY_CONFLICT`; no state change                                                          |
+| Expected version stale                     | `412 VERSION_MISMATCH`; no state change                                                              |
+| Transition not allowed                     | `409 INVALID_STATE_TRANSITION`; no side effect                                                       |
+| External timeout with unknown outcome      | Keep recoverable pending state and run reconciliation; no blind duplicate                            |
+| Duplicate event delivery                   | Consumer acknowledges idempotently; no duplicate journal/reservation                                 |
+| Event arrives out of order                 | Store/defer/reject according to version and causal ordering; never regress silently                  |
+| Operator emergency pause                   | New sensitive commands denied with `PAYOUT_PAUSED` or domain-specific code; existing state preserved |
 
 ## 6. Acceptance criteria
 

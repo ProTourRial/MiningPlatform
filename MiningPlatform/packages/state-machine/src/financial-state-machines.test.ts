@@ -48,8 +48,7 @@ test('payout rejects illegal skips and terminal transitions', () => {
         idempotencyKey: 'payout-illegal-skip',
       }),
     (error: unknown) =>
-      error instanceof FinancialTransitionError &&
-      error.code === 'ILLEGAL_TRANSITION',
+      error instanceof FinancialTransitionError && error.code === 'ILLEGAL_TRANSITION',
   );
 
   assert.throws(
@@ -62,8 +61,7 @@ test('payout rejects illegal skips and terminal transitions', () => {
         idempotencyKey: 'payout-terminal',
       }),
     (error: unknown) =>
-      error instanceof FinancialTransitionError &&
-      error.code === 'ILLEGAL_TRANSITION',
+      error instanceof FinancialTransitionError && error.code === 'ILLEGAL_TRANSITION',
   );
 });
 
@@ -95,8 +93,7 @@ test('transition event must match the declared transition', () => {
         idempotencyKey: 'reward-event-mismatch',
       }),
     (error: unknown) =>
-      error instanceof FinancialTransitionError &&
-      error.code === 'EVENT_MISMATCH',
+      error instanceof FinancialTransitionError && error.code === 'EVENT_MISMATCH',
   );
 });
 
@@ -134,8 +131,7 @@ test('same idempotency key with a different transition is rejected', () => {
         idempotencyKey: key,
       }),
     (error: unknown) =>
-      error instanceof FinancialTransitionError &&
-      error.code === 'IDEMPOTENCY_CONFLICT',
+      error instanceof FinancialTransitionError && error.code === 'IDEMPOTENCY_CONFLICT',
   );
 });
 
@@ -168,7 +164,6 @@ test('reward and block machines enforce their separate lifecycles', () => {
         idempotencyKey: 'reward-lifecycle-backward',
       }),
     (error: unknown) =>
-      error instanceof FinancialTransitionError &&
-      error.code === 'ILLEGAL_TRANSITION',
+      error instanceof FinancialTransitionError && error.code === 'ILLEGAL_TRANSITION',
   );
 });

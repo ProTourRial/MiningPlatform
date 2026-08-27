@@ -8,30 +8,30 @@
 
 ## 1. Jurisdiction decision log
 
-| Decision | Status | Required approver | Blocking consequence |
-|---|---|---|---|
-| Legal entity and operating jurisdiction | `OPEN` | Counsel/board/owner | No production payout or custody |
-| Countries/regions served or excluded | `OPEN` | Counsel/compliance | No public availability claim |
-| Nature of service: pool, payout processor, custody, or exchange | `OPEN` | Counsel/compliance/treasury | No assumption that pool status removes obligations |
-| KYC trigger and tiering | `OPEN` | Compliance owner | No payout policy beyond alpha gate |
-| AML transaction monitoring | `OPEN` | Compliance owner | No unrestricted payout |
-| Sanctions screening provider and cadence | `OPEN` | Compliance owner | No payout to unscreened destination/user where required |
-| Tax reporting and records | `OPEN` | Tax adviser | No launch claim on tax treatment |
-| Privacy/data processing basis | `OPEN` | Counsel/privacy owner | No collection beyond minimum alpha data |
+| Decision                                                        | Status | Required approver           | Blocking consequence                                    |
+| --------------------------------------------------------------- | ------ | --------------------------- | ------------------------------------------------------- |
+| Legal entity and operating jurisdiction                         | `OPEN` | Counsel/board/owner         | No production payout or custody                         |
+| Countries/regions served or excluded                            | `OPEN` | Counsel/compliance          | No public availability claim                            |
+| Nature of service: pool, payout processor, custody, or exchange | `OPEN` | Counsel/compliance/treasury | No assumption that pool status removes obligations      |
+| KYC trigger and tiering                                         | `OPEN` | Compliance owner            | No payout policy beyond alpha gate                      |
+| AML transaction monitoring                                      | `OPEN` | Compliance owner            | No unrestricted payout                                  |
+| Sanctions screening provider and cadence                        | `OPEN` | Compliance owner            | No payout to unscreened destination/user where required |
+| Tax reporting and records                                       | `OPEN` | Tax adviser                 | No launch claim on tax treatment                        |
+| Privacy/data processing basis                                   | `OPEN` | Counsel/privacy owner       | No collection beyond minimum alpha data                 |
 
 ## 2. Risk-based controls
 
 The implementation must define risk tiers using jurisdiction, user/account signals, transaction size/frequency, destination/network, sanctions result, referral abuse, and anomalous behavior. A risk score cannot silently override a hard block such as sanctions match, invalid destination, compromised account, or legal exclusion.
 
-| Control | Minimum requirement | Evidence |
-|---|---|---|
-| Identity/KYC | Trigger, provider, result, review, expiry, and appeal path | Synthetic decision fixture and vendor record |
-| AML monitoring | Thresholds, velocity rules, clustering/anomaly escalation | Alert test and case log template |
-| Sanctions | Source list, refresh cadence, exact/near-match review, disposition | Screening evidence without raw sensitive data in repo |
-| Transaction monitoring | Payout, referral, reserve, and wallet-change rules | Monitoring matrix and owner |
-| Record retention | Legal hold, retention class, deletion restriction, access log | Approved retention schedule |
-| User communication | Clear hold/rejection reason, appeal channel, no tipping-off where prohibited | Reviewed copy and support template |
-| Vendor risk | Provider security, availability, data location, subprocessor review | Vendor assessment |
+| Control                | Minimum requirement                                                          | Evidence                                              |
+| ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Identity/KYC           | Trigger, provider, result, review, expiry, and appeal path                   | Synthetic decision fixture and vendor record          |
+| AML monitoring         | Thresholds, velocity rules, clustering/anomaly escalation                    | Alert test and case log template                      |
+| Sanctions              | Source list, refresh cadence, exact/near-match review, disposition           | Screening evidence without raw sensitive data in repo |
+| Transaction monitoring | Payout, referral, reserve, and wallet-change rules                           | Monitoring matrix and owner                           |
+| Record retention       | Legal hold, retention class, deletion restriction, access log                | Approved retention schedule                           |
+| User communication     | Clear hold/rejection reason, appeal channel, no tipping-off where prohibited | Reviewed copy and support template                    |
+| Vendor risk            | Provider security, availability, data location, subprocessor review          | Vendor assessment                                     |
 
 ## 3. Payout go/no-go
 

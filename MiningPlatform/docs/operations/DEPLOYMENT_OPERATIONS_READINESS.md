@@ -10,21 +10,21 @@
 
 ## 1. Environment matrix
 
-| Concern | Local development | CI/preview | Staging | Production |
-|---|---|---|---|---|
-| `NODE_ENV` | `development` | `test`/`production-like` | `production` | `production` |
-| Database | Disposable PostgreSQL 17 | Ephemeral PostgreSQL 17 | HA/staging clone | HA primary + standby, PITR |
-| Redis | Docker Redis 7 | Ephemeral Redis | HA/staging | HA/managed Redis; not financial source of truth |
-| Web | `localhost`/Docker nginx | Preview URL | Staging domain | Production domain/TLS/edge |
-| API | `localhost:4000` | Preview API | Staging API | Production API |
-| Stratum | Dev mode/simulator allowed | Fixture/simulator | Provider sandbox or approved upstream | Production upstream with failover |
-| Payout | Always `false` | Always `false` | Simulation/manual test only | `false` until controlled-funds gate approval |
-| Swagger | Allowed locally | Optional | Internal only | Disabled (`ENABLE_SWAGGER=false`) |
-| Development dashboard | Allowed locally | Disabled | Disabled | Disabled |
-| Seed data | Optional local | Explicit fixture only | Controlled fixture | Disabled |
-| Secrets | Local `.env`, never committed | CI secret store | Secret manager | Secret manager/KMS/HSM with rotation |
-| Observability | Local logs/Prometheus | Test artifacts | Full staging dashboards | Full dashboards, paging, status/incident |
-| Deployment mode | Docker Compose | Reproducible container build | Rolling/canary where supported | Approved rolling/canary + rollback |
+| Concern               | Local development             | CI/preview                   | Staging                               | Production                                      |
+| --------------------- | ----------------------------- | ---------------------------- | ------------------------------------- | ----------------------------------------------- |
+| `NODE_ENV`            | `development`                 | `test`/`production-like`     | `production`                          | `production`                                    |
+| Database              | Disposable PostgreSQL 17      | Ephemeral PostgreSQL 17      | HA/staging clone                      | HA primary + standby, PITR                      |
+| Redis                 | Docker Redis 7                | Ephemeral Redis              | HA/staging                            | HA/managed Redis; not financial source of truth |
+| Web                   | `localhost`/Docker nginx      | Preview URL                  | Staging domain                        | Production domain/TLS/edge                      |
+| API                   | `localhost:4000`              | Preview API                  | Staging API                           | Production API                                  |
+| Stratum               | Dev mode/simulator allowed    | Fixture/simulator            | Provider sandbox or approved upstream | Production upstream with failover               |
+| Payout                | Always `false`                | Always `false`               | Simulation/manual test only           | `false` until controlled-funds gate approval    |
+| Swagger               | Allowed locally               | Optional                     | Internal only                         | Disabled (`ENABLE_SWAGGER=false`)               |
+| Development dashboard | Allowed locally               | Disabled                     | Disabled                              | Disabled                                        |
+| Seed data             | Optional local                | Explicit fixture only        | Controlled fixture                    | Disabled                                        |
+| Secrets               | Local `.env`, never committed | CI secret store              | Secret manager                        | Secret manager/KMS/HSM with rotation            |
+| Observability         | Local logs/Prometheus         | Test artifacts               | Full staging dashboards               | Full dashboards, paging, status/incident        |
+| Deployment mode       | Docker Compose                | Reproducible container build | Rolling/canary where supported        | Approved rolling/canary + rollback              |
 
 Local `.env.example` is a template only. Any `change-me`, test token, `AUTH_EXPOSE_TEST_TOKENS=true`, dev Stratum credential, or placeholder RPC secret is a deployment blocker.
 
@@ -34,13 +34,13 @@ Local `.env.example` is a template only. Any `change-me`, test token, `AUTH_EXPO
 
 Vercel should hold only browser-safe build/runtime configuration for the web project. Values prefixed `NEXT_PUBLIC_` are public by design and must never contain secrets.
 
-| Variable | Required | Example/meaning | Secret? |
-|---|---:|---|---:|
-| `NEXT_PUBLIC_API_URL` | Yes | `https://api.example.com/api/v1` or `/api/v1` behind same-origin proxy | No |
-| `NEXT_PUBLIC_SOCKET_URL` | If realtime enabled | `https://api.example.com` or same-origin socket path | No |
-| `NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD` | No; must be false in production | `false` | No |
-| `NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN` | Never production | Local-only test token | **Do not configure** |
-| `NEXT_PUBLIC_DEVELOPMENT_WORKER_ID` | Never production | Local-only fixture ID | **Do not configure** |
+| Variable                                   |                        Required | Example/meaning                                                        |              Secret? |
+| ------------------------------------------ | ------------------------------: | ---------------------------------------------------------------------- | -------------------: |
+| `NEXT_PUBLIC_API_URL`                      |                             Yes | `https://api.example.com/api/v1` or `/api/v1` behind same-origin proxy |                   No |
+| `NEXT_PUBLIC_SOCKET_URL`                   |             If realtime enabled | `https://api.example.com` or same-origin socket path                   |                   No |
+| `NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD` | No; must be false in production | `false`                                                                |                   No |
+| `NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN`  |                Never production | Local-only test token                                                  | **Do not configure** |
+| `NEXT_PUBLIC_DEVELOPMENT_WORKER_ID`        |                Never production | Local-only fixture ID                                                  | **Do not configure** |
 
 Vercel build settings must pin Node/pnpm versions, use the repository lockfile, and record the commit/image/source version shown in the deployment. Vercel must not receive `DATABASE_URL`, `REDIS_URL`, `AUTH_JWT_SECRET`, wallet/RPC credentials, signing references, or any server-only secret.
 
@@ -48,20 +48,20 @@ Vercel build settings must pin Node/pnpm versions, use the repository lockfile, 
 
 The following are server-side requirements derived from `.env.example` and `docker-compose.yml`; exact values belong in the environment secret/config store, not this document.
 
-| Group | Variables | Production rule |
-|---|---|---|
-| Runtime | `NODE_ENV`, `APP_URL`, `TRUST_PROXY_HOPS`, `LOG_LEVEL`, `PORT` | `production`, canonical HTTPS URL, exact proxy count |
-| Database | `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | HA endpoint, TLS where supported, least privilege, PITR |
-| Redis/events | `REDIS_URL`, `REDIS_PASSWORD`, `EVENT_BUS_DRIVER`, `EVENT_STORE_DRIVER`, `EVENT_STREAM`, group names | HA endpoint, auth/TLS, bounded retry/backlog |
-| Auth | `AUTH_JWT_SECRET`, `AUTH_ENCRYPTION_KEY`, `AUTH_IP_HASH_KEY`, issuer/audience, token TTLs | Random managed secrets; secure cookies; test tokens disabled |
-| Email | `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` | Verified sender/domain; disabled until provisioned |
-| Mining | `MINING_ASSET`, `MINING_ALGORITHM`, `REWARD_METHOD`, `PLATFORM_FEE_PERCENT` | Policy-approved values; no ad hoc runtime override |
-| Stratum | `STRATUM_HOST/PORT`, publish address/port, auth driver, IP hash key, limits | Public only behind firewall/edge/DDoS policy; dev mode false |
-| Upstream | driver, host/port/TLS, credentials, pools JSON, timeout/retry/health | Provider-approved, TLS where available, secrets redacted |
-| Payout/RPC | `PAYOUTS_ENABLED`, schedule, minimum/confirmations, Bitcoin RPC variables | Payout false until gate; RPC private; wallet identity audited |
-| Object storage | `S3_ENDPOINT`, region, bucket, access/secret keys, path style | Private bucket, encrypted, lifecycle and backup policy |
-| Monitoring | `METRICS_ENABLED`, Prometheus/Grafana ports and scrape config | Internal network; no public unauthenticated dashboards |
-| Retention/build | scheduler retention, `MINING_BUILD_VERSION`, `GIT_COMMIT`, `BUILD_DATE`, schema metadata | Injected by CI; must match artifact and release record |
+| Group           | Variables                                                                                            | Production rule                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Runtime         | `NODE_ENV`, `APP_URL`, `TRUST_PROXY_HOPS`, `LOG_LEVEL`, `PORT`                                       | `production`, canonical HTTPS URL, exact proxy count          |
+| Database        | `DATABASE_URL`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`                                  | HA endpoint, TLS where supported, least privilege, PITR       |
+| Redis/events    | `REDIS_URL`, `REDIS_PASSWORD`, `EVENT_BUS_DRIVER`, `EVENT_STORE_DRIVER`, `EVENT_STREAM`, group names | HA endpoint, auth/TLS, bounded retry/backlog                  |
+| Auth            | `AUTH_JWT_SECRET`, `AUTH_ENCRYPTION_KEY`, `AUTH_IP_HASH_KEY`, issuer/audience, token TTLs            | Random managed secrets; secure cookies; test tokens disabled  |
+| Email           | `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM`                                                     | Verified sender/domain; disabled until provisioned            |
+| Mining          | `MINING_ASSET`, `MINING_ALGORITHM`, `REWARD_METHOD`, `PLATFORM_FEE_PERCENT`                          | Policy-approved values; no ad hoc runtime override            |
+| Stratum         | `STRATUM_HOST/PORT`, publish address/port, auth driver, IP hash key, limits                          | Public only behind firewall/edge/DDoS policy; dev mode false  |
+| Upstream        | driver, host/port/TLS, credentials, pools JSON, timeout/retry/health                                 | Provider-approved, TLS where available, secrets redacted      |
+| Payout/RPC      | `PAYOUTS_ENABLED`, schedule, minimum/confirmations, Bitcoin RPC variables                            | Payout false until gate; RPC private; wallet identity audited |
+| Object storage  | `S3_ENDPOINT`, region, bucket, access/secret keys, path style                                        | Private bucket, encrypted, lifecycle and backup policy        |
+| Monitoring      | `METRICS_ENABLED`, Prometheus/Grafana ports and scrape config                                        | Internal network; no public unauthenticated dashboards        |
+| Retention/build | scheduler retention, `MINING_BUILD_VERSION`, `GIT_COMMIT`, `BUILD_DATE`, schema metadata             | Injected by CI; must match artifact and release record        |
 
 ### 2.3 Secret preflight
 
@@ -74,14 +74,14 @@ The following are server-side requirements derived from `.env.example` and `dock
 
 ## 3. API/web compatibility matrix
 
-| Web build | API contract | Required action |
-|---|---|---|
-| Current web | Same `/api/v1` contract and response/error enums | Normal smoke test |
-| New web, old API | Allowed only for additive fields and backward-compatible behavior | Contract test + preview verification |
-| Old web, new API | Allowed only while old fields/routes remain supported | Compatibility window and deprecation notice |
-| New required API field/enum | Not backward compatible | Version/release coordination before deploy |
-| Payout state-machine change | Financially sensitive | Separate approval, migration plan, audit, and controlled rollout |
-| Schema or migration change | Requires DB review | Expand/contract strategy, backup, rollback/forward-fix plan |
+| Web build                   | API contract                                                      | Required action                                                  |
+| --------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Current web                 | Same `/api/v1` contract and response/error enums                  | Normal smoke test                                                |
+| New web, old API            | Allowed only for additive fields and backward-compatible behavior | Contract test + preview verification                             |
+| Old web, new API            | Allowed only while old fields/routes remain supported             | Compatibility window and deprecation notice                      |
+| New required API field/enum | Not backward compatible                                           | Version/release coordination before deploy                       |
+| Payout state-machine change | Financially sensitive                                             | Separate approval, migration plan, audit, and controlled rollout |
+| Schema or migration change  | Requires DB review                                                | Expand/contract strategy, backup, rollback/forward-fix plan      |
 
 The API contract baseline is `v1.0.0-draft` at main commit `770e38c5e119102635aefa97893cdcbdbc345da9`. A deployment record must state the API contract version, web commit, API commit, config fingerprint, and schema version together.
 
@@ -157,13 +157,13 @@ Do not use `docker compose down -v` until test artifacts, backup evidence, and i
 
 ## 6. Health/readiness endpoint contract
 
-| Endpoint | Purpose | Must fail when |
-|---|---|---|
-| `/api/v1/health/live` | Process is alive | Process cannot serve a basic response |
-| `/api/v1/health/ready` | Service can accept traffic | Required DB/Redis/config/dependency readiness is not met |
+| Endpoint                | Purpose                         | Must fail when                                                    |
+| ----------------------- | ------------------------------- | ----------------------------------------------------------------- |
+| `/api/v1/health/live`   | Process is alive                | Process cannot serve a basic response                             |
+| `/api/v1/health/ready`  | Service can accept traffic      | Required DB/Redis/config/dependency readiness is not met          |
 | `/api/v1/health/domain` | Domain-level operational status | Mining/event/financial dependency is degraded according to policy |
-| `/api/v1/version` | Build/API/schema identity | Metadata is missing or inconsistent |
-| `/api/v1/metrics` | Scrape endpoint | Metrics process unavailable; endpoint remains internal |
+| `/api/v1/version`       | Build/API/schema identity       | Metadata is missing or inconsistent                               |
+| `/api/v1/metrics`       | Scrape endpoint                 | Metrics process unavailable; endpoint remains internal            |
 
 Readiness must not report green while a critical dependency is unavailable, while financial truth is ambiguous, or while the deployment is serving a mismatched schema/API contract. Liveness and readiness must remain distinct so an unhealthy dependency does not cause an endless restart loop.
 

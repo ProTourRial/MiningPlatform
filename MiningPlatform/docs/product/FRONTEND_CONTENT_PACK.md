@@ -12,15 +12,15 @@
 
 Gunakan bahasa yang jelas, tenang, dan tidak menjanjikan profit. Bedakan **payout destination** dari wallet deposit, pool treasury, dan wallet donasi. Hindari istilah “default wallet” jika yang dimaksud adalah address payout akun.
 
-| Do | Jangan gunakan |
-|---|---|
-| `BTC payout destination` | `default wallet` |
-| `BEP20 payout destination` | `wallet` tanpa network |
-| `Payout is gated` | `Payout ready` saat executor belum aktif |
+| Do                                | Jangan gunakan                                  |
+| --------------------------------- | ----------------------------------------------- |
+| `BTC payout destination`          | `default wallet`                                |
+| `BEP20 payout destination`        | `wallet` tanpa network                          |
+| `Payout is gated`                 | `Payout ready` saat executor belum aktif        |
 | `Preference saved; not effective` | `Auto-withdrawal active` hanya karena toggle ON |
-| `Address format validated` | `Wallet ownership verified` tanpa proof |
-| `Reward pending maturity` | `Available balance` untuk reward immature |
-| `Site donation beneficiary` | `MP05 fallback wallet` |
+| `Address format validated`        | `Wallet ownership verified` tanpa proof         |
+| `Reward pending maturity`         | `Available balance` untuk reward immature       |
+| `Site donation beneficiary`       | `MP05 fallback wallet`                          |
 
 ## 2. Landing page
 
@@ -55,19 +55,19 @@ Gunakan bahasa yang jelas, tenang, dan tidak menjanjikan profit. Bedakan **payou
 
 ## 3. FAQ
 
-| Pertanyaan | Jawaban |
-|---|---|
-| Apakah MiningPlatform cloud mining? | Tidak. Hashrate berasal dari hardware fisik Anda melalui koneksi mining yang dikonfigurasi. Platform tidak menjual kontrak hashrate atau menjanjikan pendapatan tetap. |
-| Apakah accepted share langsung menjadi saldo? | Tidak. Accepted share harus melewati settlement, fee policy, ledger posting, dan reconciliation sebelum dapat menjadi available balance. |
-| Apa perbedaan payout destination dan deposit wallet? | Payout destination adalah address milik akun Anda untuk menerima payout pada asset/network tertentu. Deposit wallet, pool treasury, dan wallet donasi adalah peran berbeda dan tidak boleh saling menggantikan otomatis. |
-| Apakah BTC address dapat dipakai pada BEP20? | Tidak. BTC address hanya untuk Bitcoin Network. BEP20 hanya untuk BNB Smart Chain dan asset/token yang route-nya mendukung BEP20. |
-| Apakah checksum berarti wallet sudah terbukti milik saya? | Tidak. Checksum hanya memvalidasi format. Ownership confirmation memerlukan metode tambahan atau status risk yang disetujui. |
-| Mengapa wallet baru belum dapat menerima payout? | Address baru dapat berada dalam ownership review, cooldown, atau withdrawal lock. Payout tetap gated sampai seluruh policy lulus. |
-| Apakah auto-withdrawal ON langsung mengirim dana? | Tidak. Toggle hanya menyimpan preference. `Effective` tetap false bila executor, route, address, maturity, risk, approval, atau global payout gate belum aktif. |
-| Apa itu MP05? | MP05 adalah kode referral default. Bagian beneficiary 0,125% diarahkan ke wallet donasi situs sesuai policy. MP05 bukan fallback wallet, bukan deposit wallet, dan bukan payout destination akun pengguna. |
-| Bagaimana fee dihitung? | Fee standar platform adalah 0,50%. Dengan referral valid, fee miner adalah 0,375% dan 0,125% menjadi beneficiary referral/donasi dari gross reward, setelah reward settled. |
-| Mengapa reward saya pending? | Reward dapat menunggu settlement, maturity/finality, reorg review, reconciliation, atau risk hold. Detail status dan next action ditampilkan pada reward/payout detail. |
-| Apa yang terjadi saat timeout? | Jangan membuat request baru dengan idempotency key berbeda sebelum status request sebelumnya diperiksa. Sistem harus mencegah duplicate reservation atau payout. |
+| Pertanyaan                                                | Jawaban                                                                                                                                                                                                                  |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Apakah MiningPlatform cloud mining?                       | Tidak. Hashrate berasal dari hardware fisik Anda melalui koneksi mining yang dikonfigurasi. Platform tidak menjual kontrak hashrate atau menjanjikan pendapatan tetap.                                                   |
+| Apakah accepted share langsung menjadi saldo?             | Tidak. Accepted share harus melewati settlement, fee policy, ledger posting, dan reconciliation sebelum dapat menjadi available balance.                                                                                 |
+| Apa perbedaan payout destination dan deposit wallet?      | Payout destination adalah address milik akun Anda untuk menerima payout pada asset/network tertentu. Deposit wallet, pool treasury, dan wallet donasi adalah peran berbeda dan tidak boleh saling menggantikan otomatis. |
+| Apakah BTC address dapat dipakai pada BEP20?              | Tidak. BTC address hanya untuk Bitcoin Network. BEP20 hanya untuk BNB Smart Chain dan asset/token yang route-nya mendukung BEP20.                                                                                        |
+| Apakah checksum berarti wallet sudah terbukti milik saya? | Tidak. Checksum hanya memvalidasi format. Ownership confirmation memerlukan metode tambahan atau status risk yang disetujui.                                                                                             |
+| Mengapa wallet baru belum dapat menerima payout?          | Address baru dapat berada dalam ownership review, cooldown, atau withdrawal lock. Payout tetap gated sampai seluruh policy lulus.                                                                                        |
+| Apakah auto-withdrawal ON langsung mengirim dana?         | Tidak. Toggle hanya menyimpan preference. `Effective` tetap false bila executor, route, address, maturity, risk, approval, atau global payout gate belum aktif.                                                          |
+| Apa itu MP05?                                             | MP05 adalah kode referral default. Bagian beneficiary 0,125% diarahkan ke wallet donasi situs sesuai policy. MP05 bukan fallback wallet, bukan deposit wallet, dan bukan payout destination akun pengguna.               |
+| Bagaimana fee dihitung?                                   | Fee standar platform adalah 0,50%. Dengan referral valid, fee miner adalah 0,375% dan 0,125% menjadi beneficiary referral/donasi dari gross reward, setelah reward settled.                                              |
+| Mengapa reward saya pending?                              | Reward dapat menunggu settlement, maturity/finality, reorg review, reconciliation, atau risk hold. Detail status dan next action ditampilkan pada reward/payout detail.                                                  |
+| Apa yang terjadi saat timeout?                            | Jangan membuat request baru dengan idempotency key berbeda sebelum status request sebelumnya diperiksa. Sistem harus mencegah duplicate reservation atau payout.                                                         |
 
 ## 4. Transparency page
 
@@ -77,16 +77,16 @@ Gunakan bahasa yang jelas, tenang, dan tidak menjanjikan profit. Bedakan **payou
 
 ### Card copy
 
-| Card | Label | Supporting copy |
-|---|---|---|
-| Pool hashrate | `Pool hashrate` | `Dihitung dari accepted share pada window <window>.` |
-| Worker aktif | `Active workers` | `Worker yang mengirim telemetry/share dalam <window>.` |
-| Share quality | `Accepted / rejected / stale` | `Sumber: share validation dan upstream response.` |
-| Pool luck | `Pool luck` | `Perbandingan expected dan actual block pada window <window>; bukan prediksi.` |
-| Template age | `Template age` | `Waktu sejak job/template terakhir diperbarui.` |
-| Upstream status | `Upstream status` | `Status per provider/region dengan last checked timestamp.` |
-| Uptime | `Service uptime` | `Window, exclusions, dan incident link harus terlihat.` |
-| Payout state | `Payout availability` | `Route dan executor dapat tetap gated selama alpha.` |
+| Card            | Label                         | Supporting copy                                                                |
+| --------------- | ----------------------------- | ------------------------------------------------------------------------------ |
+| Pool hashrate   | `Pool hashrate`               | `Dihitung dari accepted share pada window <window>.`                           |
+| Worker aktif    | `Active workers`              | `Worker yang mengirim telemetry/share dalam <window>.`                         |
+| Share quality   | `Accepted / rejected / stale` | `Sumber: share validation dan upstream response.`                              |
+| Pool luck       | `Pool luck`                   | `Perbandingan expected dan actual block pada window <window>; bukan prediksi.` |
+| Template age    | `Template age`                | `Waktu sejak job/template terakhir diperbarui.`                                |
+| Upstream status | `Upstream status`             | `Status per provider/region dengan last checked timestamp.`                    |
+| Uptime          | `Service uptime`              | `Window, exclusions, dan incident link harus terlihat.`                        |
+| Payout state    | `Payout availability`         | `Route dan executor dapat tetap gated selama alpha.`                           |
 
 ### Empty state
 
@@ -98,20 +98,20 @@ Jangan menggunakan angka `0` untuk membedakan “belum ada data” dari “data 
 
 ### Status copy
 
-| State | Badge | Copy |
-|---|---|---|
-| `PENDING_SETTLEMENT` | `Pending settlement` | `Reward belum selesai direkonsiliasi dengan sumber settlement.` |
-| `PENDING_MATURITY` | `Waiting for maturity` | `Reward belum mencapai confirmation/maturity policy.` |
-| `BELOW_MINIMUM_PAYOUT` | `Below minimum` | `Available balance belum mencapai minimum payout untuk route ini.` |
-| `NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS` | `Destination required` | `Tambahkan dan verifikasi payout destination yang sesuai asset/network.` |
-| `COOLDOWN` | `Wallet cooldown` | `Payout ditahan sampai cooldown destination berakhir.` |
-| `WITHDRAWAL_LOCK_ACTIVE` | `Withdrawal locked` | `Payout sementara dikunci setelah perubahan wallet atau review risiko.` |
-| `PAYOUT_PAUSED` | `Payout paused` | `Payout dipause untuk melindungi saldo dan integritas transaksi.` |
-| `ROUTE_UNAVAILABLE` | `Route unavailable` | `Route ini belum tersedia untuk payout nyata.` |
-| `ELIGIBLE` | `Eligible` | `Balance dan policy dasar lulus; request tetap memerlukan idempotency dan gate berikutnya.` |
-| `PROCESSING` | `Processing` | `Request sedang diproses; jangan kirim ulang dengan key berbeda.` |
-| `COMPLETED` | `Completed` | `Transaction telah mencapai confirmation policy dan tercatat pada history.` |
-| `FAILED` | `Failed` | `Payout gagal. Lihat reason, retryability, dan recovery action.` |
+| State                               | Badge                  | Copy                                                                                        |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
+| `PENDING_SETTLEMENT`                | `Pending settlement`   | `Reward belum selesai direkonsiliasi dengan sumber settlement.`                             |
+| `PENDING_MATURITY`                  | `Waiting for maturity` | `Reward belum mencapai confirmation/maturity policy.`                                       |
+| `BELOW_MINIMUM_PAYOUT`              | `Below minimum`        | `Available balance belum mencapai minimum payout untuk route ini.`                          |
+| `NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS` | `Destination required` | `Tambahkan dan verifikasi payout destination yang sesuai asset/network.`                    |
+| `COOLDOWN`                          | `Wallet cooldown`      | `Payout ditahan sampai cooldown destination berakhir.`                                      |
+| `WITHDRAWAL_LOCK_ACTIVE`            | `Withdrawal locked`    | `Payout sementara dikunci setelah perubahan wallet atau review risiko.`                     |
+| `PAYOUT_PAUSED`                     | `Payout paused`        | `Payout dipause untuk melindungi saldo dan integritas transaksi.`                           |
+| `ROUTE_UNAVAILABLE`                 | `Route unavailable`    | `Route ini belum tersedia untuk payout nyata.`                                              |
+| `ELIGIBLE`                          | `Eligible`             | `Balance dan policy dasar lulus; request tetap memerlukan idempotency dan gate berikutnya.` |
+| `PROCESSING`                        | `Processing`           | `Request sedang diproses; jangan kirim ulang dengan key berbeda.`                           |
+| `COMPLETED`                         | `Completed`            | `Transaction telah mencapai confirmation policy dan tercatat pada history.`                 |
+| `FAILED`                            | `Failed`               | `Payout gagal. Lihat reason, retryability, dan recovery action.`                            |
 
 ### Payout empty state
 
@@ -188,23 +188,22 @@ Jika attribution belum valid atau sudah kedaluwarsa, tampilkan fee standar dan j
 
 ### Loading
 
-> `Memuat data terbaru…`
-> `Last updated: <timestamp>`
+> `Memuat data terbaru…` > `Last updated: <timestamp>`
 
 Untuk financial data, tampilkan skeleton atau stale-data banner; jangan mengganti data sementara menjadi `0` tanpa label.
 
 ### Generic errors
 
-| Error | User copy | Next action |
-|---|---|---|
-| `401` | `Sesi Anda berakhir.` | `Masuk kembali` |
-| `403` | `Anda tidak memiliki akses untuk tindakan ini.` | `Kembali` / contact support |
-| `409` | `Data berubah sebelum tindakan selesai.` | `Muat ulang dan tinjau perubahan` |
-| `412` | `Versi data sudah berubah.` | `Muat data terbaru sebelum menyimpan` |
-| `429` | `Terlalu banyak percobaan.` | `Coba lagi setelah <retry-after>` |
-| `503` | `Layanan dependency sedang tidak tersedia.` | `Coba lagi nanti; lihat status layanan` |
-| Timeout | `Permintaan belum memiliki hasil final.` | `Periksa status sebelum retry` |
-| Unknown | `Terjadi kesalahan tak terduga.` | `Simpan request ID <request-id> dan hubungi support` |
+| Error   | User copy                                       | Next action                                          |
+| ------- | ----------------------------------------------- | ---------------------------------------------------- |
+| `401`   | `Sesi Anda berakhir.`                           | `Masuk kembali`                                      |
+| `403`   | `Anda tidak memiliki akses untuk tindakan ini.` | `Kembali` / contact support                          |
+| `409`   | `Data berubah sebelum tindakan selesai.`        | `Muat ulang dan tinjau perubahan`                    |
+| `412`   | `Versi data sudah berubah.`                     | `Muat data terbaru sebelum menyimpan`                |
+| `429`   | `Terlalu banyak percobaan.`                     | `Coba lagi setelah <retry-after>`                    |
+| `503`   | `Layanan dependency sedang tidak tersedia.`     | `Coba lagi nanti; lihat status layanan`              |
+| Timeout | `Permintaan belum memiliki hasil final.`        | `Periksa status sebelum retry`                       |
+| Unknown | `Terjadi kesalahan tak terduga.`                | `Simpan request ID <request-id> dan hubungi support` |
 
 ### Empty states
 
@@ -217,17 +216,17 @@ Untuk financial data, tampilkan skeleton atau stale-data banner; jangan menggant
 
 ## 10. Security notifications
 
-| Trigger | Title | Message | CTA |
-|---|---|---|---|
-| New login | `Login baru terdeteksi` | `Login baru dari <device/region safe label> pada <timestamp>. Jika bukan Anda, cabut session dan ubah credential.` | `Review sessions` |
-| Step-up success | `Verifikasi keamanan berhasil` | `Tindakan sensitif telah diverifikasi untuk request ini.` | `Lihat activity` |
-| Step-up failed | `Verifikasi keamanan gagal` | `Percobaan tidak berhasil. Jangan bagikan kode verifikasi kepada siapa pun.` | `Try again` |
-| Wallet changed | `Payout destination berubah` | `Destination akun berubah dan withdrawal lock/cooldown berlaku sampai <timestamp>.` | `Review wallet` |
-| Withdrawal lock | `Payout sementara dikunci` | `Payout dikunci untuk melindungi akun setelah perubahan destination atau review risiko.` | `View details` |
-| Credential rotated | `Worker credential dirotasi` | `Credential lama tidak lagi berlaku. Simpan credential baru secara aman; secret hanya ditampilkan sekali.` | `View worker` |
-| Payout paused | `Payout dipause` | `Payout sementara dihentikan untuk melindungi integritas saldo dan transaksi.` | `View status` |
-| Suspicious action | `Aktivitas sensitif memerlukan review` | `Kami menahan tindakan ini sampai pemeriksaan keamanan selesai.` | `Contact support` |
-| Potential compromise | `Lindungi akun Anda` | `Jika Anda menduga credential atau wallet compromise, hentikan payout dan hubungi security support.` | `Open security help` |
+| Trigger              | Title                                  | Message                                                                                                            | CTA                  |
+| -------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| New login            | `Login baru terdeteksi`                | `Login baru dari <device/region safe label> pada <timestamp>. Jika bukan Anda, cabut session dan ubah credential.` | `Review sessions`    |
+| Step-up success      | `Verifikasi keamanan berhasil`         | `Tindakan sensitif telah diverifikasi untuk request ini.`                                                          | `Lihat activity`     |
+| Step-up failed       | `Verifikasi keamanan gagal`            | `Percobaan tidak berhasil. Jangan bagikan kode verifikasi kepada siapa pun.`                                       | `Try again`          |
+| Wallet changed       | `Payout destination berubah`           | `Destination akun berubah dan withdrawal lock/cooldown berlaku sampai <timestamp>.`                                | `Review wallet`      |
+| Withdrawal lock      | `Payout sementara dikunci`             | `Payout dikunci untuk melindungi akun setelah perubahan destination atau review risiko.`                           | `View details`       |
+| Credential rotated   | `Worker credential dirotasi`           | `Credential lama tidak lagi berlaku. Simpan credential baru secara aman; secret hanya ditampilkan sekali.`         | `View worker`        |
+| Payout paused        | `Payout dipause`                       | `Payout sementara dihentikan untuk melindungi integritas saldo dan transaksi.`                                     | `View status`        |
+| Suspicious action    | `Aktivitas sensitif memerlukan review` | `Kami menahan tindakan ini sampai pemeriksaan keamanan selesai.`                                                   | `Contact support`    |
+| Potential compromise | `Lindungi akun Anda`                   | `Jika Anda menduga credential atau wallet compromise, hentikan payout dan hubungi security support.`               | `Open security help` |
 
 Security notification tidak boleh menampilkan full address, token, private key, worker secret, atau detail yang membantu attacker.
 

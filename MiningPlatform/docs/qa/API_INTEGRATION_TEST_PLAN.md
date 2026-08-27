@@ -10,16 +10,16 @@ Tests run in a disposable environment with synthetic accounts, test-only wallet 
 
 ## 2. Matrix
 
-| Area | Scenarios | Required assertions |
-|---|---|---|
-| Auth/session | Register, login, logout, refresh, expired session, revoked session | Status/error envelope, cookie policy, no session reuse |
-| Worker | Create, duplicate name, credential rotation, disable, unauthorized access | Scope, validation, audit event, secret redaction |
-| Reward | Mature/immature, allocation, duplicate allocation, policy reference | State, digest, idempotency, ledger evidence |
-| Wallet | BTC valid, BTC wrong network, BEP20 checksum, invalid/changed wallet | Validation code, ownership gate, cooldown/lock, audit |
-| Payout | Below minimum, eligible, reserve conflict, approval, failure, timeout | State machine, no blind retry, no double reservation |
-| Referral/fee | No referral, valid referral, MP05, expired/disabled code | Fee conservation, beneficiary attribution, no fallback wallet |
-| Reconciliation | Zero, non-zero, missing source, repeated run | Variance handling, incident, immutable evidence |
-| Observability | Correlation/request/audit propagation and required metric labels | IDs present, labels bounded, no sensitive data |
+| Area           | Scenarios                                                                 | Required assertions                                           |
+| -------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Auth/session   | Register, login, logout, refresh, expired session, revoked session        | Status/error envelope, cookie policy, no session reuse        |
+| Worker         | Create, duplicate name, credential rotation, disable, unauthorized access | Scope, validation, audit event, secret redaction              |
+| Reward         | Mature/immature, allocation, duplicate allocation, policy reference       | State, digest, idempotency, ledger evidence                   |
+| Wallet         | BTC valid, BTC wrong network, BEP20 checksum, invalid/changed wallet      | Validation code, ownership gate, cooldown/lock, audit         |
+| Payout         | Below minimum, eligible, reserve conflict, approval, failure, timeout     | State machine, no blind retry, no double reservation          |
+| Referral/fee   | No referral, valid referral, MP05, expired/disabled code                  | Fee conservation, beneficiary attribution, no fallback wallet |
+| Reconciliation | Zero, non-zero, missing source, repeated run                              | Variance handling, incident, immutable evidence               |
+| Observability  | Correlation/request/audit propagation and required metric labels          | IDs present, labels bounded, no sensitive data                |
 
 ## 3. Seed data
 

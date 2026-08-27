@@ -6,16 +6,16 @@
 
 ## 1. State model
 
-| State | Meaning | Reward/liability effect | Allowed next states |
-|---|---|---|---|
-| `CANDIDATE` | Pool has candidate evidence but no accepted chain inclusion | No user reward; track candidate metadata | `SUBMITTED` |
-| `SUBMITTED` | Candidate submitted to node/upstream | No mature allocation; track submit result | `CONFIRMED`, `ORPHANED`, `REORGED` |
-| `CONFIRMED` | Block is on the selected chain tip or approved ancestor | Coinbase remains immature until depth policy | `ORPHANED`, `REORGED` |
-| `ORPHANED` | Candidate lost before approved maturity | No new reward; reverse any provisional allocation | Terminal |
-| `REORGED` | Previously accepted block is displaced by a chain reorganization | Freeze affected liabilities and post compensating reversal | Terminal pending operator case closure |
-| `MATURE` | Policy-specific derived eligibility state | Coinbase/reward may become allocatable | `ALLOCATED` |
-| `ALLOCATED` | Contribution window has been settled | User liability and fee lines posted | `RECONCILED` |
-| `RECONCILED` | Source and internal records agree | Closed for normal processing | Terminal |
+| State        | Meaning                                                          | Reward/liability effect                                    | Allowed next states                    |
+| ------------ | ---------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- |
+| `CANDIDATE`  | Pool has candidate evidence but no accepted chain inclusion      | No user reward; track candidate metadata                   | `SUBMITTED`                            |
+| `SUBMITTED`  | Candidate submitted to node/upstream                             | No mature allocation; track submit result                  | `CONFIRMED`, `ORPHANED`, `REORGED`     |
+| `CONFIRMED`  | Block is on the selected chain tip or approved ancestor          | Coinbase remains immature until depth policy               | `ORPHANED`, `REORGED`                  |
+| `ORPHANED`   | Candidate lost before approved maturity                          | No new reward; reverse any provisional allocation          | Terminal                               |
+| `REORGED`    | Previously accepted block is displaced by a chain reorganization | Freeze affected liabilities and post compensating reversal | Terminal pending operator case closure |
+| `MATURE`     | Policy-specific derived eligibility state                        | Coinbase/reward may become allocatable                     | `ALLOCATED`                            |
+| `ALLOCATED`  | Contribution window has been settled                             | User liability and fee lines posted                        | `RECONCILED`                           |
+| `RECONCILED` | Source and internal records agree                                | Closed for normal processing                               | Terminal                               |
 
 `MATURE` and later reward states are represented by the reward state machine; they are not alternative shortcuts around block confirmation.
 
@@ -23,14 +23,14 @@
 
 Confirmation depth is an unresolved product/treasury decision. The implementation must read a versioned policy containing asset, network, confirmation depth, maturity depth, effective time, and approver. A block cannot become reward-eligible merely because a transaction ID or block hash exists.
 
-| Gate | Required evidence |
-|---|---|
-| Candidate | Template/job ID, coinbase intent, contribution window, candidate ID |
-| Submitted | Node/provider response, submit timestamp, source endpoint, idempotency key |
-| Confirmed | Block hash, height, chain tip evidence, node quorum/result |
-| Mature | Current height minus block height meets approved depth |
-| Allocated | Deterministic contribution window, reward scheme ID, fee policy ID, allocation digest |
-| Reconciled | Coinbase/source amount, ledger, beneficiary fee, and payout liability agree |
+| Gate       | Required evidence                                                                     |
+| ---------- | ------------------------------------------------------------------------------------- |
+| Candidate  | Template/job ID, coinbase intent, contribution window, candidate ID                   |
+| Submitted  | Node/provider response, submit timestamp, source endpoint, idempotency key            |
+| Confirmed  | Block hash, height, chain tip evidence, node quorum/result                            |
+| Mature     | Current height minus block height meets approved depth                                |
+| Allocated  | Deterministic contribution window, reward scheme ID, fee policy ID, allocation digest |
+| Reconciled | Coinbase/source amount, ledger, beneficiary fee, and payout liability agree           |
 
 ## 3. Orphan and reorg handling
 

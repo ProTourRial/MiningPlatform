@@ -27,8 +27,7 @@ function validateTarget() {
   const parsed = new URL(baseUrl);
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
   const explicitlySyntheticRemote =
-    process.env.LOAD_ALLOW_REMOTE_SYNTHETIC === '1' &&
-    process.env.LOAD_SYNTHETIC_CONFIRM === 'YES';
+    process.env.LOAD_ALLOW_REMOTE_SYNTHETIC === '1' && process.env.LOAD_SYNTHETIC_CONFIRM === 'YES';
   if (!loopback && !explicitlySyntheticRemote) {
     fail('Remote targets require LOAD_ALLOW_REMOTE_SYNTHETIC=1 and LOAD_SYNTHETIC_CONFIRM=YES.');
   }
@@ -81,15 +80,26 @@ if (validateTarget()) {
   if (!profile) {
     fail(`profile ${profileId} was not found.`);
   } else if (
-    !Number.isInteger(profile.concurrency) || profile.concurrency < 1 || profile.concurrency > 50 ||
-    !Number.isInteger(profile.maxRequests) || profile.maxRequests < 1 || profile.maxRequests > 100_000
+    !Number.isInteger(profile.concurrency) ||
+    profile.concurrency < 1 ||
+    profile.concurrency > 50 ||
+    !Number.isInteger(profile.maxRequests) ||
+    profile.maxRequests < 1 ||
+    profile.maxRequests > 100_000
   ) {
     fail('profile concurrency/maxRequests is outside safe bounds.');
   } else {
     const startedAt = new Date().toISOString();
-    const state = { next: 0, results: [], deadline: performance.now() + profile.durationSeconds * 1_000 };
+    const state = {
+      next: 0,
+      results: [],
+      deadline: performance.now() + profile.durationSeconds * 1_000,
+    };
     await Promise.all(Array.from({ length: profile.concurrency }, () => worker(profile, state)));
-    const elapsedSeconds = Math.max(0.001, (performance.now() + 0 - (state.deadline - profile.durationSeconds * 1_000)) / 1_000);
+    const elapsedSeconds = Math.max(
+      0.001,
+      (performance.now() + 0 - (state.deadline - profile.durationSeconds * 1_000)) / 1_000,
+    );
     const latency = state.results.map((result) => result.elapsedMs);
     const passed = state.results.filter((result) => result.ok).length;
     const report = {
@@ -108,23 +118,32 @@ if (validateTarget()) {
       passed,
       failed: state.results.length - passed,
       throughputPerSecond: state.results.length / elapsedSeconds,
-      errorRate: state.results.length === 0 ? 1 : (state.results.length - passed) / state.results.length,
+      errorRate:
+        state.results.length === 0 ? 1 : (state.results.length - passed) / state.results.length,
       latencyMs: {
         p50: percentile(latency, 0.5),
         p95: percentile(latency, 0.95),
         p99: percentile(latency, 0.99),
       },
       statusCounts: Object.fromEntries(
-        Object.entries(state.results.reduce((counts, result) => {
-          const key = String(result.status ?? result.error ?? 'network_error');
-          counts[key] = (counts[key] ?? 0) + 1;
-          return counts;
-        }, {})),
+        Object.entries(
+          state.results.reduce((counts, result) => {
+            const key = String(result.status ?? result.error ?? 'network_error');
+            counts[key] = (counts[key] ?? 0) + 1;
+            return counts;
+          }, {}),
+        ),
       ),
     };
     await mkdir(dirname(reportPath), { recursive: true });
     await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-    console.log(JSON.stringify({ reportPath, requestCount: report.requestCount, errorRate: report.errorRate }));
+    console.log(
+      JSON.stringify({
+        reportPath,
+        requestCount: report.requestCount,
+        errorRate: report.errorRate,
+      }),
+    );
     if (report.failed > 0) process.exitCode = 1;
   }
 }

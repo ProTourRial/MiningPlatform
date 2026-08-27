@@ -121,9 +121,7 @@ export function calculateVardiffDecision(
     sampleCount,
   });
 
-  if (
-    input.nowSeconds - input.lastRetargetAtSeconds < policy.retargetIntervalSeconds
-  ) {
+  if (input.nowSeconds - input.lastRetargetAtSeconds < policy.retargetIntervalSeconds) {
     return noChange('WAITING_FOR_INTERVAL');
   }
   if (sampleCount < policy.minimumSamples) {

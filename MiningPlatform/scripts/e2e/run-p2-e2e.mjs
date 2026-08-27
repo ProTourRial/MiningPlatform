@@ -24,8 +24,7 @@ function assertSafeTarget() {
   const parsed = new URL(baseUrl);
   const isLoopback = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
   const explicitlySyntheticRemote =
-    process.env.E2E_ALLOW_REMOTE_SYNTHETIC === '1' &&
-    process.env.E2E_SYNTHETIC_CONFIRM === 'YES';
+    process.env.E2E_ALLOW_REMOTE_SYNTHETIC === '1' && process.env.E2E_SYNTHETIC_CONFIRM === 'YES';
   if (!isLoopback && !explicitlySyntheticRemote) {
     fail('Remote targets require E2E_ALLOW_REMOTE_SYNTHETIC=1 and E2E_SYNTHETIC_CONFIRM=YES.');
   }
@@ -37,7 +36,10 @@ function assertSafeTarget() {
 
 function redactedBody(text) {
   return text
-    .replace(/(authorization|cookie|set-cookie|token|secret|password)\s*[:=]\s*[^,;\s}]+/gi, '$1:[REDACTED]')
+    .replace(
+      /(authorization|cookie|set-cookie|token|secret|password)\s*[:=]\s*[^,;\s}]+/gi,
+      '$1:[REDACTED]',
+    )
     .slice(0, 500);
 }
 

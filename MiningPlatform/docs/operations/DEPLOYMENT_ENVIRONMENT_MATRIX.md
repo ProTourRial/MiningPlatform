@@ -6,23 +6,23 @@
 
 ## 1. Environment matrix
 
-| Environment | Data | Payout mode | Signer mode | External nodes | Required posture |
-|---|---|---|---|---|---|
-| Local | Disposable/synthetic | Disabled | Mock/none | Regtest or mock | No production secrets |
-| CI | Ephemeral synthetic | Disabled | Mock | Mock/test endpoint | Reproducible and isolated |
-| Preview | Synthetic/isolated | Disabled | Mock/none | Test endpoint | Publicly non-financial |
-| Staging | Sanitized synthetic | Simulation only | Isolated test signer | Testnet/regtest/provider sandbox | Same policy shape as production |
-| Production | Approved controlled data | Gated until go/no-go | Isolated production signer | HA Bitcoin Core/provider | Least privilege, audited, monitored |
+| Environment | Data                     | Payout mode          | Signer mode                | External nodes                   | Required posture                    |
+| ----------- | ------------------------ | -------------------- | -------------------------- | -------------------------------- | ----------------------------------- |
+| Local       | Disposable/synthetic     | Disabled             | Mock/none                  | Regtest or mock                  | No production secrets               |
+| CI          | Ephemeral synthetic      | Disabled             | Mock                       | Mock/test endpoint               | Reproducible and isolated           |
+| Preview     | Synthetic/isolated       | Disabled             | Mock/none                  | Test endpoint                    | Publicly non-financial              |
+| Staging     | Sanitized synthetic      | Simulation only      | Isolated test signer       | Testnet/regtest/provider sandbox | Same policy shape as production     |
+| Production  | Approved controlled data | Gated until go/no-go | Isolated production signer | HA Bitcoin Core/provider         | Least privilege, audited, monitored |
 
 ## 2. Configuration classes
 
-| Class | Examples | Rules |
-|---|---|---|
-| Public configuration | Web/API URL, build version, feature display flags | May be exposed only if non-sensitive |
-| Secret configuration | Database URL, Redis credentials, session secret, provider token, signer reference | Secret manager only; never repo/log/client |
-| Financial control | Payout mode, reserve limit, confirmation/maturity, fee policy ID | Change-controlled, effective-dated, audited |
-| Security control | Allowed origins, rate limits, session TTL, step-up policy | Reviewed by Security and tested per environment |
-| Node control | RPC endpoint, quorum, freshness, provider priority | Never expose credentials; fail closed on ambiguity |
+| Class                | Examples                                                                          | Rules                                              |
+| -------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Public configuration | Web/API URL, build version, feature display flags                                 | May be exposed only if non-sensitive               |
+| Secret configuration | Database URL, Redis credentials, session secret, provider token, signer reference | Secret manager only; never repo/log/client         |
+| Financial control    | Payout mode, reserve limit, confirmation/maturity, fee policy ID                  | Change-controlled, effective-dated, audited        |
+| Security control     | Allowed origins, rate limits, session TTL, step-up policy                         | Reviewed by Security and tested per environment    |
+| Node control         | RPC endpoint, quorum, freshness, provider priority                                | Never expose credentials; fail closed on ambiguity |
 
 ## 3. Compatibility requirements
 

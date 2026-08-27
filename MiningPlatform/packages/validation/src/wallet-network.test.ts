@@ -6,10 +6,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  validateBep20Address,
-  validateWalletDestination,
-} from './wallet-network.js';
+import { validateBep20Address, validateWalletDestination } from './wallet-network.js';
 
 const btcAddress = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
 const bep20Address = '0x52908400098527886E0F7030069857D2E4169EE7';

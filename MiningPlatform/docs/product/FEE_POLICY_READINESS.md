@@ -6,11 +6,11 @@
 
 ## 1. Normative fee matrix
 
-| Scenario | Platform fee | Referral beneficiary | User net | Required attribution |
-|---|---:|---:|---:|---|
-| No referral | 0.50% | 0.00% | 99.50% | Platform treasury/fee liability |
-| Valid referral | 0.375% | 0.125% | 99.50% | Referrer account or approved beneficiary |
-| Default code `MP05` | 0.375% | 0.125% | 99.50% | Site donation wallet, never user payout fallback |
+| Scenario            | Platform fee | Referral beneficiary | User net | Required attribution                             |
+| ------------------- | -----------: | -------------------: | -------: | ------------------------------------------------ |
+| No referral         |        0.50% |                0.00% |   99.50% | Platform treasury/fee liability                  |
+| Valid referral      |       0.375% |               0.125% |   99.50% | Referrer account or approved beneficiary         |
+| Default code `MP05` |       0.375% |               0.125% |   99.50% | Site donation wallet, never user payout fallback |
 
 The fee percentages are applied to the eligible gross amount according to the selected reward/payout unit. The sum of platform and beneficiary fees must equal 0.50%; rounding must not create or destroy value.
 
@@ -18,16 +18,16 @@ The fee percentages are applied to the eligible gross amount according to the se
 
 A fee policy is identified by `policyId`, `effectiveFrom`, optional `effectiveTo`, asset, network, and scope. The policy used for a reward/payout calculation must be recorded with the resulting settlement. Historical records are never recalculated silently when a policy changes.
 
-| Field | Requirement |
-|---|---|
-| `policyId` | Immutable, unique, auditable identifier |
-| `effectiveFrom` | UTC timestamp; inclusive |
-| `effectiveTo` | UTC timestamp; exclusive when present |
-| `scope` | Asset/network, reward scheme, campaign, or account segment |
-| `platformRateBps` | 50 bps for standard; 37.5 bps is represented in atomic-safe form for referral policy |
-| `beneficiaryRateBps` | 0 standard; 12.5 bps for valid referral |
-| `roundingMode` | Explicit deterministic mode, approved per asset/network |
-| `status` | Draft, approved, active, disabled, superseded |
+| Field                | Requirement                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| `policyId`           | Immutable, unique, auditable identifier                                              |
+| `effectiveFrom`      | UTC timestamp; inclusive                                                             |
+| `effectiveTo`        | UTC timestamp; exclusive when present                                                |
+| `scope`              | Asset/network, reward scheme, campaign, or account segment                           |
+| `platformRateBps`    | 50 bps for standard; 37.5 bps is represented in atomic-safe form for referral policy |
+| `beneficiaryRateBps` | 0 standard; 12.5 bps for valid referral                                              |
+| `roundingMode`       | Explicit deterministic mode, approved per asset/network                              |
+| `status`             | Draft, approved, active, disabled, superseded                                        |
 
 Because half-basis-point values cannot be represented as integer bps without loss, the implementation must use a fixed-point rate representation or an equivalent exact rational calculation. Never round the rate before multiplying the gross amount.
 
@@ -52,24 +52,24 @@ Referral abuse controls must support self-referral rejection, account/code owner
 
 ## 5. Required invariants
 
-| Invariant | Rejection condition |
-|---|---|
-| Fee conservation | `platform + beneficiary + user_net != gross` |
-| Single attribution | More than one beneficiary line for one settlement key |
-| Effective policy | No approved policy matches calculation timestamp |
-| Determinism | Same settlement key and policy produce different result |
-| Immutability | Posted fee line is edited instead of reversed |
-| Network scope | Policy asset/network does not match reward/payout route |
-| Disable safety | Disabled beneficiary still receives new settlement |
+| Invariant          | Rejection condition                                     |
+| ------------------ | ------------------------------------------------------- |
+| Fee conservation   | `platform + beneficiary + user_net != gross`            |
+| Single attribution | More than one beneficiary line for one settlement key   |
+| Effective policy   | No approved policy matches calculation timestamp        |
+| Determinism        | Same settlement key and policy produce different result |
+| Immutability       | Posted fee line is edited instead of reversed           |
+| Network scope      | Policy asset/network does not match reward/payout route |
+| Disable safety     | Disabled beneficiary still receives new settlement      |
 
 ## 6. Acceptance examples
 
-| Gross atomic | Scenario | Platform | Beneficiary | User net | Expected |
-|---:|---|---:|---:|---:|---|
-| 100,000,000 | No referral | 500,000 | 0 | 99,500,000 | Pass |
-| 100,000,000 | Valid referral | 375,000 | 125,000 | 99,500,000 | Pass |
-| 1 | Any | 0 or policy-defined residual | 0 or policy-defined residual | Conservation-preserving | Pass only if exact residual rule is recorded |
-| 100,000,000 | Duplicate retry | Same as original | Same as original | Same as original | No second allocation |
+| Gross atomic | Scenario        |                     Platform |                  Beneficiary |                User net | Expected                                     |
+| -----------: | --------------- | ---------------------------: | ---------------------------: | ----------------------: | -------------------------------------------- |
+|  100,000,000 | No referral     |                      500,000 |                            0 |              99,500,000 | Pass                                         |
+|  100,000,000 | Valid referral  |                      375,000 |                      125,000 |              99,500,000 | Pass                                         |
+|            1 | Any             | 0 or policy-defined residual | 0 or policy-defined residual | Conservation-preserving | Pass only if exact residual rule is recorded |
+|  100,000,000 | Duplicate retry |             Same as original |             Same as original |        Same as original | No second allocation                         |
 
 ## 7. Approval and disable workflow
 

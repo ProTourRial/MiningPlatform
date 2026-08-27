@@ -12,14 +12,14 @@ Stratum load profiles are defined for the local/test simulator or an approved is
 
 ## 2. Profiles
 
-| Profile | Purpose | Connections/concurrency | Duration | Abort |
-|---|---|---:|---:|---|
-| Smoke | Verify route and readiness | 1 | 30s | Any safety violation |
-| Baseline | Establish normal latency/error rate | 5 HTTP workers; 10 Stratum sessions | 5m | Error rate >5% or queue >70% |
-| Ramp | Observe gradual capacity curve | 1 to approved ceiling | 10m | p95 breach, memory slope, rejection anomaly |
-| Soak | Detect leaks and drift | Approved steady rate | 30m to 2h | Memory growth, stale age, queue growth |
-| Burst | Simulate reconnect/share burst | 2x baseline for bounded window | 60s | CPU saturation, queue >90%, dropped evidence |
-| Failure | Dependency timeout/unavailable | Small synthetic load | 5m | Retry storm, unsafe payout/signing path |
+| Profile  | Purpose                             |             Connections/concurrency |  Duration | Abort                                        |
+| -------- | ----------------------------------- | ----------------------------------: | --------: | -------------------------------------------- |
+| Smoke    | Verify route and readiness          |                                   1 |       30s | Any safety violation                         |
+| Baseline | Establish normal latency/error rate | 5 HTTP workers; 10 Stratum sessions |        5m | Error rate >5% or queue >70%                 |
+| Ramp     | Observe gradual capacity curve      |               1 to approved ceiling |       10m | p95 breach, memory slope, rejection anomaly  |
+| Soak     | Detect leaks and drift              |                Approved steady rate | 30m to 2h | Memory growth, stale age, queue growth       |
+| Burst    | Simulate reconnect/share burst      |      2x baseline for bounded window |       60s | CPU saturation, queue >90%, dropped evidence |
+| Failure  | Dependency timeout/unavailable      |                Small synthetic load |        5m | Retry storm, unsafe payout/signing path      |
 
 Exact ceiling, share rate, and duration are deployment decisions. The runner defaults are intentionally low.
 

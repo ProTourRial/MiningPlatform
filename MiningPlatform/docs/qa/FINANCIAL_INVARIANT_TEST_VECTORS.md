@@ -35,17 +35,17 @@ Expected invariants:
 
 ## 2. Vector summary
 
-| ID | Scenario | Expected result | Priority |
-|---|---|---|---|
-| FV-01 | Balanced journal | Accepted; debits equal credits | P0 |
-| FV-02 | Unbalanced journal | Rejected atomically; no partial lines | P0 |
-| FV-03 | Immutable posted entry | Update/delete rejected; original unchanged | P0 |
-| FV-04 | Reversal | Equal-and-opposite adjustment accepted and traceable | P0 |
-| FV-05 | Retry without double-credit | Same command returns original result; one allocation | P0 |
-| FV-06 | Single reward allocation | Duplicate source delivery cannot create second allocation | P0 |
-| FV-07 | Application rollback | Durable records remain once; replay resumes safely | P0 |
-| FV-08 | Reconciliation source | Matching source closes period; mismatch creates exception | P0 |
-| FV-09 | Payout reservation | Atomic hold succeeds once and cannot exceed balance | P0 |
+| ID    | Scenario                    | Expected result                                           | Priority |
+| ----- | --------------------------- | --------------------------------------------------------- | -------- |
+| FV-01 | Balanced journal            | Accepted; debits equal credits                            | P0       |
+| FV-02 | Unbalanced journal          | Rejected atomically; no partial lines                     | P0       |
+| FV-03 | Immutable posted entry      | Update/delete rejected; original unchanged                | P0       |
+| FV-04 | Reversal                    | Equal-and-opposite adjustment accepted and traceable      | P0       |
+| FV-05 | Retry without double-credit | Same command returns original result; one allocation      | P0       |
+| FV-06 | Single reward allocation    | Duplicate source delivery cannot create second allocation | P0       |
+| FV-07 | Application rollback        | Durable records remain once; replay resumes safely        | P0       |
+| FV-08 | Reconciliation source       | Matching source closes period; mismatch creates exception | P0       |
+| FV-09 | Payout reservation          | Atomic hold succeeds once and cannot exceed balance       | P0       |
 
 ## 3. FV-01 — Balanced journal
 
@@ -57,9 +57,24 @@ Expected invariants:
   "status": "POSTED",
   "currency": "BTC",
   "lines": [
-    { "lineId": "line-01", "account": "USER_REWARD_PAYABLE", "side": "DEBIT", "amountAtomic": "1000000" },
-    { "lineId": "line-02", "account": "UPSTREAM_CLEARING", "side": "CREDIT", "amountAtomic": "995000" },
-    { "lineId": "line-03", "account": "PLATFORM_FEE_REVENUE", "side": "CREDIT", "amountAtomic": "5000" }
+    {
+      "lineId": "line-01",
+      "account": "USER_REWARD_PAYABLE",
+      "side": "DEBIT",
+      "amountAtomic": "1000000"
+    },
+    {
+      "lineId": "line-02",
+      "account": "UPSTREAM_CLEARING",
+      "side": "CREDIT",
+      "amountAtomic": "995000"
+    },
+    {
+      "lineId": "line-03",
+      "account": "PLATFORM_FEE_REVENUE",
+      "side": "CREDIT",
+      "amountAtomic": "5000"
+    }
   ],
   "sourceEventId": "settlement-fv-01"
 }
@@ -67,14 +82,14 @@ Expected invariants:
 
 ### Expected
 
-| Assertion | Expected |
-|---|---|
-| Accepted | Yes |
-| Total debit | `1000000` |
-| Total credit | `1000000` |
-| Journal state | `POSTED` |
-| Balance projection | Updated from journal, not direct mutation |
-| Audit | `journalId`, source event, policy version, correlation ID stored |
+| Assertion          | Expected                                                         |
+| ------------------ | ---------------------------------------------------------------- |
+| Accepted           | Yes                                                              |
+| Total debit        | `1000000`                                                        |
+| Total credit       | `1000000`                                                        |
+| Journal state      | `POSTED`                                                         |
+| Balance projection | Updated from journal, not direct mutation                        |
+| Audit              | `journalId`, source event, policy version, correlation ID stored |
 
 ## 4. FV-02 — Unbalanced journal rejection
 
@@ -86,8 +101,18 @@ Expected invariants:
   "status": "POSTED",
   "currency": "BTC",
   "lines": [
-    { "lineId": "line-01", "account": "USER_REWARD_PAYABLE", "side": "DEBIT", "amountAtomic": "1000000" },
-    { "lineId": "line-02", "account": "UPSTREAM_CLEARING", "side": "CREDIT", "amountAtomic": "994999" }
+    {
+      "lineId": "line-01",
+      "account": "USER_REWARD_PAYABLE",
+      "side": "DEBIT",
+      "amountAtomic": "1000000"
+    },
+    {
+      "lineId": "line-02",
+      "account": "UPSTREAM_CLEARING",
+      "side": "CREDIT",
+      "amountAtomic": "994999"
+    }
   ],
   "sourceEventId": "settlement-fv-02"
 }
@@ -120,13 +145,13 @@ Expected invariants:
 
 ### Expected
 
-| Assertion | Expected |
-|---|---|
-| Update posted line | Rejected with `POSTED_ENTRY_IMMUTABLE` |
-| Delete posted line | Rejected with same invariant |
-| Original journal | Remains byte/field-equivalent |
-| Correction path | Requires reversal/adjustment with original reference |
-| Audit | Rejected attempt is recorded; no financial side effect |
+| Assertion          | Expected                                               |
+| ------------------ | ------------------------------------------------------ |
+| Update posted line | Rejected with `POSTED_ENTRY_IMMUTABLE`                 |
+| Delete posted line | Rejected with same invariant                           |
+| Original journal   | Remains byte/field-equivalent                          |
+| Correction path    | Requires reversal/adjustment with original reference   |
+| Audit              | Rejected attempt is recorded; no financial side effect |
 
 ## 6. FV-04 — Reversal
 
@@ -183,14 +208,14 @@ Send the exact command three times, including a simulated client timeout after t
 
 ### Expected
 
-| Check | Expected |
-|---|---|
-| First response | `201`/`202` with allocation ID and transition ID |
-| Repeated exact command | Same allocation/transition result with `idempotentReplay=true` |
-| Different payload with same key | `409 IDEMPOTENCY_CONFLICT`; no new side effect |
-| Journal count | One allocation journal for this command |
-| User liability | Increased exactly once by expected amount |
-| Audit | First execution plus replay metadata, no duplicate financial event |
+| Check                           | Expected                                                           |
+| ------------------------------- | ------------------------------------------------------------------ |
+| First response                  | `201`/`202` with allocation ID and transition ID                   |
+| Repeated exact command          | Same allocation/transition result with `idempotentReplay=true`     |
+| Different payload with same key | `409 IDEMPOTENCY_CONFLICT`; no new side effect                     |
+| Journal count                   | One allocation journal for this command                            |
+| User liability                  | Increased exactly once by expected amount                          |
+| Audit                           | First execution plus replay metadata, no duplicate financial event |
 
 ## 8. FV-06 — Single reward allocation
 
@@ -306,16 +331,16 @@ Expected:
 
 ## 12. Test execution record
 
-| Field | Value |
-|---|---|
-| Test run ID | `TBD` |
-| Environment | `TBD` |
-| Source commit | `TBD` |
-| Database/provider fixture version | `TBD` |
-| Executed by | `TBD` |
-| Executed at UTC | `TBD` |
-| Result | `NOT_RUN` |
-| Linked evidence | `TBD` |
+| Field                             | Value     |
+| --------------------------------- | --------- |
+| Test run ID                       | `TBD`     |
+| Environment                       | `TBD`     |
+| Source commit                     | `TBD`     |
+| Database/provider fixture version | `TBD`     |
+| Executed by                       | `TBD`     |
+| Executed at UTC                   | `TBD`     |
+| Result                            | `NOT_RUN` |
+| Linked evidence                   | `TBD`     |
 
 ## 13. Acceptance criteria
 

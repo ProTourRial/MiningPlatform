@@ -21,28 +21,28 @@ Each run has a `reconciliationRunId`, period, asset, network, source snapshots, 
 
 ## 2. Daily workflow
 
-| Step | Action | Evidence |
-|---:|---|---|
-| 1 | Freeze period input boundaries and collect source snapshots | Snapshot IDs, timestamps, checksums |
-| 2 | Recompute accepted contribution and reward allocation | Allocation digest, reward scheme ID |
-| 3 | Recompute platform/referral fee and user net | Fee policy ID, rounding result |
-| 4 | Compare reservations and payout states | Reservation IDs, state counts, amount totals |
-| 5 | Compare wallet/node/provider source | Source response, transaction/UTXO identifiers |
-| 6 | Calculate variance by asset/network/source | Atomic deltas and threshold result |
-| 7 | Review exceptions and open incident if needed | Incident ID and reason |
-| 8 | Obtain independent sign-off | Reviewer and timestamp |
+| Step | Action                                                      | Evidence                                      |
+| ---: | ----------------------------------------------------------- | --------------------------------------------- |
+|    1 | Freeze period input boundaries and collect source snapshots | Snapshot IDs, timestamps, checksums           |
+|    2 | Recompute accepted contribution and reward allocation       | Allocation digest, reward scheme ID           |
+|    3 | Recompute platform/referral fee and user net                | Fee policy ID, rounding result                |
+|    4 | Compare reservations and payout states                      | Reservation IDs, state counts, amount totals  |
+|    5 | Compare wallet/node/provider source                         | Source response, transaction/UTXO identifiers |
+|    6 | Calculate variance by asset/network/source                  | Atomic deltas and threshold result            |
+|    7 | Review exceptions and open incident if needed               | Incident ID and reason                        |
+|    8 | Obtain independent sign-off                                 | Reviewer and timestamp                        |
 
 ## 3. Variance policy
 
-| Condition | Action |
-|---|---|
-| Zero variance | Mark source pair reconciled and retain evidence |
-| Non-zero ledger trial balance | Freeze affected posting and payout scope immediately |
-| Wallet/node variance | Pause payout for affected wallet class and network |
-| Coinbase/source mismatch | Freeze block/reward liability and investigate maturity/reorg |
-| Duplicate reservation or payout | Freeze account/scope; inspect idempotency and provider status |
-| Missing source snapshot | Mark run incomplete; do not infer zero |
-| Unexplained fee/beneficiary delta | Hold beneficiary settlement and open finance incident |
+| Condition                         | Action                                                        |
+| --------------------------------- | ------------------------------------------------------------- |
+| Zero variance                     | Mark source pair reconciled and retain evidence               |
+| Non-zero ledger trial balance     | Freeze affected posting and payout scope immediately          |
+| Wallet/node variance              | Pause payout for affected wallet class and network            |
+| Coinbase/source mismatch          | Freeze block/reward liability and investigate maturity/reorg  |
+| Duplicate reservation or payout   | Freeze account/scope; inspect idempotency and provider status |
+| Missing source snapshot           | Mark run incomplete; do not infer zero                        |
+| Unexplained fee/beneficiary delta | Hold beneficiary settlement and open finance incident         |
 
 A non-zero variance is never cleared by manually editing a ledger row, lowering a balance, deleting a source record, or suppressing an alert. Resolution requires a documented explanation, approved compensating entry/reversal if needed, repeat run, and reviewer sign-off.
 

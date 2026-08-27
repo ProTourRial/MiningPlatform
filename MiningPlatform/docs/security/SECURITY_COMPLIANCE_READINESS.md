@@ -24,29 +24,29 @@ Tujuan minimum sebelum payout nyata:
 
 ### 2.1 Assets
 
-| Asset | Contoh | Dampak kompromi |
-|---|---|---|
-| User identity | Account, session, 2FA, recovery | Account takeover, unauthorized wallet change |
-| Worker identity | Worker credential, alias, farm metadata | Unauthorized mining, telemetry pollution |
-| Financial records | Reward, fee, referral, ledger, balance, payout reservation | False liability, double payout, user loss |
-| Wallet boundary | Signing key, HSM/KMS reference, hot/warm/cold allocation | Irreversible fund theft |
-| Infrastructure | PostgreSQL, Redis, nodes, API, Stratum, CI/CD | Data loss, service outage, supply-chain compromise |
-| Private data | Email, IP, location, worker telemetry, wallet fingerprint | Privacy harm, profiling, targeted attack |
-| Trust surface | Transparency, status, terms, support, API docs | Misleading claims, impersonation, reputational loss |
+| Asset             | Contoh                                                     | Dampak kompromi                                     |
+| ----------------- | ---------------------------------------------------------- | --------------------------------------------------- |
+| User identity     | Account, session, 2FA, recovery                            | Account takeover, unauthorized wallet change        |
+| Worker identity   | Worker credential, alias, farm metadata                    | Unauthorized mining, telemetry pollution            |
+| Financial records | Reward, fee, referral, ledger, balance, payout reservation | False liability, double payout, user loss           |
+| Wallet boundary   | Signing key, HSM/KMS reference, hot/warm/cold allocation   | Irreversible fund theft                             |
+| Infrastructure    | PostgreSQL, Redis, nodes, API, Stratum, CI/CD              | Data loss, service outage, supply-chain compromise  |
+| Private data      | Email, IP, location, worker telemetry, wallet fingerprint  | Privacy harm, profiling, targeted attack            |
+| Trust surface     | Transparency, status, terms, support, API docs             | Misleading claims, impersonation, reputational loss |
 
 ### 2.2 Adversaries and abuse cases
 
-| Actor | Abuse case | Primary controls |
-|---|---|---|
-| Unauthenticated internet client | Credential stuffing, endpoint enumeration, DDoS | Edge protection, rate limit, generic errors, MFA |
-| Compromised user | Change destination, create payout, abuse referral | Step-up, cooldown, device/session review, limits |
-| Malicious miner | Fake/duplicate/low-difficulty/stale shares | Protocol validation, dedupe, difficulty, upstream evidence |
-| Compromised operator | Approve/sign unauthorized transfer | RBAC, maker-checker, HSM/KMS, audit, dual control |
-| Malicious insider | Alter balance or hide mismatch | Immutable ledger, separation of duties, reconciliation |
-| Provider compromise | Wrong settlement, malicious transaction response | Multi-source verification, signed import, limits, pause |
-| Supply-chain attacker | Malicious dependency/image/CI secret access | Lockfile review, artifact attestations, secret scanning |
-| Chain/network event | Reorg, double-spend, node disagreement | Confirmation policy, node quorum, reorg state machine |
-| Privacy attacker | Link identity to address/worker/farm | Minimize data, masking, access logging, retention limits |
+| Actor                           | Abuse case                                        | Primary controls                                           |
+| ------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| Unauthenticated internet client | Credential stuffing, endpoint enumeration, DDoS   | Edge protection, rate limit, generic errors, MFA           |
+| Compromised user                | Change destination, create payout, abuse referral | Step-up, cooldown, device/session review, limits           |
+| Malicious miner                 | Fake/duplicate/low-difficulty/stale shares        | Protocol validation, dedupe, difficulty, upstream evidence |
+| Compromised operator            | Approve/sign unauthorized transfer                | RBAC, maker-checker, HSM/KMS, audit, dual control          |
+| Malicious insider               | Alter balance or hide mismatch                    | Immutable ledger, separation of duties, reconciliation     |
+| Provider compromise             | Wrong settlement, malicious transaction response  | Multi-source verification, signed import, limits, pause    |
+| Supply-chain attacker           | Malicious dependency/image/CI secret access       | Lockfile review, artifact attestations, secret scanning    |
+| Chain/network event             | Reorg, double-spend, node disagreement            | Confirmation policy, node quorum, reorg state machine      |
+| Privacy attacker                | Link identity to address/worker/farm              | Minimize data, masking, access logging, retention limits   |
 
 ### 2.3 Security assumptions to validate
 
@@ -86,15 +86,15 @@ Private key, seed phrase, raw token, dan full address dilarang ditulis ke incide
 
 ### Separation of duties
 
-| Action | Maker | Checker | Additional control |
-|---|---|---|---|
-| Request payout | User/system | — | Eligibility and idempotency |
-| Release reservation | Payout operator | Finance/treasury | Reason and original intent |
-| Approve payout | Treasury maker | Independent treasury checker | Amount/destination/policy review |
-| Sign transaction | Isolated signer service | KMS/HSM policy | Key boundary and limit |
-| Change payout route/limit | Product/operations maker | Security + treasury + owner | Effective time and rollback |
-| Change fee/referral policy | Product maker | Finance + owner; legal as needed | Versioned policy and disclosure |
-| Emergency resume after pause | Incident commander | Security + treasury + operations | Time/amount/scope-limited approval |
+| Action                       | Maker                    | Checker                          | Additional control                 |
+| ---------------------------- | ------------------------ | -------------------------------- | ---------------------------------- |
+| Request payout               | User/system              | —                                | Eligibility and idempotency        |
+| Release reservation          | Payout operator          | Finance/treasury                 | Reason and original intent         |
+| Approve payout               | Treasury maker           | Independent treasury checker     | Amount/destination/policy review   |
+| Sign transaction             | Isolated signer service  | KMS/HSM policy                   | Key boundary and limit             |
+| Change payout route/limit    | Product/operations maker | Security + treasury + owner      | Effective time and rollback        |
+| Change fee/referral policy   | Product maker            | Finance + owner; legal as needed | Versioned policy and disclosure    |
+| Emergency resume after pause | Incident commander       | Security + treasury + operations | Time/amount/scope-limited approval |
 
 Rules:
 
@@ -108,14 +108,14 @@ Rules:
 
 ### Secret classes
 
-| Secret | Storage | Rotation trigger | Evidence |
-|---|---|---|---|
-| User/session token | Hashed/secure session store | Replay, compromise, expiry | Session audit |
-| Worker credential | Hash or one-time display boundary | User request, compromise, worker retirement | Rotation/revocation event |
-| API key | Hashed, scoped, last-used metadata | Schedule, leak, role change | Key audit |
-| DB/Redis credential | Secret manager | Personnel/deployment/provider change | Access review |
-| Node RPC credential | Private secret manager | Node rotation, exposure, role change | RPC access log |
-| Signer/KMS reference | HSM/KMS policy | Key ceremony, compromise, scheduled rotation | KMS/HSM audit |
+| Secret               | Storage                            | Rotation trigger                             | Evidence                  |
+| -------------------- | ---------------------------------- | -------------------------------------------- | ------------------------- |
+| User/session token   | Hashed/secure session store        | Replay, compromise, expiry                   | Session audit             |
+| Worker credential    | Hash or one-time display boundary  | User request, compromise, worker retirement  | Rotation/revocation event |
+| API key              | Hashed, scoped, last-used metadata | Schedule, leak, role change                  | Key audit                 |
+| DB/Redis credential  | Secret manager                     | Personnel/deployment/provider change         | Access review             |
+| Node RPC credential  | Private secret manager             | Node rotation, exposure, role change         | RPC access log            |
+| Signer/KMS reference | HSM/KMS policy                     | Key ceremony, compromise, scheduled rotation | KMS/HSM audit             |
 
 ### Isolation requirements
 
@@ -132,15 +132,15 @@ Rules:
 
 ### Rate-limit classes
 
-| Surface | Key | Initial control |
-|---|---|---|
-| Login/register | IP + account fingerprint | Low burst, progressive backoff, CAPTCHA/challenge when needed |
-| Step-up/2FA | Account + device/IP | Strict attempt limit, lock/recovery workflow |
-| Worker auth/Stratum | Worker credential + IP/region | Connection cap, auth failure backoff, per-worker quota |
-| Read API | Principal/API key + endpoint | Token bucket, `429`, `Retry-After` |
-| Financial mutation | Principal + resource + idempotency key | Low rate, concurrency guard, maker-checker |
-| Webhook delivery | Destination + event type | Bounded retry, dead-letter, signature verification |
-| Public transparency | IP/edge | CDN/cache, aggregate-only, no sensitive backend query |
+| Surface             | Key                                    | Initial control                                               |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------- |
+| Login/register      | IP + account fingerprint               | Low burst, progressive backoff, CAPTCHA/challenge when needed |
+| Step-up/2FA         | Account + device/IP                    | Strict attempt limit, lock/recovery workflow                  |
+| Worker auth/Stratum | Worker credential + IP/region          | Connection cap, auth failure backoff, per-worker quota        |
+| Read API            | Principal/API key + endpoint           | Token bucket, `429`, `Retry-After`                            |
+| Financial mutation  | Principal + resource + idempotency key | Low rate, concurrency guard, maker-checker                    |
+| Webhook delivery    | Destination + event type               | Bounded retry, dead-letter, signature verification            |
+| Public transparency | IP/edge                                | CDN/cache, aggregate-only, no sensitive backend query         |
 
 ### DDoS/abuse response
 
@@ -154,14 +154,14 @@ Rules:
 
 ## 7. Privacy data classification
 
-| Class | Examples | Handling |
-|---|---|---|
-| P0 secret | Private key, seed phrase, access/refresh token, worker secret | Never log/store in plaintext; immediate rotation if exposed |
-| P1 highly sensitive | Full payout address, raw IP, exact farm location, security evidence | Restricted access, encryption, audit, short operational retention |
-| P2 personal/account | Email, account ID, sessions, support history, device metadata | Purpose limitation, access control, retention and deletion policy |
-| P3 financial operational | Balance, reward, fee, referral liability, payout state, tx hash | Need-to-know; ledger/legal retention; user-scoped read |
-| P4 internal operational | Service metrics, trace IDs, provider health, deployment data | Internal access; redact identifiers; bounded metric cardinality |
-| P5 public aggregate | Pool hashrate, uptime, incident status, fee policy | Privacy-reviewed read model; timestamp and freshness |
+| Class                    | Examples                                                            | Handling                                                          |
+| ------------------------ | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| P0 secret                | Private key, seed phrase, access/refresh token, worker secret       | Never log/store in plaintext; immediate rotation if exposed       |
+| P1 highly sensitive      | Full payout address, raw IP, exact farm location, security evidence | Restricted access, encryption, audit, short operational retention |
+| P2 personal/account      | Email, account ID, sessions, support history, device metadata       | Purpose limitation, access control, retention and deletion policy |
+| P3 financial operational | Balance, reward, fee, referral liability, payout state, tx hash     | Need-to-know; ledger/legal retention; user-scoped read            |
+| P4 internal operational  | Service metrics, trace IDs, provider health, deployment data        | Internal access; redact identifiers; bounded metric cardinality   |
+| P5 public aggregate      | Pool hashrate, uptime, incident status, fee policy                  | Privacy-reviewed read model; timestamp and freshness              |
 
 Minimum data controls:
 
@@ -175,20 +175,20 @@ Minimum data controls:
 
 This is a decision log template, not a conclusion that any specific license or control is legally sufficient.
 
-| Decision | Current status | Decision owner | Required analysis/evidence |
-|---|---|---|---|
-| Operating legal entity | `TBD — pending legal review` | Owner + Legal | Entity, beneficial owner, place of business |
-| Launch jurisdictions | `TBD — pending legal review` | Owner + Legal | Country/state licensing, consumer, tax, privacy |
-| Custody characterization | `TBD — pending product/legal review` | Legal + Treasury | Whether platform controls funds/keys or only routes settlement |
-| Conversion activity | `TBD — pending legal/compliance review` | Legal + Finance | Exchange/money-service implications and provider obligations |
-| KYC tiers | `TBD — pending risk appetite` | Compliance + Security | Thresholds, enhanced due diligence, account/payout triggers |
-| AML monitoring | `TBD — pending program design` | Compliance | Structuring, velocity, linked accounts, address risk, escalation |
-| Sanctions screening | `TBD — provider selection` | Compliance + Security | Jurisdictions, lists, false positives, screening events |
-| Travel rule/data sharing | `TBD — pending asset/network scope` | Legal + Compliance | Applicability, vendors, privacy and data transfer |
-| Suspicious activity handling | `TBD — pending legal review` | Compliance | Case management, reporting, retention, confidentiality |
-| Tax records/reporting | `TBD — pending tax review` | Finance + Tax advisor | Reward, fee, referral, conversion, payout exports |
-| Referral/donation liability | `TBD — pending legal/accounting review` | Finance + Legal | MP05 beneficiary, disclosure, donation treatment, reporting |
-| Restricted users/assets | `TBD — pending jurisdiction matrix` | Legal + Compliance | Blocking, geofencing, notice, appeal, audit |
+| Decision                     | Current status                          | Decision owner        | Required analysis/evidence                                       |
+| ---------------------------- | --------------------------------------- | --------------------- | ---------------------------------------------------------------- |
+| Operating legal entity       | `TBD — pending legal review`            | Owner + Legal         | Entity, beneficial owner, place of business                      |
+| Launch jurisdictions         | `TBD — pending legal review`            | Owner + Legal         | Country/state licensing, consumer, tax, privacy                  |
+| Custody characterization     | `TBD — pending product/legal review`    | Legal + Treasury      | Whether platform controls funds/keys or only routes settlement   |
+| Conversion activity          | `TBD — pending legal/compliance review` | Legal + Finance       | Exchange/money-service implications and provider obligations     |
+| KYC tiers                    | `TBD — pending risk appetite`           | Compliance + Security | Thresholds, enhanced due diligence, account/payout triggers      |
+| AML monitoring               | `TBD — pending program design`          | Compliance            | Structuring, velocity, linked accounts, address risk, escalation |
+| Sanctions screening          | `TBD — provider selection`              | Compliance + Security | Jurisdictions, lists, false positives, screening events          |
+| Travel rule/data sharing     | `TBD — pending asset/network scope`     | Legal + Compliance    | Applicability, vendors, privacy and data transfer                |
+| Suspicious activity handling | `TBD — pending legal review`            | Compliance            | Case management, reporting, retention, confidentiality           |
+| Tax records/reporting        | `TBD — pending tax review`              | Finance + Tax advisor | Reward, fee, referral, conversion, payout exports                |
+| Referral/donation liability  | `TBD — pending legal/accounting review` | Finance + Legal       | MP05 beneficiary, disclosure, donation treatment, reporting      |
+| Restricted users/assets      | `TBD — pending jurisdiction matrix`     | Legal + Compliance    | Blocking, geofencing, notice, appeal, audit                      |
 
 ### Decision log acceptance
 

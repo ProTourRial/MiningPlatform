@@ -10,11 +10,11 @@
 
 ## 1. Release vocabulary
 
-| Stage | Meaning | User/funds posture | Required evidence |
-|---|---|---|---|
-| **Alpha** | Fondasi masih berkembang; contract, provider, feature, atau operational gate belum final | Internal/allowlisted use; payout and custody disabled by default; no ROI promise | Scope disclosure, known gaps, targeted tests, rollback path |
-| **Beta** | Core workflow usable pada controlled population; breaking changes masih mungkin dengan notice | Limited external users; controlled funds only if separate signed gate passes; limits/holds active | End-to-end, load/soak, security review, support/runbooks, incident drills |
-| **Production** | Contract, operations, security, financial truth, and support are owned and measured | Public availability according to approved terms/SLA; payout only through approved custody/control policy | Release evidence, approvals, monitoring, backup/restore, rollback, post-launch owner |
+| Stage          | Meaning                                                                                       | User/funds posture                                                                                       | Required evidence                                                                    |
+| -------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Alpha**      | Fondasi masih berkembang; contract, provider, feature, atau operational gate belum final      | Internal/allowlisted use; payout and custody disabled by default; no ROI promise                         | Scope disclosure, known gaps, targeted tests, rollback path                          |
+| **Beta**       | Core workflow usable pada controlled population; breaking changes masih mungkin dengan notice | Limited external users; controlled funds only if separate signed gate passes; limits/holds active        | End-to-end, load/soak, security review, support/runbooks, incident drills            |
+| **Production** | Contract, operations, security, financial truth, and support are owned and measured           | Public availability according to approved terms/SLA; payout only through approved custody/control policy | Release evidence, approvals, monitoring, backup/restore, rollback, post-launch owner |
 
 The current repository baseline is **alpha** unless a later release record explicitly states otherwise. A polished frontend or successful build does not change the stage.
 
@@ -33,17 +33,17 @@ Every release candidate must have a release record containing:
 
 ### Mandatory gates by stage
 
-| Gate | Alpha | Beta | Production |
-|---|---:|---:|---:|
-| Build/lint/typecheck | Required | Required | Required |
-| Unit/integration/contract test | Relevant scope | Full critical scope | Full release scope |
-| Manual QA | P0 smoke | P0/P1 critical journeys | P0/P1 plus supported devices |
-| Security review | Threat model baseline | Remediation review | Independent/sign-off review |
-| Financial invariant vectors | Documentation/fixture | Passing critical vectors | Passing plus reconciliation evidence |
-| Backup/restore drill | Local/staging | Staging | Production-equivalent and recurring |
-| Load/soak/failover | Planned | Evidence for critical services | Thresholds and SLO evidence |
-| Payout | Disabled | Manual controlled pilot only if separately approved | Approved controlled/automated mode |
-| Public disclosure | Alpha limitations | Beta limitations/risk | Terms/privacy/SLA/support/status |
+| Gate                           |                 Alpha |                                                Beta |                           Production |
+| ------------------------------ | --------------------: | --------------------------------------------------: | -----------------------------------: |
+| Build/lint/typecheck           |              Required |                                            Required |                             Required |
+| Unit/integration/contract test |        Relevant scope |                                 Full critical scope |                   Full release scope |
+| Manual QA                      |              P0 smoke |                             P0/P1 critical journeys |         P0/P1 plus supported devices |
+| Security review                | Threat model baseline |                                  Remediation review |          Independent/sign-off review |
+| Financial invariant vectors    | Documentation/fixture |                            Passing critical vectors | Passing plus reconciliation evidence |
+| Backup/restore drill           |         Local/staging |                                             Staging |  Production-equivalent and recurring |
+| Load/soak/failover             |               Planned |                      Evidence for critical services |          Thresholds and SLO evidence |
+| Payout                         |              Disabled | Manual controlled pilot only if separately approved |   Approved controlled/automated mode |
+| Public disclosure              |     Alpha limitations |                               Beta limitations/risk |     Terms/privacy/SLA/support/status |
 
 ## 3. Migration approval
 
@@ -106,15 +106,15 @@ Draft PRs are appropriate for contracts, design, and reference documents. A draf
 
 ## 7. Rollback authority
 
-| Situation | Primary authority | Required coordination |
-|---|---|---|
-| Web/API availability regression | Incident commander/operations | Engineering owner; security if data exposure |
-| DB/Redis/node degradation | Operations/database owner | Incident commander; finance if financial state affected |
-| Ledger imbalance/reconciliation mismatch | Finance/accounting owner + incident commander | Security, database, product, owner |
-| Payout/signing anomaly | Security + treasury owner | Incident commander, finance, owner; pause immediately |
-| Wallet/key compromise | Security incident commander | Treasury, infrastructure, legal/compliance, owner |
-| Migration failure | Database owner | Release owner, operations, finance/security as applicable |
-| Unauthorized policy/config change | Security owner | Owner, product, affected domain owner |
+| Situation                                | Primary authority                             | Required coordination                                     |
+| ---------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
+| Web/API availability regression          | Incident commander/operations                 | Engineering owner; security if data exposure              |
+| DB/Redis/node degradation                | Operations/database owner                     | Incident commander; finance if financial state affected   |
+| Ledger imbalance/reconciliation mismatch | Finance/accounting owner + incident commander | Security, database, product, owner                        |
+| Payout/signing anomaly                   | Security + treasury owner                     | Incident commander, finance, owner; pause immediately     |
+| Wallet/key compromise                    | Security incident commander                   | Treasury, infrastructure, legal/compliance, owner         |
+| Migration failure                        | Database owner                                | Release owner, operations, finance/security as applicable |
+| Unauthorized policy/config change        | Security owner                                | Owner, product, affected domain owner                     |
 
 Any authorized rollback may pause service or payout but may not silently reverse blockchain transactions, edit posted ledger facts, or delete evidence. Resume requires explicit owner(s), scope, timestamp, and verification checklist.
 

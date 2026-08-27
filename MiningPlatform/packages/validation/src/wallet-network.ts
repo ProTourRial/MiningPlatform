@@ -57,7 +57,9 @@ function isHexAddress(address: string): boolean {
  * Validates a checksummed EVM address for a BEP20 route.
  * Lowercase/uppercase-only addresses are rejected by default for payout safety.
  */
-export function validateBep20Address(address: string):
+export function validateBep20Address(
+  address: string,
+):
   | { valid: true; normalizedAddress: string; addressFingerprint: string }
   | { valid: false; code: 'INVALID_EVM_ADDRESS' | 'EVM_CHECKSUM_MISMATCH'; message: string } {
   if (!isHexAddress(address)) {
@@ -91,9 +93,7 @@ export function validateBep20Address(address: string):
   };
 }
 
-export function validateWalletDestination(
-  input: unknown,
-): WalletValidationResult {
+export function validateWalletDestination(input: unknown): WalletValidationResult {
   const parsed = walletDestinationInputSchema.safeParse(input);
   if (!parsed.success) {
     return {

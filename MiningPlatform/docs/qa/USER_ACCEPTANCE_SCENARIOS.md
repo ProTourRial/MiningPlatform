@@ -12,31 +12,31 @@
 
 Tester mencatat environment, browser/device, UTC timestamp, source commit, API contract version, account/worker/destination ID yang disanitasi, request ID, correlation ID, audit ID, screenshot, dan actual result. Tidak boleh ada secret, full address, token, atau private key pada evidence.
 
-| Label | Meaning |
-|---|---|
-| `PASS` | User dapat menyelesaikan scenario dan expected behavior terbukti |
-| `FAIL` | UI/API memberi hasil yang berbeda atau misleading |
-| `BLOCKED` | Dependency/feature gate menghalangi eksekusi |
-| `NOT RUN` | Belum dieksekusi |
+| Label     | Meaning                                                          |
+| --------- | ---------------------------------------------------------------- |
+| `PASS`    | User dapat menyelesaikan scenario dan expected behavior terbukti |
+| `FAIL`    | UI/API memberi hasil yang berbeda atau misleading                |
+| `BLOCKED` | Dependency/feature gate menghalangi eksekusi                     |
+| `NOT RUN` | Belum dieksekusi                                                 |
 
 All payout-related scenarios assume **payout remains gated in alpha** unless the test environment explicitly documents a controlled pilot gate.
 
 ## 2. Scenario summary
 
-| ID | User goal | Priority |
-|---|---|---:|
-| UA-01 | Menambahkan wallet payout BTC | P0 |
-| UA-02 | Menambahkan wallet payout BEP20 | P0 |
-| UA-03 | Mengganti wallet payout | P0 |
-| UA-04 | Menolak wallet invalid/wrong network | P0 |
-| UA-05 | Memahami auto-withdrawal ON/OFF | P0 |
-| UA-06 | Melihat payout ditolak karena belum eligible | P0 |
-| UA-07 | Melihat payout ditahan karena maturity | P0 |
-| UA-08 | Retry setelah timeout tanpa double payout | P0 |
-| UA-09 | Akun terkena payout lock setelah wallet berubah | P0 |
-| UA-10 | Melihat status payout gate/route inactive | P0 |
-| UA-11 | Memahami fee/referral/MP05 | P1 |
-| UA-12 | Memulihkan dari error tanpa kehilangan konteks | P1 |
+| ID    | User goal                                       | Priority |
+| ----- | ----------------------------------------------- | -------: |
+| UA-01 | Menambahkan wallet payout BTC                   |       P0 |
+| UA-02 | Menambahkan wallet payout BEP20                 |       P0 |
+| UA-03 | Mengganti wallet payout                         |       P0 |
+| UA-04 | Menolak wallet invalid/wrong network            |       P0 |
+| UA-05 | Memahami auto-withdrawal ON/OFF                 |       P0 |
+| UA-06 | Melihat payout ditolak karena belum eligible    |       P0 |
+| UA-07 | Melihat payout ditahan karena maturity          |       P0 |
+| UA-08 | Retry setelah timeout tanpa double payout       |       P0 |
+| UA-09 | Akun terkena payout lock setelah wallet berubah |       P0 |
+| UA-10 | Melihat status payout gate/route inactive       |       P0 |
+| UA-11 | Memahami fee/referral/MP05                      |       P1 |
+| UA-12 | Memulihkan dari error tanpa kehilangan konteks  |       P1 |
 
 ## 3. UA-01 — User menambahkan wallet payout BTC
 
@@ -252,28 +252,28 @@ Expected: preference OFF, scheduler tidak membuat request baru, active reservati
 
 ## 15. UAT sign-off matrix
 
-| Domain | P0 scenarios | Required approver |
-|---|---|---|
-| Wallet/network | UA-01, UA-02, UA-03, UA-04, UA-09 | Product + Security + Treasury |
-| Auto-withdrawal | UA-05 | Product + Security + Operations |
-| Payout eligibility/maturity | UA-06, UA-07, UA-10 | Product + Finance/Treasury |
-| Retry/idempotency | UA-08, UA-12 | Engineering + Operations |
-| Fee/referral | UA-11 | Finance + Product |
-| Legal/risk copy | All payout/wallet scenarios | Legal/Compliance review |
+| Domain                      | P0 scenarios                      | Required approver               |
+| --------------------------- | --------------------------------- | ------------------------------- |
+| Wallet/network              | UA-01, UA-02, UA-03, UA-04, UA-09 | Product + Security + Treasury   |
+| Auto-withdrawal             | UA-05                             | Product + Security + Operations |
+| Payout eligibility/maturity | UA-06, UA-07, UA-10               | Product + Finance/Treasury      |
+| Retry/idempotency           | UA-08, UA-12                      | Engineering + Operations        |
+| Fee/referral                | UA-11                             | Finance + Product               |
+| Legal/risk copy             | All payout/wallet scenarios       | Legal/Compliance review         |
 
 UAT dapat diberi status **GO** hanya bila semua P0 scenario `PASS` atau memiliki signed waiver yang menyebut risiko, scope, expiry, owner, dan compensating control. `BLOCKED` karena payout masih gated bukan `FAIL`, selama UI secara jujur menunjukkan alasan dan tidak mengklaim fitur aktif.
 
 ## 16. Test record
 
-| Field | Value |
-|---|---|
-| UAT run ID | `TBD` |
-| Environment | `TBD` |
-| Web/API commit | `TBD` |
+| Field                | Value |
+| -------------------- | ----- |
+| UAT run ID           | `TBD` |
+| Environment          | `TBD` |
+| Web/API commit       | `TBD` |
 | API contract version | `TBD` |
-| Tester | `TBD` |
-| UTC start/end | `TBD` |
+| Tester               | `TBD` |
+| UTC start/end        | `TBD` |
 | P0 pass/fail/blocked | `TBD` |
-| Sign-off | `TBD` |
+| Sign-off             | `TBD` |
 
 No implementation change is authorized by this documentation-only branch.

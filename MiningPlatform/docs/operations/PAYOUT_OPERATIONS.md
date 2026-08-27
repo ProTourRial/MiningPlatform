@@ -6,16 +6,16 @@
 
 ## 1. Roles and separation
 
-| Role | Permission | Prohibited |
-|---|---|---|
-| Eligibility operator | Review eligibility and exceptions | Approve own exception or sign |
-| Maker | Prepare payout batch and attach evidence | Final approval or signer access |
-| Checker | Review batch, limits, destination, fees, and reconciliation | Modify maker evidence silently |
-| Treasury approver | Approve within limit and reserve policy | Bypass network/ownership gate |
-| Signer service | Sign approved payload under isolated policy | Accept unsigned/unapproved request |
-| Broadcast watcher | Observe provider/node result and confirmations | Blind retry ambiguous result |
-| Reconciliation owner | Close source-versus-ledger variance | Delete or edit posted ledger rows |
-| Incident commander | Pause/resume affected scope | Resume without sign-off evidence |
+| Role                 | Permission                                                  | Prohibited                         |
+| -------------------- | ----------------------------------------------------------- | ---------------------------------- |
+| Eligibility operator | Review eligibility and exceptions                           | Approve own exception or sign      |
+| Maker                | Prepare payout batch and attach evidence                    | Final approval or signer access    |
+| Checker              | Review batch, limits, destination, fees, and reconciliation | Modify maker evidence silently     |
+| Treasury approver    | Approve within limit and reserve policy                     | Bypass network/ownership gate      |
+| Signer service       | Sign approved payload under isolated policy                 | Accept unsigned/unapproved request |
+| Broadcast watcher    | Observe provider/node result and confirmations              | Blind retry ambiguous result       |
+| Reconciliation owner | Close source-versus-ledger variance                         | Delete or edit posted ledger rows  |
+| Incident commander   | Pause/resume affected scope                                 | Resume without sign-off evidence   |
 
 Maker and checker must be distinct identities. Approval is scoped to an immutable batch digest, policy IDs, and destination fingerprints; changing any material field invalidates prior approval.
 

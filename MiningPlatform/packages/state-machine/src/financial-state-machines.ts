@@ -38,11 +38,7 @@ export type RewardEvent =
   | 'REWARD_ALLOCATED'
   | 'REWARD_RECONCILED';
 
-export type BlockEvent =
-  | 'BLOCK_SUBMITTED'
-  | 'BLOCK_CONFIRMED'
-  | 'BLOCK_ORPHANED'
-  | 'BLOCK_REORGED';
+export type BlockEvent = 'BLOCK_SUBMITTED' | 'BLOCK_CONFIRMED' | 'BLOCK_ORPHANED' | 'BLOCK_REORGED';
 
 export type FinancialEvent = PayoutEvent | RewardEvent | BlockEvent;
 
@@ -89,14 +85,8 @@ export class FinancialTransitionError extends Error {
  * Production callers must persist the idempotency decision and transition event
  * atomically with their durable state; this class does not replace that boundary.
  */
-export class FinancialStateMachine<
-  TState extends string,
-  TEvent extends string,
-> {
-  private readonly appliedByKey = new Map<
-    string,
-    TransitionResult<TState, TEvent>
-  >();
+export class FinancialStateMachine<TState extends string, TEvent extends string> {
+  private readonly appliedByKey = new Map<string, TransitionResult<TState, TEvent>>();
 
   constructor(
     readonly domain: FinancialDomain,
@@ -111,9 +101,7 @@ export class FinancialStateMachine<
     return this.transitions[from]?.[to];
   }
 
-  transition(
-    input: TransitionInput<TState, TEvent>,
-  ): TransitionResult<TState, TEvent> {
+  transition(input: TransitionInput<TState, TEvent>): TransitionResult<TState, TEvent> {
     if (!input.entityId || !input.idempotencyKey) {
       throw new FinancialTransitionError(
         'INVALID_INPUT',
@@ -195,17 +183,8 @@ export const blockTransitions: TransitionTable<BlockState, BlockEvent> = {
   REORGED: {},
 };
 
-export const payoutStateMachine = new FinancialStateMachine(
-  'PAYOUT',
-  payoutTransitions,
-);
+export const payoutStateMachine = new FinancialStateMachine('PAYOUT', payoutTransitions);
 
-export const rewardStateMachine = new FinancialStateMachine(
-  'REWARD',
-  rewardTransitions,
-);
+export const rewardStateMachine = new FinancialStateMachine('REWARD', rewardTransitions);
 
-export const blockStateMachine = new FinancialStateMachine(
-  'BLOCK',
-  blockTransitions,
-);
+export const blockStateMachine = new FinancialStateMachine('BLOCK', blockTransitions);

@@ -16,11 +16,11 @@
 
 ### Severity model
 
-| Severity | Criteria | Initial response target | Communication |
-|---|---|---:|---|
-| Sev-1 | Suspected fund loss/unauthorized signing, ledger imbalance, double payout, broad pool outage, or security compromise | ≤15 menit | Incident commander, security, treasury, owner; status update ≤30 menit |
-| Sev-2 | One region/provider down, payout queue blocked, node disagreement, major reconciliation mismatch, or DB/Redis failover | ≤30 menit | Operations owner and affected stakeholders; update hourly |
-| Sev-3 | Degraded dashboard, isolated worker issue, delayed telemetry, or non-financial API error | ≤4 jam | Service owner; update when resolved |
+| Severity | Criteria                                                                                                               | Initial response target | Communication                                                          |
+| -------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------: | ---------------------------------------------------------------------- |
+| Sev-1    | Suspected fund loss/unauthorized signing, ledger imbalance, double payout, broad pool outage, or security compromise   |               ≤15 menit | Incident commander, security, treasury, owner; status update ≤30 menit |
+| Sev-2    | One region/provider down, payout queue blocked, node disagreement, major reconciliation mismatch, or DB/Redis failover |               ≤30 menit | Operations owner and affected stakeholders; update hourly              |
+| Sev-3    | Degraded dashboard, isolated worker issue, delayed telemetry, or non-financial API error                               |                  ≤4 jam | Service owner; update when resolved                                    |
 
 ## 2. Common incident procedure
 

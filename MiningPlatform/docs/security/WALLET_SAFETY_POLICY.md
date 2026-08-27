@@ -12,11 +12,11 @@
 
 Setiap destination harus menyimpan `accountId`, `assetId`, `networkId`, `routeId`, address fingerprint, status, policy version, dan audit reference.
 
-| Route | Required validation | Reject |
-|---|---|---|
-| BTC native | Bitcoin mainnet parser, supported format, checksum, network/version, route compatibility | BEP20/EVM address, testnet address, malformed string |
-| BEP20 | BNB Smart Chain chain ID, EVM checksum/normalization policy, token contract/decimals, route compatibility | BTC address, unsupported chain/token, invalid checksum |
-| Future deposit | Explicit deposit route and custody policy | Reuse of user payout/treasury/donation route |
+| Route          | Required validation                                                                                       | Reject                                                 |
+| -------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| BTC native     | Bitcoin mainnet parser, supported format, checksum, network/version, route compatibility                  | BEP20/EVM address, testnet address, malformed string   |
+| BEP20          | BNB Smart Chain chain ID, EVM checksum/normalization policy, token contract/decimals, route compatibility | BTC address, unsupported chain/token, invalid checksum |
+| Future deposit | Explicit deposit route and custody policy                                                                 | Reuse of user payout/treasury/donation route           |
 
 No address may reach signer or broadcast until syntax, network, asset, ownership/risk, cooldown, lock, route, and approval checks pass.
 
@@ -48,13 +48,13 @@ Signer approval is not user approval; both identity and treasury controls must p
 
 ## 5. Wallet topology
 
-| Class | Purpose | Exposure | Rule |
-|---|---|---:|---|
-| Hot wallet | Limited operational payout liquidity | Highest | Strict cap, allowlist, velocity limit, maker-checker, emergency stop |
-| Warm wallet | Replenishment/settlement buffer | Medium | Offline or restricted signing, scheduled review, dual control |
-| Cold wallet | Reserve custody | Lowest | Offline/key ceremony, no automated user payout path |
-| Pool treasury | Platform clearing/fee/reserve | Controlled | Never exposed as user fallback destination |
-| Site donation wallet | MP05 beneficiary/donation | Separate | Explicit beneficiary policy; never user payout fallback |
+| Class                | Purpose                              |   Exposure | Rule                                                                 |
+| -------------------- | ------------------------------------ | ---------: | -------------------------------------------------------------------- |
+| Hot wallet           | Limited operational payout liquidity |    Highest | Strict cap, allowlist, velocity limit, maker-checker, emergency stop |
+| Warm wallet          | Replenishment/settlement buffer      |     Medium | Offline or restricted signing, scheduled review, dual control        |
+| Cold wallet          | Reserve custody                      |     Lowest | Offline/key ceremony, no automated user payout path                  |
+| Pool treasury        | Platform clearing/fee/reserve        | Controlled | Never exposed as user fallback destination                           |
+| Site donation wallet | MP05 beneficiary/donation            |   Separate | Explicit beneficiary policy; never user payout fallback              |
 
 ## 6. Signer isolation
 

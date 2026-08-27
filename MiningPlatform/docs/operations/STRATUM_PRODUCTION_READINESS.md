@@ -10,15 +10,15 @@ Dokumen ini mendefinisikan kriteria produksi untuk koneksi miner dan share volum
 
 ## 2. Protocol contract
 
-| Area | Requirement | Evidence |
-|---|---|---|
-| Framing | JSON-RPC line framing, bounded line length, malformed input rejected | Protocol negative tests |
-| Handshake | `mining.subscribe` and `mining.authorize` have timeout and safe error response | Synthetic client trace |
-| Authorization | Worker identity is scoped to account/session; invalid credential is rejected | Auth test and audit event |
-| Job notification | Job ID, clean-jobs flag, target/difficulty, and template age are observable | Job fixture and metric query |
-| Share submission | Duplicate/stale/invalid share has deterministic code and no reward side effect | Share rejection vectors |
-| Connection | Idle timeout, maximum connections, per-account quotas, and graceful drain | Soak/load evidence |
-| Security | No secret/address/credential appears in response or logs | Redaction review |
+| Area             | Requirement                                                                    | Evidence                     |
+| ---------------- | ------------------------------------------------------------------------------ | ---------------------------- |
+| Framing          | JSON-RPC line framing, bounded line length, malformed input rejected           | Protocol negative tests      |
+| Handshake        | `mining.subscribe` and `mining.authorize` have timeout and safe error response | Synthetic client trace       |
+| Authorization    | Worker identity is scoped to account/session; invalid credential is rejected   | Auth test and audit event    |
+| Job notification | Job ID, clean-jobs flag, target/difficulty, and template age are observable    | Job fixture and metric query |
+| Share submission | Duplicate/stale/invalid share has deterministic code and no reward side effect | Share rejection vectors      |
+| Connection       | Idle timeout, maximum connections, per-account quotas, and graceful drain      | Soak/load evidence           |
+| Security         | No secret/address/credential appears in response or logs                       | Redaction review             |
 
 ## 3. Limits and backpressure
 
@@ -32,15 +32,15 @@ Ban decisions require a reason code, scope, duration, actor/system, evidence IDs
 
 ## 5. SLO and load profile
 
-| Signal | Initial target | Warning | Critical |
-|---|---:|---:|---:|
-| Connection accept success | >=99.9% | <99.9%/10m | <99%/10m |
-| Share validation success latency | p95 <=1s | p95 >1s/10m | p95 >3s/10m |
-| Share rejection rate | Within approved baseline | >2x baseline | >5% and >2x baseline |
-| Stale share rate | Within approved baseline | >2x baseline | Sustained abnormal rate |
-| Queue depth | <70% capacity | >=70%/10m | >=90% or timeout spike |
-| Job/template age | <=60s | >60s | >120s |
-| Reconnect rate | Within approved baseline | >2x baseline | Sustained region-wide spike |
+| Signal                           |           Initial target |      Warning |                    Critical |
+| -------------------------------- | -----------------------: | -----------: | --------------------------: |
+| Connection accept success        |                  >=99.9% |   <99.9%/10m |                    <99%/10m |
+| Share validation success latency |                 p95 <=1s |  p95 >1s/10m |                 p95 >3s/10m |
+| Share rejection rate             | Within approved baseline | >2x baseline |        >5% and >2x baseline |
+| Stale share rate                 | Within approved baseline | >2x baseline |     Sustained abnormal rate |
+| Queue depth                      |            <70% capacity |    >=70%/10m |      >=90% or timeout spike |
+| Job/template age                 |                    <=60s |         >60s |                       >120s |
+| Reconnect rate                   | Within approved baseline | >2x baseline | Sustained region-wide spike |
 
 Load profiles must include normal ramp, burst, sustained soak, reconnect storm, slow client, malformed client, downstream validator latency, Redis unavailable, node/provider unavailable, and graceful deploy drain. Each profile records worker count, shares per second, connection count, duration, region, CPU/memory/network, error classes, queue depth, and abort criteria.
 

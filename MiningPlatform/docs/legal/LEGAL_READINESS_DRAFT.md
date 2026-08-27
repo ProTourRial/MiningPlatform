@@ -30,16 +30,16 @@ A reorg or orphan can delay, reduce, reverse, or invalidate an immature reward u
 
 ## 5. Data processing inventory
 
-| Data | Purpose | Classification | Retention decision |
-|---|---|---|---|
-| Account/session | Authentication and security | Personal/confidential | Pending legal approval |
-| Worker metadata | Mining operations and support | Operational | Pending retention policy |
-| Wallet destination | Payout routing and validation | Financial/confidential | Keep through legal/audit hold; exact period pending |
-| Payout/reward/ledger | Financial reconciliation | Financial/high integrity | Retain per legal/accounting requirement |
-| Referral attribution | Fee settlement and abuse review | Operational/financial | Retain with settlement evidence |
-| Audit/security event | Accountability and incident response | Security/confidential | Preserve under legal hold rules |
-| KYC/AML/sanctions | Compliance decision | Sensitive/restricted | Provider/legal-specific |
-| Public metrics | Transparency | Aggregated/public | Bounded historical retention |
+| Data                 | Purpose                              | Classification           | Retention decision                                  |
+| -------------------- | ------------------------------------ | ------------------------ | --------------------------------------------------- |
+| Account/session      | Authentication and security          | Personal/confidential    | Pending legal approval                              |
+| Worker metadata      | Mining operations and support        | Operational              | Pending retention policy                            |
+| Wallet destination   | Payout routing and validation        | Financial/confidential   | Keep through legal/audit hold; exact period pending |
+| Payout/reward/ledger | Financial reconciliation             | Financial/high integrity | Retain per legal/accounting requirement             |
+| Referral attribution | Fee settlement and abuse review      | Operational/financial    | Retain with settlement evidence                     |
+| Audit/security event | Accountability and incident response | Security/confidential    | Preserve under legal hold rules                     |
+| KYC/AML/sanctions    | Compliance decision                  | Sensitive/restricted     | Provider/legal-specific                             |
+| Public metrics       | Transparency                         | Aggregated/public        | Bounded historical retention                        |
 
 ## 6. Unresolved legal decisions
 

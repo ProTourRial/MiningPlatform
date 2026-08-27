@@ -258,9 +258,7 @@ Authorization: Bearer <access-token>
     "addressFingerprint": "8f2a91ef7c20aa10",
     "routeStatus": "ACTIVE"
   },
-  "blockers": [
-    "BALANCE_BELOW_MINIMUM_PAYOUT"
-  ],
+  "blockers": ["BALANCE_BELOW_MINIMUM_PAYOUT"],
   "evaluatedAt": "2026-08-27T08:00:00Z",
   "policyVersion": "payout-policy-v1"
 }
@@ -709,22 +707,22 @@ Public contract `v1.0.0-draft` menggunakan envelope berikut untuk response baru.
 
 ### 9.2 Normative status codes and error codes
 
-| HTTP status | Normative meaning | Error code examples | Retry guidance |
-|---:|---|---|---|
-| `200` | Read atau mutation selesai dan state dapat dibaca | — | Tidak perlu retry otomatis |
-| `201` | Resource baru berhasil dibuat | — | Jangan ulangi tanpa idempotency |
-| `202` | Request diterima untuk asynchronous processing | — | Poll resource/status dengan backoff |
-| `204` | Mutation berhasil tanpa response body | — | Tidak perlu retry |
-| `400` | Request malformed atau semantic input invalid | `INVALID_REQUEST`, `VALIDATION_ERROR` | Perbaiki request |
-| `401` | Credential/token tidak ada atau invalid | `UNAUTHENTICATED`, `TOKEN_EXPIRED` | Refresh interactive session; jangan loop tanpa batas |
-| `403` | Identity valid tetapi tidak punya permission | `FORBIDDEN_SCOPE`, `ROLE_NOT_ALLOWED` | Jangan retry tanpa perubahan permission |
-| `404` | Resource tidak ada atau tidak terlihat oleh caller | `RESOURCE_NOT_FOUND` | Jangan menebak ID lain |
-| `409` | State conflict atau idempotency conflict | `STATE_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `ADDRESS_ALREADY_ACTIVE` | Re-read resource; jangan blind retry |
-| `412` | `If-Match` tidak cocok | `VERSION_MISMATCH` | Re-read, tampilkan diff, minta konfirmasi ulang |
-| `428` | Optimistic concurrency wajib tetapi header tidak ada | `PRECONDITION_REQUIRED` | Kirim ulang setelah GET terbaru |
-| `429` | Rate limit terlampaui | `RATE_LIMITED` | Ikuti `Retry-After` dan exponential backoff |
-| `500` | Kesalahan internal tidak terklasifikasi | `INTERNAL_ERROR` | Retry terbatas hanya untuk safe/idempotent request |
-| `502/503/504` | Dependency/provider unavailable atau timeout | `UPSTREAM_UNAVAILABLE`, `DEPENDENCY_TIMEOUT` | Retry bounded dengan jitter; mutation harus idempotent |
+|   HTTP status | Normative meaning                                    | Error code examples                                                | Retry guidance                                         |
+| ------------: | ---------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
+|         `200` | Read atau mutation selesai dan state dapat dibaca    | —                                                                  | Tidak perlu retry otomatis                             |
+|         `201` | Resource baru berhasil dibuat                        | —                                                                  | Jangan ulangi tanpa idempotency                        |
+|         `202` | Request diterima untuk asynchronous processing       | —                                                                  | Poll resource/status dengan backoff                    |
+|         `204` | Mutation berhasil tanpa response body                | —                                                                  | Tidak perlu retry                                      |
+|         `400` | Request malformed atau semantic input invalid        | `INVALID_REQUEST`, `VALIDATION_ERROR`                              | Perbaiki request                                       |
+|         `401` | Credential/token tidak ada atau invalid              | `UNAUTHENTICATED`, `TOKEN_EXPIRED`                                 | Refresh interactive session; jangan loop tanpa batas   |
+|         `403` | Identity valid tetapi tidak punya permission         | `FORBIDDEN_SCOPE`, `ROLE_NOT_ALLOWED`                              | Jangan retry tanpa perubahan permission                |
+|         `404` | Resource tidak ada atau tidak terlihat oleh caller   | `RESOURCE_NOT_FOUND`                                               | Jangan menebak ID lain                                 |
+|         `409` | State conflict atau idempotency conflict             | `STATE_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `ADDRESS_ALREADY_ACTIVE` | Re-read resource; jangan blind retry                   |
+|         `412` | `If-Match` tidak cocok                               | `VERSION_MISMATCH`                                                 | Re-read, tampilkan diff, minta konfirmasi ulang        |
+|         `428` | Optimistic concurrency wajib tetapi header tidak ada | `PRECONDITION_REQUIRED`                                            | Kirim ulang setelah GET terbaru                        |
+|         `429` | Rate limit terlampaui                                | `RATE_LIMITED`                                                     | Ikuti `Retry-After` dan exponential backoff            |
+|         `500` | Kesalahan internal tidak terklasifikasi              | `INTERNAL_ERROR`                                                   | Retry terbatas hanya untuk safe/idempotent request     |
+| `502/503/504` | Dependency/provider unavailable atau timeout         | `UPSTREAM_UNAVAILABLE`, `DEPENDENCY_TIMEOUT`                       | Retry bounded dengan jitter; mutation harus idempotent |
 
 Error code adalah kontrak machine-readable; HTTP status tidak boleh menjadi satu-satunya input untuk frontend branching.
 
@@ -741,21 +739,21 @@ Error code adalah kontrak machine-readable; HTTP status tidak boleh menjadi satu
 
 ### 9.4 Permission matrix
 
-| Operation | Guest | User | Admin | Owner/approved operator | Required scope |
-|---|---:|---:|---:|---:|---|
-| Read public status/metadata | Allow | Allow | Allow | Allow | None |
-| Read own workers | — | Allow | Scoped support only | Scoped support only | `workers:read` |
-| Create/update/delete own worker | — | Allow | Scoped support only | Scoped support only | `workers:write` |
-| Read own reward/ledger/balance | — | Allow | Scoped support only | Scoped support only | `rewards:read`, `ledger:read` |
-| Register/activate/disable own payout destination | — | Allow with step-up | No implicit access | Break-glass only with audit | `profile:write` + step-up |
-| Toggle own auto-withdrawal preference | — | Allow interactive session | No implicit access | Break-glass only with audit | `profile:write` |
-| Read own payout eligibility | — | Allow | Scoped support only | Scoped support only | `payouts:read` |
-| Request payout | — | Target; interactive + step-up | No implicit access | Approved operator workflow | `payouts:write` + idempotency |
-| Approve/sign/broadcast payout | — | Deny | Deny by default | Maker-checker role separation | `treasury:approve`, `treasury:sign` |
-| Read referral attribution/rewards | — | Allow own data | Scoped support only | Scoped support only | `referrals:read` |
-| Manage referral program/policy | — | Deny | Deny by default | Owner + finance approval | `referrals:admin` |
-| Read audit events | — | Own security events only | Scoped support | Full operational scope | `audit:read` |
-| Change fee/route/payout policy | — | Deny | Deny by default | Owner + finance/security/legal approval | `policy:write` |
+| Operation                                        | Guest |                          User |               Admin |                 Owner/approved operator | Required scope                      |
+| ------------------------------------------------ | ----: | ----------------------------: | ------------------: | --------------------------------------: | ----------------------------------- |
+| Read public status/metadata                      | Allow |                         Allow |               Allow |                                   Allow | None                                |
+| Read own workers                                 |     — |                         Allow | Scoped support only |                     Scoped support only | `workers:read`                      |
+| Create/update/delete own worker                  |     — |                         Allow | Scoped support only |                     Scoped support only | `workers:write`                     |
+| Read own reward/ledger/balance                   |     — |                         Allow | Scoped support only |                     Scoped support only | `rewards:read`, `ledger:read`       |
+| Register/activate/disable own payout destination |     — |            Allow with step-up |  No implicit access |             Break-glass only with audit | `profile:write` + step-up           |
+| Toggle own auto-withdrawal preference            |     — |     Allow interactive session |  No implicit access |             Break-glass only with audit | `profile:write`                     |
+| Read own payout eligibility                      |     — |                         Allow | Scoped support only |                     Scoped support only | `payouts:read`                      |
+| Request payout                                   |     — | Target; interactive + step-up |  No implicit access |              Approved operator workflow | `payouts:write` + idempotency       |
+| Approve/sign/broadcast payout                    |     — |                          Deny |     Deny by default |           Maker-checker role separation | `treasury:approve`, `treasury:sign` |
+| Read referral attribution/rewards                |     — |                Allow own data | Scoped support only |                     Scoped support only | `referrals:read`                    |
+| Manage referral program/policy                   |     — |                          Deny |     Deny by default |                Owner + finance approval | `referrals:admin`                   |
+| Read audit events                                |     — |      Own security events only |      Scoped support |                  Full operational scope | `audit:read`                        |
+| Change fee/route/payout policy                   |     — |                          Deny |     Deny by default | Owner + finance/security/legal approval | `policy:write`                      |
 
 Role membership alone is insufficient for treasury actions. Resource ownership, scope, interactive session, step-up, maker-checker, and audit policy must all be evaluated.
 
@@ -791,22 +789,22 @@ Sensitive mutable resources use an opaque `version` or `ETag` returned by GET. U
 
 Every wallet or payout mutation emits an immutable audit event in the same transaction as the state change or its durable outbox record.
 
-| Event | Trigger | Minimum metadata |
-|---|---|---|
-| `PAYOUT_DESTINATION_REGISTERED` | New address stored | `auditId`, actor, user/resource ID, route ID/version, asset/network, address fingerprint, step-up authorization ID, cooldown, request ID |
-| `PAYOUT_DESTINATION_ACTIVATED` | Address becomes active | `auditId`, actor, destination ID, route version, prior active ID, step-up ID, request ID |
-| `PAYOUT_DESTINATION_DISABLED` | Address disabled | `auditId`, actor, destination ID, reason, step-up ID, request ID |
-| `AUTO_WITHDRAWAL_ENABLED` | Preference set ON | `auditId`, actor, mining account ID, prior/new value, effective flag, blockers, request ID |
-| `AUTO_WITHDRAWAL_DISABLED` | Preference set OFF | `auditId`, actor, mining account ID, prior/new value, request ID |
-| `PAYOUT_ELIGIBILITY_EVALUATED` | Eligibility read/decision | `auditId` or decision ID, account, asset/network, balance snapshot, threshold, blockers, policy version, request ID |
-| `PAYOUT_REQUESTED` | Payout intent accepted | `auditId`, payout ID, idempotency key hash, amount, asset/network, destination fingerprint, request ID |
-| `PAYOUT_RESERVED` | Balance held | `auditId`, payout ID, journal/reservation ID, amount, expiry, request ID |
-| `PAYOUT_APPROVED` | Maker-checker approval | `auditId`, approver ID, payout ID, approval policy/version, reason, request ID |
-| `PAYOUT_SIGNING_STARTED` | Signer receives approved intent | `auditId`, payout ID, signer key reference (not key), policy version, request ID |
-| `PAYOUT_BROADCAST` | Transaction submitted | `auditId`, payout ID, tx hash, node/provider reference, request ID |
-| `PAYOUT_CONFIRMED` | Confirmation/finality reached | `auditId`, payout ID, tx hash, block hash/height, confirmation count, request ID |
-| `PAYOUT_FAILED` | Terminal failure | `auditId`, payout ID, safe error code, retryable, recovery action, request ID |
-| `PAYOUT_PAUSED` | Gate/operator pause | `auditId`, actor/system, scope, reason, incident ID, request ID |
+| Event                           | Trigger                         | Minimum metadata                                                                                                                         |
+| ------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAYOUT_DESTINATION_REGISTERED` | New address stored              | `auditId`, actor, user/resource ID, route ID/version, asset/network, address fingerprint, step-up authorization ID, cooldown, request ID |
+| `PAYOUT_DESTINATION_ACTIVATED`  | Address becomes active          | `auditId`, actor, destination ID, route version, prior active ID, step-up ID, request ID                                                 |
+| `PAYOUT_DESTINATION_DISABLED`   | Address disabled                | `auditId`, actor, destination ID, reason, step-up ID, request ID                                                                         |
+| `AUTO_WITHDRAWAL_ENABLED`       | Preference set ON               | `auditId`, actor, mining account ID, prior/new value, effective flag, blockers, request ID                                               |
+| `AUTO_WITHDRAWAL_DISABLED`      | Preference set OFF              | `auditId`, actor, mining account ID, prior/new value, request ID                                                                         |
+| `PAYOUT_ELIGIBILITY_EVALUATED`  | Eligibility read/decision       | `auditId` or decision ID, account, asset/network, balance snapshot, threshold, blockers, policy version, request ID                      |
+| `PAYOUT_REQUESTED`              | Payout intent accepted          | `auditId`, payout ID, idempotency key hash, amount, asset/network, destination fingerprint, request ID                                   |
+| `PAYOUT_RESERVED`               | Balance held                    | `auditId`, payout ID, journal/reservation ID, amount, expiry, request ID                                                                 |
+| `PAYOUT_APPROVED`               | Maker-checker approval          | `auditId`, approver ID, payout ID, approval policy/version, reason, request ID                                                           |
+| `PAYOUT_SIGNING_STARTED`        | Signer receives approved intent | `auditId`, payout ID, signer key reference (not key), policy version, request ID                                                         |
+| `PAYOUT_BROADCAST`              | Transaction submitted           | `auditId`, payout ID, tx hash, node/provider reference, request ID                                                                       |
+| `PAYOUT_CONFIRMED`              | Confirmation/finality reached   | `auditId`, payout ID, tx hash, block hash/height, confirmation count, request ID                                                         |
+| `PAYOUT_FAILED`                 | Terminal failure                | `auditId`, payout ID, safe error code, retryable, recovery action, request ID                                                            |
+| `PAYOUT_PAUSED`                 | Gate/operator pause             | `auditId`, actor/system, scope, reason, incident ID, request ID                                                                          |
 
 Never include private key, seed phrase, worker secret, full payout address, raw authentication token, or sensitive raw IP in event metadata. `auditId`, `requestId`, and `correlationId` must be searchable across API, worker, outbox, ledger, signer, node, and incident records.
 

@@ -10,12 +10,12 @@ Rekomendasi awal untuk native pool adalah **PPLNS**, dengan payout tetap gated s
 
 ## 2. Comparison
 
-| Scheme | Operator liability | User variance | Reserve need | Implementation risk | Initial posture |
-|---|---|---|---|---|---|
-| PPLNS | Lower; tied to pool blocks and contribution window | Higher, especially at low pool luck/hashrate | Moderate | Moderate; window and contribution integrity required | **Recommended first** |
-| PROP | Lower; distributes each found block proportionally | High for small/short-lived participation | Moderate | Moderate; round boundaries and join/leave gaming | Alternative after baseline |
-| PPS | High; operator pays expected value independent of found blocks | Low for user | High | High; requires reserve, variance, fraud and hashrate controls | Not initial |
-| FPPS | High; includes transaction fee expectation in addition to subsidy | Low for user | Very high | High; fee estimation, mempool, variance, reserve | Not initial |
+| Scheme | Operator liability                                                | User variance                                | Reserve need | Implementation risk                                           | Initial posture            |
+| ------ | ----------------------------------------------------------------- | -------------------------------------------- | ------------ | ------------------------------------------------------------- | -------------------------- |
+| PPLNS  | Lower; tied to pool blocks and contribution window                | Higher, especially at low pool luck/hashrate | Moderate     | Moderate; window and contribution integrity required          | **Recommended first**      |
+| PROP   | Lower; distributes each found block proportionally                | High for small/short-lived participation     | Moderate     | Moderate; round boundaries and join/leave gaming              | Alternative after baseline |
+| PPS    | High; operator pays expected value independent of found blocks    | Low for user                                 | High         | High; requires reserve, variance, fraud and hashrate controls | Not initial                |
+| FPPS   | High; includes transaction fee expectation in addition to subsidy | Low for user                                 | Very high    | High; fee estimation, mempool, variance, reserve              | Not initial                |
 
 ## 3. PPLNS contract
 
@@ -25,26 +25,26 @@ The operator must not allocate a reward before the block is in the approved life
 
 ## 4. Liability and reserve model
 
-| Liability | Trigger | Reserve treatment | Alert |
-|---|---|---|---|
-| Immature coinbase | Candidate/confirmed block before maturity | Not user-withdrawable; tracked separately | Block maturity lag |
-| Mature reward allocation | Approved mature block and contribution window | User liability increases | Allocation mismatch |
-| Payout reservation | Eligible user amount reserved | Reserve/liquidity decreases or is earmarked | Reservation conflict |
-| Fee beneficiary | Approved fee/referral settlement | Separate payable line | Beneficiary mismatch |
-| Reorg reversal | Confirmed block later orphaned/reorged | Freeze affected scope and post reversal | Non-zero variance |
+| Liability                | Trigger                                       | Reserve treatment                           | Alert                |
+| ------------------------ | --------------------------------------------- | ------------------------------------------- | -------------------- |
+| Immature coinbase        | Candidate/confirmed block before maturity     | Not user-withdrawable; tracked separately   | Block maturity lag   |
+| Mature reward allocation | Approved mature block and contribution window | User liability increases                    | Allocation mismatch  |
+| Payout reservation       | Eligible user amount reserved                 | Reserve/liquidity decreases or is earmarked | Reservation conflict |
+| Fee beneficiary          | Approved fee/referral settlement              | Separate payable line                       | Beneficiary mismatch |
+| Reorg reversal           | Confirmed block later orphaned/reorged        | Freeze affected scope and post reversal     | Non-zero variance    |
 
 Reserve policy must define a hard maximum payout exposure, a minimum operating buffer, and emergency pause conditions. A reserve shortfall cannot be hidden by lowering user balances or changing historical policy.
 
 ## 5. Attack surface and mitigations
 
-| Risk | Mitigation |
-|---|---|
+| Risk                             | Mitigation                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------- |
 | Share replay or duplicate credit | Contribution ID plus idempotency key and immutable accepted-share evidence |
-| Window hopping | Fixed cutoff and membership rules recorded per block/window |
-| Hashrate spoofing | Accepted share validation and worker identity controls |
-| Pool luck variance | PPLNS disclosure, reserve limits, and transparent block history |
-| Reorg/orphan exposure | Block state machine, maturity depth, reversal, and reconciliation |
-| Referral/fee double allocation | Single settlement key and fee conservation invariant |
+| Window hopping                   | Fixed cutoff and membership rules recorded per block/window                |
+| Hashrate spoofing                | Accepted share validation and worker identity controls                     |
+| Pool luck variance               | PPLNS disclosure, reserve limits, and transparent block history            |
+| Reorg/orphan exposure            | Block state machine, maturity depth, reversal, and reconciliation          |
+| Referral/fee double allocation   | Single settlement key and fee conservation invariant                       |
 
 ## 6. Rollout gates
 

@@ -6,15 +6,15 @@
 
 ## 1. Test record
 
-| Field | Value |
-|---|---|
-| UAT run ID | `TBD` |
-| Environment | Disposable/staging only |
-| Web/API commit | `TBD` |
-| Contract version | `TBD` |
-| Tester/reviewer | `TBD` |
-| Start/end UTC | `TBD` |
-| Result | `PASS`, `FAIL`, or `BLOCKED` |
+| Field            | Value                        |
+| ---------------- | ---------------------------- |
+| UAT run ID       | `TBD`                        |
+| Environment      | Disposable/staging only      |
+| Web/API commit   | `TBD`                        |
+| Contract version | `TBD`                        |
+| Tester/reviewer  | `TBD`                        |
+| Start/end UTC    | `TBD`                        |
+| Result           | `PASS`, `FAIL`, or `BLOCKED` |
 
 ## 2. Scenarios
 

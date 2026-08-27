@@ -8,13 +8,13 @@
 
 RPO and RTO are pending Operations/Finance approval and must be recorded per service. Financial integrity is more important than fast recovery: if source, ledger, payout, or signer state is ambiguous, recovery must fail closed and pause payout.
 
-| Service/data | Required decision | Minimum evidence |
-|---|---|---|
-| PostgreSQL ledger/reward/payout/audit | RPO/RTO, PITR window, retention | Restore checksum and reconciliation |
-| Redis idempotency/queue/session | Durability, rebuildability, max loss window | Replay/queue recovery test |
-| Node/provider source snapshots | Snapshot frequency and authoritative source | Block/tx/source digest |
-| Object/log evidence | Retention, encryption, legal hold | Retrieval and access audit |
-| Signer configuration/reference | Key recovery and rotation authority | Security-approved recovery drill |
+| Service/data                          | Required decision                           | Minimum evidence                    |
+| ------------------------------------- | ------------------------------------------- | ----------------------------------- |
+| PostgreSQL ledger/reward/payout/audit | RPO/RTO, PITR window, retention             | Restore checksum and reconciliation |
+| Redis idempotency/queue/session       | Durability, rebuildability, max loss window | Replay/queue recovery test          |
+| Node/provider source snapshots        | Snapshot frequency and authoritative source | Block/tx/source digest              |
+| Object/log evidence                   | Retention, encryption, legal hold           | Retrieval and access audit          |
+| Signer configuration/reference        | Key recovery and rotation authority         | Security-approved recovery drill    |
 
 ## 2. Backup policy
 
@@ -35,14 +35,14 @@ A backup is not considered valid until restore verification proves it is readabl
 
 ## 4. Disaster scenarios
 
-| Scenario | Immediate action | Recovery constraint |
-|---|---|---|
-| Primary database unavailable | Pause payout and write operations as policy requires; promote approved replica | No write split-brain or manual ledger edit |
-| Corrupted database | Isolate primary; preserve evidence; restore verified point | Reconcile before reopening liability/payout |
-| Redis loss | Pause idempotent financial jobs if keys/queue state is uncertain | Rebuild/replay only with durable event evidence |
-| Region outage | Activate approved failover region | Confirm contract/version and source freshness |
-| Object/log loss | Preserve remaining audit IDs; open security incident | Do not claim reconciliation complete without evidence |
-| Signer/secret loss | Emergency pause; rotate/recover under security authority | No signing until signer boundary revalidated |
+| Scenario                     | Immediate action                                                               | Recovery constraint                                   |
+| ---------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Primary database unavailable | Pause payout and write operations as policy requires; promote approved replica | No write split-brain or manual ledger edit            |
+| Corrupted database           | Isolate primary; preserve evidence; restore verified point                     | Reconcile before reopening liability/payout           |
+| Redis loss                   | Pause idempotent financial jobs if keys/queue state is uncertain               | Rebuild/replay only with durable event evidence       |
+| Region outage                | Activate approved failover region                                              | Confirm contract/version and source freshness         |
+| Object/log loss              | Preserve remaining audit IDs; open security incident                           | Do not claim reconciliation complete without evidence |
+| Signer/secret loss           | Emergency pause; rotate/recover under security authority                       | No signing until signer boundary revalidated          |
 
 ## 5. Key recovery
 

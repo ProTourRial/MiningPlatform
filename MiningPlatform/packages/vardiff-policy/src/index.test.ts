@@ -6,10 +6,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  calculateVardiffDecision,
-  DEFAULT_VARDIFF_POLICY,
-} from './index.js';
+import { calculateVardiffDecision, DEFAULT_VARDIFF_POLICY } from './index.js';
 
 const baseInput = {
   currentDifficulty: 100,

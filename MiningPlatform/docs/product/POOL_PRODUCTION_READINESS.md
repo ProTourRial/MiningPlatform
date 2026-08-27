@@ -18,18 +18,18 @@ Pada fase alpha, jalur yang boleh disebut tersedia adalah **development/upstream
 
 Nilai dan pilihan berikut **belum final**. Angka di kolom “usulan kerja” hanya boleh digunakan untuk simulasi, fixture, atau desain UI sementara; bukan sebagai public commitment. Setiap keputusan final memerlukan owner approval, ADR, update policy, dan bukti bahwa histori settlement tetap dapat direproduksi.
 
-| Decision | Usulan kerja sementara | Status | Approver yang diperlukan | Dampak bila belum diputuskan |
-|---|---|---|---|---|
-| Minimum payout BTC native | `0.001 BTC` sebagai baseline konfigurasi awal | **Pending** | Product + Treasury + Finance + Legal | UI/API hanya boleh menampilkan “belum final”; payout tidak boleh aktif |
-| Minimum payout BEP20 | Ditentukan per asset/network berdasarkan gas, operational cost, reserve, dan user threshold; belum ada angka final | **Pending** | Product + Treasury + Finance + Legal | Tidak boleh mengaktifkan route BEP20 atau menjanjikan threshold |
-| Konfirmasi BTC | Baseline simulasi `3 confirmations` | **Pending** | Security + Treasury + Operations | Payout finality, reorg risk, dan incident alert belum memiliki policy final |
-| Coinbase maturity | Baseline own-pool `100 blocks` sebelum spendable | **Pending** | Product + Pool Operations + Treasury | Reward maturity dan eligibility belum boleh dikunci pada UI/API |
-| Reward scheme awal | Gateway: `FOLLOW_UPSTREAM`; own-pool kandidat: **PPLNS** | **Pending** | Product + Pool Operations + Finance | Perhitungan reward, disclosure, dan simulator belum final |
-| Batas reserve pool | Belum ditentukan; harus berbasis worst-case payout exposure, settlement lag, hot-wallet limit, dan stress scenario | **Pending** | Treasury + Risk + Security + Owner | PPS/FPPS dan auto-payout tidak boleh dipertimbangkan sebagai ACTIVE |
-| SLA target | Target internal: Stratum 99,90%; API/control plane 99,95%; RPO ≤5m; RTO ≤30m | **Pending** | Operations + Product + Legal | Belum boleh disebut SLA kontraktual atau warranty |
-| Wilayah legal operasi | Belum ditentukan; wajib mencakup legal entity, custody/conversion analysis, sanctions, KYC/AML, dan tax review | **Pending** | Legal + Compliance + Owner | Dana nyata, conversion, referral liability, dan public launch tetap gated |
-| Default payout wallet | BTC native sebagai UX default untuk BTC; BEP20 hanya pada asset/network yang kompatibel | **Pending** | Product + Security + Treasury | Default tidak boleh di-hard-code sebagai custody permission |
-| Auto-withdrawal | Default `OFF`; baru efektif setelah payout executor, route, risk, approval, dan reconciliation ACTIVE | **Pending** | Product + Security + Treasury + Operations | Toggle preference tidak boleh membuat payout request |
+| Decision                  | Usulan kerja sementara                                                                                             | Status      | Approver yang diperlukan                   | Dampak bila belum diputuskan                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| Minimum payout BTC native | `0.001 BTC` sebagai baseline konfigurasi awal                                                                      | **Pending** | Product + Treasury + Finance + Legal       | UI/API hanya boleh menampilkan “belum final”; payout tidak boleh aktif      |
+| Minimum payout BEP20      | Ditentukan per asset/network berdasarkan gas, operational cost, reserve, dan user threshold; belum ada angka final | **Pending** | Product + Treasury + Finance + Legal       | Tidak boleh mengaktifkan route BEP20 atau menjanjikan threshold             |
+| Konfirmasi BTC            | Baseline simulasi `3 confirmations`                                                                                | **Pending** | Security + Treasury + Operations           | Payout finality, reorg risk, dan incident alert belum memiliki policy final |
+| Coinbase maturity         | Baseline own-pool `100 blocks` sebelum spendable                                                                   | **Pending** | Product + Pool Operations + Treasury       | Reward maturity dan eligibility belum boleh dikunci pada UI/API             |
+| Reward scheme awal        | Gateway: `FOLLOW_UPSTREAM`; own-pool kandidat: **PPLNS**                                                           | **Pending** | Product + Pool Operations + Finance        | Perhitungan reward, disclosure, dan simulator belum final                   |
+| Batas reserve pool        | Belum ditentukan; harus berbasis worst-case payout exposure, settlement lag, hot-wallet limit, dan stress scenario | **Pending** | Treasury + Risk + Security + Owner         | PPS/FPPS dan auto-payout tidak boleh dipertimbangkan sebagai ACTIVE         |
+| SLA target                | Target internal: Stratum 99,90%; API/control plane 99,95%; RPO ≤5m; RTO ≤30m                                       | **Pending** | Operations + Product + Legal               | Belum boleh disebut SLA kontraktual atau warranty                           |
+| Wilayah legal operasi     | Belum ditentukan; wajib mencakup legal entity, custody/conversion analysis, sanctions, KYC/AML, dan tax review     | **Pending** | Legal + Compliance + Owner                 | Dana nyata, conversion, referral liability, dan public launch tetap gated   |
+| Default payout wallet     | BTC native sebagai UX default untuk BTC; BEP20 hanya pada asset/network yang kompatibel                            | **Pending** | Product + Security + Treasury              | Default tidak boleh di-hard-code sebagai custody permission                 |
+| Auto-withdrawal           | Default `OFF`; baru efektif setelah payout executor, route, risk, approval, dan reconciliation ACTIVE              | **Pending** | Product + Security + Treasury + Operations | Toggle preference tidak boleh membuat payout request                        |
 
 **Decision log minimum:** tanggal keputusan, decision owner, approver, policy version, effective time, affected asset/network/algorithm, rollback/expiry condition, dan link ADR. Jika nilai belum final, gunakan label `TBD — pending approval`, bukan angka yang tampak final.
 
@@ -56,12 +56,12 @@ Pada upstream gateway, MiningPlatform tetap menggunakan `FOLLOW_UPSTREAM`. Platf
 
 ### 2.2 Perbandingan skema
 
-| Skema | Cara menghitung | Risiko operator | Kelebihan pengguna | Kekurangan | Keputusan awal |
-|---|---|---:|---|---|---|
-| **PPLNS** | Reward block dibagikan berdasarkan share valid pada window N terakhir | Sedang–tinggi; pendapatan mengikuti luck | Lebih tahan pool hopping dan lazim untuk pool | Pendapatan tidak rata; perlu definisi window, cutoff, orphan, dan share difficulty | **Direkomendasikan untuk own-pool setelah block/reorg evidence lulus** |
-| **PROP** | Reward dibagi proporsional terhadap share pada round tertentu | Tinggi terhadap pool hopping dan round variance | Paling mudah dijelaskan dan diaudit | Miner dapat berpindah saat round hampir selesai; operator menanggung round risk | **Opsional untuk mode transparansi/pilot dengan batasan jelas** |
-| **PPS** | Setiap share valid dibayar berdasarkan probabilitas block dan block subsidy | Sangat tinggi; operator menanggung variance dan treasury exposure | Pendapatan lebih stabil dan mudah diprediksi | Membutuhkan modal, reserve, anti-abuse, dan pricing yang kuat | **Tidak diaktifkan pada milestone pertama** |
-| **FPPS** | PPS ditambah estimasi transaction fee share | Sangat tinggi; perlu model fee dan validasi estimasi | Potensi payout lebih tinggi dan stabil | Model lebih kompleks; fee estimation dan variance dapat diperdebatkan | **Post-production setelah PPS governance lulus** |
+| Skema     | Cara menghitung                                                             |                                                   Risiko operator | Kelebihan pengguna                            | Kekurangan                                                                         | Keputusan awal                                                         |
+| --------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------: | --------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **PPLNS** | Reward block dibagikan berdasarkan share valid pada window N terakhir       |                          Sedang–tinggi; pendapatan mengikuti luck | Lebih tahan pool hopping dan lazim untuk pool | Pendapatan tidak rata; perlu definisi window, cutoff, orphan, dan share difficulty | **Direkomendasikan untuk own-pool setelah block/reorg evidence lulus** |
+| **PROP**  | Reward dibagi proporsional terhadap share pada round tertentu               |                   Tinggi terhadap pool hopping dan round variance | Paling mudah dijelaskan dan diaudit           | Miner dapat berpindah saat round hampir selesai; operator menanggung round risk    | **Opsional untuk mode transparansi/pilot dengan batasan jelas**        |
+| **PPS**   | Setiap share valid dibayar berdasarkan probabilitas block dan block subsidy | Sangat tinggi; operator menanggung variance dan treasury exposure | Pendapatan lebih stabil dan mudah diprediksi  | Membutuhkan modal, reserve, anti-abuse, dan pricing yang kuat                      | **Tidak diaktifkan pada milestone pertama**                            |
+| **FPPS**  | PPS ditambah estimasi transaction fee share                                 |              Sangat tinggi; perlu model fee dan validasi estimasi | Potensi payout lebih tinggi dan stabil        | Model lebih kompleks; fee estimation dan variance dapat diperdebatkan              | **Post-production setelah PPS governance lulus**                       |
 
 ### 2.3 Keputusan produk
 
@@ -90,14 +90,14 @@ Konfigurasi saat ini mencantumkan baseline `MINIMUM_PAYOUT_BTC=0.001` dan `PAYOU
 
 ### 3.2 Policy yang diusulkan
 
-| Item | BTC native | BEP20 untuk aset/token yang kompatibel | Acceptance condition |
-|---|---|---|---|
-| Wallet default | BTC native address sebagai pilihan utama saat payout asset BTC | BEP20 sebagai pilihan jaringan default untuk aset yang memang mendukung BEP20; jangan menampilkan untuk aset yang tidak kompatibel | Route catalog aktif, validator network benar, dan warning network tampil |
-| Minimum payout | Awal: 0.001 BTC; dapat diubah melalui versioned route policy | Asset-denominated threshold per token, dihitung terhadap gas/operational cost dan reserve | Threshold, timestamp, fee, dan next eligibility terlihat di UI/API |
-| Maturity | Untuk coinbase reward own-pool: default 100 block confirmations sebelum spendable | Tidak menggunakan coinbase maturity; menunggu balance settlement dan route risk checks | Status `IMMATURE`, `PENDING_SETTLEMENT`, dan `SPENDABLE` dibedakan |
-| Payout confirmations | Baseline awal 3; dapat dinaikkan berdasarkan risk policy | Usulan awal 12 block confirmations; harus dikalibrasi terhadap chain risk dan provider | Confirmation count, source node, dan finality policy tercatat |
-| Address change | Step-up, cooldown, audit, one-active-address | Step-up, cooldown, audit, network-specific validation, dan memo/tag jika diperlukan | Address checksum tidak dianggap sebagai proof of ownership |
-| Auto-withdrawal | Default OFF pada akun baru | Default OFF pada akun baru | Tidak efektif bila route, executor, risk, atau reconciliation belum ACTIVE |
+| Item                 | BTC native                                                                        | BEP20 untuk aset/token yang kompatibel                                                                                             | Acceptance condition                                                       |
+| -------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Wallet default       | BTC native address sebagai pilihan utama saat payout asset BTC                    | BEP20 sebagai pilihan jaringan default untuk aset yang memang mendukung BEP20; jangan menampilkan untuk aset yang tidak kompatibel | Route catalog aktif, validator network benar, dan warning network tampil   |
+| Minimum payout       | Awal: 0.001 BTC; dapat diubah melalui versioned route policy                      | Asset-denominated threshold per token, dihitung terhadap gas/operational cost dan reserve                                          | Threshold, timestamp, fee, dan next eligibility terlihat di UI/API         |
+| Maturity             | Untuk coinbase reward own-pool: default 100 block confirmations sebelum spendable | Tidak menggunakan coinbase maturity; menunggu balance settlement dan route risk checks                                             | Status `IMMATURE`, `PENDING_SETTLEMENT`, dan `SPENDABLE` dibedakan         |
+| Payout confirmations | Baseline awal 3; dapat dinaikkan berdasarkan risk policy                          | Usulan awal 12 block confirmations; harus dikalibrasi terhadap chain risk dan provider                                             | Confirmation count, source node, dan finality policy tercatat              |
+| Address change       | Step-up, cooldown, audit, one-active-address                                      | Step-up, cooldown, audit, network-specific validation, dan memo/tag jika diperlukan                                                | Address checksum tidak dianggap sebagai proof of ownership                 |
+| Auto-withdrawal      | Default OFF pada akun baru                                                        | Default OFF pada akun baru                                                                                                         | Tidak efektif bila route, executor, risk, atau reconciliation belum ACTIVE |
 
 > “Default wallet” berarti default UX selection, bukan izin untuk mengirim dana tanpa verifikasi. Pengguna tetap harus mengonfirmasi bahwa address dan network sesuai dengan wallet/exchange tujuan.
 
@@ -113,13 +113,13 @@ Konfigurasi saat ini mencantumkan baseline `MINIMUM_PAYOUT_BTC=0.001` dan `PAYOU
 
 ## 4. Fee matrix
 
-| Skenario | Gross reward | Platform fee | Referral discount/commission | Net user reward | Catatan |
-|---|---:|---:|---:|---:|---|
-| Standar | 100% | **0,50%** | 0% | **99,50%** sebelum biaya upstream/network lain | Policy default terversi |
-| Referral valid | 100% | **0,375%** dibebankan ke miner | **0,125%** dari gross reward kepada beneficiary | **99,625%** sebelum biaya lain | Hanya dari reward yang sudah settled |
-| Referral tidak valid/kedaluwarsa | 100% | **0,50%** | 0% | **99,50%** sebelum biaya lain | Attribution tidak boleh berubah retroaktif |
-| **Kode default `MP05`** | 100% | Mengikuti policy akun: **0,50%** atau **0,375%** bila attribution valid | **0,125%** dialokasikan sebagai liability ke **wallet donasi situs** | Sesuai skenario fee yang berlaku | MP05 bukan saldo platform; liability harus dapat direkonsiliasi dan payout-nya tetap tunduk pada approval |
-| Fee/network/upstream tambahan | 100% | Mengikuti route policy | Mengikuti referral policy | Gross dikurangi seluruh komponen yang ditampilkan | Tidak boleh ada potongan tersembunyi |
+| Skenario                         | Gross reward |                                                            Platform fee |                                         Referral discount/commission |                                   Net user reward | Catatan                                                                                                   |
+| -------------------------------- | -----------: | ----------------------------------------------------------------------: | -------------------------------------------------------------------: | ------------------------------------------------: | --------------------------------------------------------------------------------------------------------- |
+| Standar                          |         100% |                                                               **0,50%** |                                                                   0% |    **99,50%** sebelum biaya upstream/network lain | Policy default terversi                                                                                   |
+| Referral valid                   |         100% |                                          **0,375%** dibebankan ke miner |                      **0,125%** dari gross reward kepada beneficiary |                    **99,625%** sebelum biaya lain | Hanya dari reward yang sudah settled                                                                      |
+| Referral tidak valid/kedaluwarsa |         100% |                                                               **0,50%** |                                                                   0% |                     **99,50%** sebelum biaya lain | Attribution tidak boleh berubah retroaktif                                                                |
+| **Kode default `MP05`**          |         100% | Mengikuti policy akun: **0,50%** atau **0,375%** bila attribution valid | **0,125%** dialokasikan sebagai liability ke **wallet donasi situs** |                  Sesuai skenario fee yang berlaku | MP05 bukan saldo platform; liability harus dapat direkonsiliasi dan payout-nya tetap tunduk pada approval |
+| Fee/network/upstream tambahan    |         100% |                                                  Mengikuti route policy |                                            Mengikuti referral policy | Gross dikurangi seluruh komponen yang ditampilkan | Tidak boleh ada potongan tersembunyi                                                                      |
 
 **Kontrak fee yang wajib dipertahankan:** fee standar platform adalah **0,50%**; fee miner dengan referral valid adalah **0,375%**; bagian pemilik kode referral adalah **0,125% dari gross reward**. Untuk kode default **MP05**, beneficiary tersebut diarahkan ke wallet donasi situs yang ditetapkan melalui konfigurasi terversi. Pengarahan ini adalah liability accounting, bukan izin untuk mengkredit saldo user, dan wallet tujuan tidak boleh diubah tanpa audit, approval, serta disclosure.
 
@@ -136,20 +136,20 @@ Acceptance criteria fee:
 
 Matriks ini adalah kontrak review lintas produk, API, komponen, dan evidence. Nama komponen yang belum ada ditandai **target**; keberadaan interface atau halaman saja tidak dianggap sebagai implementasi.
 
-| Goal | Requirement | API/komponen | Test | Acceptance evidence |
-|---|---|---|---|---|
-| Miner dapat memulai dengan aman | Account, alias, worker, credential, dan setup dapat dibuat tanpa mencampur password akun | Auth API; Worker API; `workers-manager`; **target:** Mining Setup Wizard | Registration/login; worker CRUD; credential create/rotate/revoke | Sanitized request/response, audit event, screenshot onboarding, owner isolation proof |
-| Share menjadi fakta mining | Session, job, difficulty, share, duplicate/stale, dan upstream decision punya correlation ID | Stratum gateway; mining-core; upstream adapter; **target:** provider fixture layer | Subscribe/authorize/submit; duplicate/stale; provider reconnect/failover | Redacted protocol fixture, accepted/rejected trace, soak/load report |
-| Reward dapat direkonsiliasi | Contribution hanya berasal dari accepted upstream work dan settlement period | Reward engine; accounting worker; reward API | Duplicate delivery, retry, rounding, settlement conflict, period close | Immutable contribution, settlement source checksum, period report |
-| Fee selalu transparan | 0,50% standard; 0,375% referral; 0,125% beneficiary; MP05 → donation liability | Fee policy resolver; reward detail API; **target:** fee disclosure UI | Standard/referral/MP05 allocation, historical policy snapshot, reversal | Balanced journal, policy version, UI/API gross-to-net breakdown |
-| Balance tidak fiktif | Spendable balance hanya berasal dari posted, reconciled ledger | Ledger package; balance projection; wallet/reward read model | Unbalanced journal rejection; reversal; concurrent posting | Trial balance, journal immutability, end-to-end share-to-balance trace |
-| User memahami payout readiness | Threshold, maturity, confirmation, hold, route, dan blocker terlihat sebelum request | Payout route/destination API; `PayoutAddressPanel`; **target:** eligibility API | Below threshold; immature/orphan/reorg; gated route; address cooldown | Eligibility decision record, screenshot status, negative payout assertion |
-| Payout tidak double-spend | Reservation, idempotency, approval, signing, broadcast, confirmation, reconciliation | **Target:** payout orchestrator; isolated signer; blockchain adapter | Concurrent payout; provider timeout; signer unavailable; broadcast retry; reorg | State-machine trace, tx hash, approval audit, node comparison, reconciliation report |
-| Auto-withdrawal aman | Preference default OFF dan tidak efektif sebelum seluruh gate ACTIVE | Auto-withdrawal API/panel; payout scheduler; **target:** executor | ON/OFF; executor disabled; route disabled; recovery | Preference audit, blocker list, no-payout proof when gated |
-| Worker dapat dipantau | Hashrate, share quality, status, telemetry, lag, dan event freshness memiliki definisi | Monitoring API/WebSocket; `realtime-mining-panel`; mining projection | Online/offline/degraded; event delay; WebSocket reconnect | Dashboard screenshot, metric query, event-lag/SLO report |
-| Publik dapat memverifikasi layanan | Aggregate stats, fee policy, status upstream, uptime, incident, dan data timestamp tersedia | Transparency page/API; status page; **target:** public read model | Empty/loading/error; privacy redaction; stale data | Timestamped public response, privacy review, incident timeline |
-| Integrator dapat membangun tooling | Versioned public API memiliki auth/signature, scope, pagination, quota, and webhook contract | **Target:** API contract package; API gateway; SDK/examples | Invalid signature/timestamp/scope; rate limit; idempotency; webhook retry | OpenAPI/contract document, conformance tests, signed example requests |
-| Operasi dapat pulih | Node/DB/Redis failure, backup restore, payout pause, compromise, reorg, mismatch memiliki runbook | Operations runbooks; alerts; on-call; DR tooling | Game-day scenarios and restore drill | Incident timeline, RPO/RTO measurement, postmortem/action items |
+| Goal                               | Requirement                                                                                       | API/komponen                                                                       | Test                                                                            | Acceptance evidence                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Miner dapat memulai dengan aman    | Account, alias, worker, credential, dan setup dapat dibuat tanpa mencampur password akun          | Auth API; Worker API; `workers-manager`; **target:** Mining Setup Wizard           | Registration/login; worker CRUD; credential create/rotate/revoke                | Sanitized request/response, audit event, screenshot onboarding, owner isolation proof |
+| Share menjadi fakta mining         | Session, job, difficulty, share, duplicate/stale, dan upstream decision punya correlation ID      | Stratum gateway; mining-core; upstream adapter; **target:** provider fixture layer | Subscribe/authorize/submit; duplicate/stale; provider reconnect/failover        | Redacted protocol fixture, accepted/rejected trace, soak/load report                  |
+| Reward dapat direkonsiliasi        | Contribution hanya berasal dari accepted upstream work dan settlement period                      | Reward engine; accounting worker; reward API                                       | Duplicate delivery, retry, rounding, settlement conflict, period close          | Immutable contribution, settlement source checksum, period report                     |
+| Fee selalu transparan              | 0,50% standard; 0,375% referral; 0,125% beneficiary; MP05 → donation liability                    | Fee policy resolver; reward detail API; **target:** fee disclosure UI              | Standard/referral/MP05 allocation, historical policy snapshot, reversal         | Balanced journal, policy version, UI/API gross-to-net breakdown                       |
+| Balance tidak fiktif               | Spendable balance hanya berasal dari posted, reconciled ledger                                    | Ledger package; balance projection; wallet/reward read model                       | Unbalanced journal rejection; reversal; concurrent posting                      | Trial balance, journal immutability, end-to-end share-to-balance trace                |
+| User memahami payout readiness     | Threshold, maturity, confirmation, hold, route, dan blocker terlihat sebelum request              | Payout route/destination API; `PayoutAddressPanel`; **target:** eligibility API    | Below threshold; immature/orphan/reorg; gated route; address cooldown           | Eligibility decision record, screenshot status, negative payout assertion             |
+| Payout tidak double-spend          | Reservation, idempotency, approval, signing, broadcast, confirmation, reconciliation              | **Target:** payout orchestrator; isolated signer; blockchain adapter               | Concurrent payout; provider timeout; signer unavailable; broadcast retry; reorg | State-machine trace, tx hash, approval audit, node comparison, reconciliation report  |
+| Auto-withdrawal aman               | Preference default OFF dan tidak efektif sebelum seluruh gate ACTIVE                              | Auto-withdrawal API/panel; payout scheduler; **target:** executor                  | ON/OFF; executor disabled; route disabled; recovery                             | Preference audit, blocker list, no-payout proof when gated                            |
+| Worker dapat dipantau              | Hashrate, share quality, status, telemetry, lag, dan event freshness memiliki definisi            | Monitoring API/WebSocket; `realtime-mining-panel`; mining projection               | Online/offline/degraded; event delay; WebSocket reconnect                       | Dashboard screenshot, metric query, event-lag/SLO report                              |
+| Publik dapat memverifikasi layanan | Aggregate stats, fee policy, status upstream, uptime, incident, dan data timestamp tersedia       | Transparency page/API; status page; **target:** public read model                  | Empty/loading/error; privacy redaction; stale data                              | Timestamped public response, privacy review, incident timeline                        |
+| Integrator dapat membangun tooling | Versioned public API memiliki auth/signature, scope, pagination, quota, and webhook contract      | **Target:** API contract package; API gateway; SDK/examples                        | Invalid signature/timestamp/scope; rate limit; idempotency; webhook retry       | OpenAPI/contract document, conformance tests, signed example requests                 |
+| Operasi dapat pulih                | Node/DB/Redis failure, backup restore, payout pause, compromise, reorg, mismatch memiliki runbook | Operations runbooks; alerts; on-call; DR tooling                                   | Game-day scenarios and restore drill                                            | Incident timeline, RPO/RTO measurement, postmortem/action items                       |
 
 Matriks ini harus diperbarui setiap requirement berubah. Pull request fitur tidak boleh dianggap lengkap bila kolom `Test` atau `Acceptance evidence` masih `TBD`.
 
@@ -157,18 +157,18 @@ Matriks ini harus diperbarui setiap requirement berubah. Pull request fitur tida
 
 Payout nyata tidak boleh diaktifkan hanya dengan mengubah `PAYOUTS_ENABLED=true`. Gate berikut harus disetujui secara eksplisit oleh owner, finance/treasury, security, dan operations.
 
-| Gate | Requirement | Evidence minimum |
-|---|---|---|
-| Balance eligibility | Hanya saldo `POSTED`, `RECONCILED`, tidak terkena hold, dan melewati threshold yang dapat eligible | Query/read model, invariant test, sample trace |
-| Reservation | Atomic reservation mencegah double payout dan menangani concurrent request | Concurrency test, idempotency record, recovery test |
-| Risk checks | Address/network, cooldown, sanctions/risk policy, velocity, account state, dan manual hold diperiksa | Decision log dan negative test |
-| Approval | Manual pilot memakai separation of duties dan minimal dua approval untuk hot-wallet movement di atas limit | Approval audit dan operator runbook |
-| Signing | Private key tidak berada di web/API/database/log; signer terisolasi dan menerima intent terverifikasi | Threat model, signer test, access review |
-| Broadcast | Raw transaction hanya dibroadcast setelah policy lulus; retry tidak membuat transaksi ganda | Provider/node evidence, tx idempotency, failure simulation |
-| Confirmation | Confirmation/finality dipantau dari node redundan; state machine menangani dropped/replaced/reorg | Blockchain fixture dan monitoring alert |
-| Reconciliation | Internal ledger, payout record, node, wallet balance, dan blockchain tx cocok; selisih menjadi exception | Reconciliation report dan correction workflow |
-| Recovery | Ada emergency stop, retry budget, manual recovery, backup restore, dan incident communication | Game-day evidence dan signed runbook |
-| User disclosure | UI memperlihatkan status, threshold, fee, destination fingerprint, tx hash, confirmation, dan failure reason | Screenshot, API contract, content review |
+| Gate                | Requirement                                                                                                  | Evidence minimum                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Balance eligibility | Hanya saldo `POSTED`, `RECONCILED`, tidak terkena hold, dan melewati threshold yang dapat eligible           | Query/read model, invariant test, sample trace             |
+| Reservation         | Atomic reservation mencegah double payout dan menangani concurrent request                                   | Concurrency test, idempotency record, recovery test        |
+| Risk checks         | Address/network, cooldown, sanctions/risk policy, velocity, account state, dan manual hold diperiksa         | Decision log dan negative test                             |
+| Approval            | Manual pilot memakai separation of duties dan minimal dua approval untuk hot-wallet movement di atas limit   | Approval audit dan operator runbook                        |
+| Signing             | Private key tidak berada di web/API/database/log; signer terisolasi dan menerima intent terverifikasi        | Threat model, signer test, access review                   |
+| Broadcast           | Raw transaction hanya dibroadcast setelah policy lulus; retry tidak membuat transaksi ganda                  | Provider/node evidence, tx idempotency, failure simulation |
+| Confirmation        | Confirmation/finality dipantau dari node redundan; state machine menangani dropped/replaced/reorg            | Blockchain fixture dan monitoring alert                    |
+| Reconciliation      | Internal ledger, payout record, node, wallet balance, dan blockchain tx cocok; selisih menjadi exception     | Reconciliation report dan correction workflow              |
+| Recovery            | Ada emergency stop, retry budget, manual recovery, backup restore, dan incident communication                | Game-day evidence dan signed runbook                       |
+| User disclosure     | UI memperlihatkan status, threshold, fee, destination fingerprint, tx hash, confirmation, dan failure reason | Screenshot, API contract, content review                   |
 
 Auto payout baru dapat diaktifkan setelah manual pilot terkontrol lulus, bukan sebelum itu.
 
@@ -178,15 +178,15 @@ Auto payout baru dapat diaktifkan setelah manual pilot terkontrol lulus, bukan s
 
 Target di bawah adalah **internal production target** untuk direncanakan dan diukur. Tidak boleh dipublikasikan sebagai SLA kontraktual sebelum tersedia 90 hari evidence dan persetujuan legal.
 
-| Surface | Target | Measurement |
-|---|---:|---|
-| Stratum regional endpoint | 99,90% monthly availability | Successful authenticated sessions dan connection health, per region |
-| Control Plane/API | 99,95% monthly availability | Synthetic checks untuk health, login, worker read, dan dashboard read |
-| Realtime monitoring | 99,90% event delivery availability | Event lag, disconnect rate, dan projection freshness |
-| Accepted share intake | 99,95% durable intake availability | Accepted local share yang tersimpan durable atau masuk explicit failure state |
-| Payout processing | 99,50% eligible requests selesai atau berstatus actionable dalam 24 jam | Payout state machine dan exception aging |
-| Incident response | Sev-1 acknowledgement ≤15 menit | On-call log dan incident timeline |
-| Recovery target | RPO ≤5 menit untuk operational events; RTO ≤30 menit control plane | Backup/restore and failover drill |
+| Surface                   |                                                                  Target | Measurement                                                                   |
+| ------------------------- | ----------------------------------------------------------------------: | ----------------------------------------------------------------------------- |
+| Stratum regional endpoint |                                             99,90% monthly availability | Successful authenticated sessions dan connection health, per region           |
+| Control Plane/API         |                                             99,95% monthly availability | Synthetic checks untuk health, login, worker read, dan dashboard read         |
+| Realtime monitoring       |                                      99,90% event delivery availability | Event lag, disconnect rate, dan projection freshness                          |
+| Accepted share intake     |                                      99,95% durable intake availability | Accepted local share yang tersimpan durable atau masuk explicit failure state |
+| Payout processing         | 99,50% eligible requests selesai atau berstatus actionable dalam 24 jam | Payout state machine dan exception aging                                      |
+| Incident response         |                                         Sev-1 acknowledgement ≤15 menit | On-call log dan incident timeline                                             |
+| Recovery target           |      RPO ≤5 menit untuk operational events; RTO ≤30 menit control plane | Backup/restore and failover drill                                             |
 
 Scheduled maintenance, upstream outage yang terbukti berasal dari provider, force majeure, chain halt, dan tindakan keamanan darurat harus memiliki definisi pengecualian yang tertulis.
 
@@ -217,16 +217,16 @@ Scheduled maintenance, upstream outage yang terbukti berasal dari provider, forc
 
 ### 7.5 Minimum metric catalog
 
-| Domain | Metric wajib | Alert contoh |
-|---|---|---|
-| Pool performance | Pool hashrate, worker hashrate, accepted/rejected/stale/duplicate share, share latency | Reject/stale melewati baseline; worker drop mendadak |
-| Luck | Expected blocks, actual blocks, luck per window, variance | Luck anomaly; block accounting mismatch |
-| Template/job | Template age, job age, clean-job rate, stale template ratio | Template age terlalu tinggi; job stream berhenti |
-| Block propagation | Found-to-first-seen, first-seen-to-node-confirmed, peer propagation | Propagation delay di atas target |
-| Upstream | Connection state, reconnect, failover, submit response, provider latency | Primary/backup unhealthy; error burst |
-| Accounting | Gross reward, settled reward, fee, referral liability, clearing, user liability | Journal imbalance; liability tidak cocok dengan source |
-| Payout | Eligible, reserved, approved, signed, broadcast, confirmed, failed, exception age | Queue menua; duplicate attempt; signer unavailable |
-| Infrastructure | CPU, memory, disk, DB/Redis lag, event backlog, WebSocket disconnect | Capacity threshold atau recovery budget terlampaui |
+| Domain            | Metric wajib                                                                           | Alert contoh                                           |
+| ----------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Pool performance  | Pool hashrate, worker hashrate, accepted/rejected/stale/duplicate share, share latency | Reject/stale melewati baseline; worker drop mendadak   |
+| Luck              | Expected blocks, actual blocks, luck per window, variance                              | Luck anomaly; block accounting mismatch                |
+| Template/job      | Template age, job age, clean-job rate, stale template ratio                            | Template age terlalu tinggi; job stream berhenti       |
+| Block propagation | Found-to-first-seen, first-seen-to-node-confirmed, peer propagation                    | Propagation delay di atas target                       |
+| Upstream          | Connection state, reconnect, failover, submit response, provider latency               | Primary/backup unhealthy; error burst                  |
+| Accounting        | Gross reward, settled reward, fee, referral liability, clearing, user liability        | Journal imbalance; liability tidak cocok dengan source |
+| Payout            | Eligible, reserved, approved, signed, broadcast, confirmed, failed, exception age      | Queue menua; duplicate attempt; signer unavailable     |
+| Infrastructure    | CPU, memory, disk, DB/Redis lag, event backlog, WebSocket disconnect                   | Capacity threshold atau recovery budget terlampaui     |
 
 ## 8. Frontend/UX review notes
 
@@ -271,16 +271,16 @@ Navigation should keep **Overview, Workers, Mining Setup, Rewards, and Payouts**
 
 ### 8.3 FAQ copy draft
 
-| Pertanyaan | Jawaban yang disarankan |
-|---|---|
-| Apakah ini cloud mining? | Tidak. Mining dilakukan oleh perangkat fisik Anda melalui Stratum. MiningPlatform tidak menjual kontrak hashrate atau menjanjikan keuntungan tetap. |
-| Apa yang terjadi setelah worker terhubung? | Worker menerima job, mengirim share, dan server memvalidasi share tersebut. Accepted share belum otomatis menjadi saldo spendable; reward harus melewati settlement dan reconciliation. |
-| Kapan reward dapat dibayar? | Reward harus settled, posted ke ledger, melewati minimum payout, risk check, dan route payout yang aktif. Selama alpha, payout dapat tetap gated. |
-| Mengapa hashrate di dashboard berbeda dari miner? | Dashboard dapat menampilkan reported hashrate dan calculated hashrate dari accepted share. Keduanya memiliki sumber dan window pengukuran berbeda. |
-| Apa perbedaan BTC dan BEP20? | BTC adalah network Bitcoin native. BEP20 adalah network BNB Smart Chain untuk aset yang kompatibel. Address, fee, confirmation, dan dukungan wallet harus cocok; network yang salah dapat menyebabkan kehilangan dana. |
-| Apakah checksum membuktikan wallet milik saya? | Tidak. Checksum hanya memvalidasi format address. Anda tetap bertanggung jawab memastikan address dan network benar-benar dikendalikan atau didukung oleh wallet tujuan. |
-| Apakah auto-withdrawal langsung mengirim dana? | Tidak selalu. Preference dapat tersimpan, tetapi efektivitasnya bergantung pada address aktif, route, risk gate, payout executor, approval, dan global payout gate. |
-| Apa yang terjadi saat reorg atau orphan? | Reward yang belum final tetap pending. Jika reward sebelumnya terkena reorg, platform membuat koreksi melalui event/reversal yang dapat diaudit; histori tidak dihapus. |
+| Pertanyaan                                        | Jawaban yang disarankan                                                                                                                                                                                                |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Apakah ini cloud mining?                          | Tidak. Mining dilakukan oleh perangkat fisik Anda melalui Stratum. MiningPlatform tidak menjual kontrak hashrate atau menjanjikan keuntungan tetap.                                                                    |
+| Apa yang terjadi setelah worker terhubung?        | Worker menerima job, mengirim share, dan server memvalidasi share tersebut. Accepted share belum otomatis menjadi saldo spendable; reward harus melewati settlement dan reconciliation.                                |
+| Kapan reward dapat dibayar?                       | Reward harus settled, posted ke ledger, melewati minimum payout, risk check, dan route payout yang aktif. Selama alpha, payout dapat tetap gated.                                                                      |
+| Mengapa hashrate di dashboard berbeda dari miner? | Dashboard dapat menampilkan reported hashrate dan calculated hashrate dari accepted share. Keduanya memiliki sumber dan window pengukuran berbeda.                                                                     |
+| Apa perbedaan BTC dan BEP20?                      | BTC adalah network Bitcoin native. BEP20 adalah network BNB Smart Chain untuk aset yang kompatibel. Address, fee, confirmation, dan dukungan wallet harus cocok; network yang salah dapat menyebabkan kehilangan dana. |
+| Apakah checksum membuktikan wallet milik saya?    | Tidak. Checksum hanya memvalidasi format address. Anda tetap bertanggung jawab memastikan address dan network benar-benar dikendalikan atau didukung oleh wallet tujuan.                                               |
+| Apakah auto-withdrawal langsung mengirim dana?    | Tidak selalu. Preference dapat tersimpan, tetapi efektivitasnya bergantung pada address aktif, route, risk gate, payout executor, approval, dan global payout gate.                                                    |
+| Apa yang terjadi saat reorg atau orphan?          | Reward yang belum final tetap pending. Jika reward sebelumnya terkena reorg, platform membuat koreksi melalui event/reversal yang dapat diaudit; histori tidak dihapus.                                                |
 
 ### 8.4 Transparency page copy draft
 
@@ -321,45 +321,45 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 
 ### 8.6 Screenshot dan contoh tampilan yang diinginkan
 
-| Screenshot | Tujuan | Elemen wajib |
-|---|---|---|
-| Landing desktop | Menjelaskan positioning | Hero, CTA setup, trust strip, alpha disclosure, pipeline |
-| Landing mobile | Memastikan readability dan conversion | Menu collapse, CTA sticky/visible, no horizontal overflow |
-| Overview populated | Menunjukkan nilai dashboard | Worker status, hashrate, accepted share, reward state, incident banner |
-| Overview empty state | Menuntun miner baru | “Belum ada worker”, CTA setup, contoh konfigurasi, help link |
-| Mining setup wizard | Mengurangi time-to-first-share | Hardware → algorithm → asset/network → region/port → worker → copy config |
-| Worker detail | Operasional farm | Current/average hashrate, share quality, uptime, temperature/power bila ada |
-| Reward detail | Transparansi finansial | Gross, fee, referral, net, settlement, ledger trace, pending reason |
-| Payout eligible | Kepercayaan payout | Threshold, available balance, route, fee, confirmation, CTA request |
-| Payout gated | Menghindari misleading UI | Blocker list, status badge, next action, no fake submit button |
-| Wallet address cooldown | Security UX | Masked address, fingerprint, network, cooldown timer, audit/step-up |
-| Transparency page | Public trust | Aggregate cards, timestamps, uptime, incidents, fee policy |
-| Error/loading states | Reliability perception | Skeleton, retry, request ID, actionable message, support link |
-| Responsive 320/375/768/1440 px | Cross-device quality | No clipped cards, readable tables, accessible focus and touch target |
+| Screenshot                     | Tujuan                                | Elemen wajib                                                                |
+| ------------------------------ | ------------------------------------- | --------------------------------------------------------------------------- |
+| Landing desktop                | Menjelaskan positioning               | Hero, CTA setup, trust strip, alpha disclosure, pipeline                    |
+| Landing mobile                 | Memastikan readability dan conversion | Menu collapse, CTA sticky/visible, no horizontal overflow                   |
+| Overview populated             | Menunjukkan nilai dashboard           | Worker status, hashrate, accepted share, reward state, incident banner      |
+| Overview empty state           | Menuntun miner baru                   | “Belum ada worker”, CTA setup, contoh konfigurasi, help link                |
+| Mining setup wizard            | Mengurangi time-to-first-share        | Hardware → algorithm → asset/network → region/port → worker → copy config   |
+| Worker detail                  | Operasional farm                      | Current/average hashrate, share quality, uptime, temperature/power bila ada |
+| Reward detail                  | Transparansi finansial                | Gross, fee, referral, net, settlement, ledger trace, pending reason         |
+| Payout eligible                | Kepercayaan payout                    | Threshold, available balance, route, fee, confirmation, CTA request         |
+| Payout gated                   | Menghindari misleading UI             | Blocker list, status badge, next action, no fake submit button              |
+| Wallet address cooldown        | Security UX                           | Masked address, fingerprint, network, cooldown timer, audit/step-up         |
+| Transparency page              | Public trust                          | Aggregate cards, timestamps, uptime, incidents, fee policy                  |
+| Error/loading states           | Reliability perception                | Skeleton, retry, request ID, actionable message, support link               |
+| Responsive 320/375/768/1440 px | Cross-device quality                  | No clipped cards, readable tables, accessible focus and touch target        |
 
 ### 8.7 Frontend review checklist untuk `feat/professional-frontend-redesign`
 
 Checklist ini digunakan saat review branch frontend dan tidak meminta perubahan pada backend dalam branch readiness.
 
-| Check | Pertanyaan review | Evidence yang diminta | Status |
-|---|---|---|---|
-| Tombol punya endpoint nyata | Apakah setiap CTA submit/action memiliki API route yang benar, method, auth, scope, dan failure mapping? | Link ke contract/API handler atau label `disabled — no endpoint` | ☐ |
-| Tidak ada fake success | Apakah UI tidak menampilkan success/paid/active dari mock state atau optimistic update yang tidak dikonfirmasi server? | Network capture dan state transition | ☐ |
-| Loading state | Apakah first load, refetch, mutation, WebSocket connect, dan slow response memiliki skeleton/spinner yang tidak mengubah angka menjadi nol? | Screenshot desktop/mobile | ☐ |
-| Error state | Apakah 401, 403, 409, 422, 429, 5xx, timeout, dan offline memiliki pesan actionable serta request ID? | Error matrix + screenshot | ☐ |
-| Empty state | Apakah akun baru tanpa worker/reward/payout memiliki CTA langkah berikutnya dan bukan halaman kosong? | Screenshot empty state | ☐ |
-| Mobile navigation | Apakah menu primary dapat dibuka/ditutup dengan keyboard/touch, tidak menutup konten, dan mempertahankan route aktif? | Screenshot 320/375 px + keyboard check | ☐ |
-| Worker flow | Apakah create, rename, delete, credential rotate/revoke, ownership, dan status worker mengarah ke endpoint nyata? | Endpoint map + screen recording | ☐ |
-| Wallet destination | Apakah BTC/BEP20 network, checksum, memo/tag, mask, fingerprint, cooldown, dan step-up dijelaskan sebelum submit? | Screenshot + copy review | ☐ |
-| Payout destination state | Apakah `REGISTRATION_ONLY`, `COOLDOWN`, `ACTIVE`, `DISABLED`, dan route unavailable dibedakan dengan jelas? | State catalogue + screenshot | ☐ |
-| Auto-withdrawal ON/OFF | Apakah toggle menunjukkan preference dan effective status secara terpisah, termasuk blocker executor/global gate? | Screenshot ON/OFF/gated | ☐ |
-| Payout gated | Apakah CTA payout dinonaktifkan atau aman ketika balance pending, threshold belum tercapai, risk hold, route inactive, atau executor belum ada? | Negative test + screenshot | ☐ |
-| Reward/fee display | Apakah gross, 0,50%, 0,375%, 0,125%, MP05 donation liability, net, dan status settlement tidak ambigu? | Example fixture + screenshot | ☐ |
-| Security | Apakah secret, full wallet address, raw IP, token, dan sensitive metadata tidak bocor di UI, URL, analytics, atau clipboard? | Redaction review | ☐ |
-| Accessibility | Apakah focus order, semantic labels, contrast, keyboard action, reduced motion, form errors, dan touch targets memenuhi baseline aksesibilitas? | Accessibility report | ☐ |
-| Responsive data display | Apakah table/chart/card tidak overflow, clipped, atau kehilangan unit/timestamp pada mobile? | Breakpoint screenshots | ☐ |
-| Copy/status consistency | Apakah istilah `foundation`, `pilot`, `gated`, `active`, dan `production` konsisten dengan backend status? | Content diff + API enum map | ☐ |
-| Observability UX | Apakah loading/error state menyediakan retry, last updated, data delay, dan support/incident link? | Screenshot + request ID | ☐ |
+| Check                       | Pertanyaan review                                                                                                                               | Evidence yang diminta                                            | Status |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------ |
+| Tombol punya endpoint nyata | Apakah setiap CTA submit/action memiliki API route yang benar, method, auth, scope, dan failure mapping?                                        | Link ke contract/API handler atau label `disabled — no endpoint` | ☐      |
+| Tidak ada fake success      | Apakah UI tidak menampilkan success/paid/active dari mock state atau optimistic update yang tidak dikonfirmasi server?                          | Network capture dan state transition                             | ☐      |
+| Loading state               | Apakah first load, refetch, mutation, WebSocket connect, dan slow response memiliki skeleton/spinner yang tidak mengubah angka menjadi nol?     | Screenshot desktop/mobile                                        | ☐      |
+| Error state                 | Apakah 401, 403, 409, 422, 429, 5xx, timeout, dan offline memiliki pesan actionable serta request ID?                                           | Error matrix + screenshot                                        | ☐      |
+| Empty state                 | Apakah akun baru tanpa worker/reward/payout memiliki CTA langkah berikutnya dan bukan halaman kosong?                                           | Screenshot empty state                                           | ☐      |
+| Mobile navigation           | Apakah menu primary dapat dibuka/ditutup dengan keyboard/touch, tidak menutup konten, dan mempertahankan route aktif?                           | Screenshot 320/375 px + keyboard check                           | ☐      |
+| Worker flow                 | Apakah create, rename, delete, credential rotate/revoke, ownership, dan status worker mengarah ke endpoint nyata?                               | Endpoint map + screen recording                                  | ☐      |
+| Wallet destination          | Apakah BTC/BEP20 network, checksum, memo/tag, mask, fingerprint, cooldown, dan step-up dijelaskan sebelum submit?                               | Screenshot + copy review                                         | ☐      |
+| Payout destination state    | Apakah `REGISTRATION_ONLY`, `COOLDOWN`, `ACTIVE`, `DISABLED`, dan route unavailable dibedakan dengan jelas?                                     | State catalogue + screenshot                                     | ☐      |
+| Auto-withdrawal ON/OFF      | Apakah toggle menunjukkan preference dan effective status secara terpisah, termasuk blocker executor/global gate?                               | Screenshot ON/OFF/gated                                          | ☐      |
+| Payout gated                | Apakah CTA payout dinonaktifkan atau aman ketika balance pending, threshold belum tercapai, risk hold, route inactive, atau executor belum ada? | Negative test + screenshot                                       | ☐      |
+| Reward/fee display          | Apakah gross, 0,50%, 0,375%, 0,125%, MP05 donation liability, net, dan status settlement tidak ambigu?                                          | Example fixture + screenshot                                     | ☐      |
+| Security                    | Apakah secret, full wallet address, raw IP, token, dan sensitive metadata tidak bocor di UI, URL, analytics, atau clipboard?                    | Redaction review                                                 | ☐      |
+| Accessibility               | Apakah focus order, semantic labels, contrast, keyboard action, reduced motion, form errors, dan touch targets memenuhi baseline aksesibilitas? | Accessibility report                                             | ☐      |
+| Responsive data display     | Apakah table/chart/card tidak overflow, clipped, atau kehilangan unit/timestamp pada mobile?                                                    | Breakpoint screenshots                                           | ☐      |
+| Copy/status consistency     | Apakah istilah `foundation`, `pilot`, `gated`, `active`, dan `production` konsisten dengan backend status?                                      | Content diff + API enum map                                      | ☐      |
+| Observability UX            | Apakah loading/error state menyediakan retry, last updated, data delay, dan support/incident link?                                              | Screenshot + request ID                                          | ☐      |
 
 Review frontend tidak lulus jika ada tombol yang tampak aktif tetapi tidak memiliki endpoint nyata, payout gated yang terlihat seperti payout sukses, atau wallet action tanpa network/risk disclosure.
 
@@ -417,38 +417,38 @@ Review frontend tidak lulus jika ada tombol yang tampak aktif tetapi tidak memil
 
 Checklist berikut sengaja hanya meminta verifikasi manual dan evidence capture; tidak mengubah kode.
 
-| ID | Area | Skenario | Expected result | Evidence | Status |
-|---|---|---|---|---|---|
-| M-01 | Registrasi | Daftar dengan data valid | Account dibuat, status verification terlihat, tidak ada token sensitif di UI/log | Screenshot + request ID | ☐ |
-| M-02 | Registrasi | Email invalid/duplikat/password lemah | Error spesifik dan tidak membocorkan account existence berlebihan | Screenshot | ☐ |
-| M-03 | Login | Login valid | Session/access flow berhasil, redirect aman | Screenshot + log | ☐ |
-| M-04 | Login | Password salah berulang | Rate limit/lock policy berlaku, pesan tidak membocorkan detail | Screenshot + audit event | ☐ |
-| M-05 | Logout | Logout current session | Token/session tidak lagi dapat mengakses protected route | Request evidence | ☐ |
-| M-06 | Session | Refresh session normal | Refresh berhasil dan rotation berjalan sesuai policy | Network capture sanitized | ☐ |
-| M-07 | Session | Replay refresh token | Family/session dicabut atau ditolak; incident tercatat | Audit event | ☐ |
-| M-08 | Worker | Membuat worker | Worker tampil hanya pada akun pemilik, status awal jelas | Screenshot | ☐ |
-| M-09 | Worker | Rename/delete worker | Ownership check, confirmation, audit, dan UI state konsisten | Screenshot + audit | ☐ |
-| M-10 | Credential | Create credential | Secret hanya tampil sekali; plaintext tidak muncul lagi | Sanitized capture | ☐ |
-| M-11 | Credential | Rotate credential | Credential lama invalid, credential baru dapat dipakai sesuai delay | Miner/log evidence | ☐ |
-| M-12 | Credential | Revoke credential | Connection/auth baru ditolak; audit tercatat | Log + screenshot | ☐ |
-| M-13 | Wallet | Menyimpan BTC address valid | Network/checksum benar, masked read, cooldown, step-up | Screenshot | ☐ |
-| M-14 | Wallet | BTC address invalid/wrong network | Ditolak sebelum persistence; pesan actionable | Screenshot | ☐ |
-| M-15 | Wallet | Menyimpan BEP20 address pada route kompatibel | Network warning, route policy, cooldown, dan fingerprint tampil | Screenshot | ☐ |
-| M-16 | Wallet | Address change selama cooldown | Aktivasi/payout ditolak sampai cooldown selesai | Screenshot + API result | ☐ |
-| M-17 | Wallet | Address ganda/active address | One-active-address rule konsisten dan audit tersedia | DB/API evidence | ☐ |
-| M-18 | Auto payout | Toggle OFF → ON | Preference tersimpan; effective status dan blocker list jujur | Screenshot | ☐ |
-| M-19 | Auto payout | ON saat executor/global gate mati | Tidak ada payout request; UI menampilkan gated reason | Screenshot + audit | ☐ |
-| M-20 | Referral | Kode valid saat onboarding | Attribution sticky; fee 0,375% dan beneficiary 0,125% hanya setelah settled | Reward fixture/screenshot | ☐ |
-| M-21 | Referral | Kode invalid/attempt override | Tidak ada discount/commission yang tidak sah; audit/event jelas | Screenshot | ☐ |
-| M-22 | Payout eligibility | Balance pending/immature | Tidak eligible dan alasan terlihat | Screenshot | ☐ |
-| M-23 | Payout eligibility | Balance settled di bawah threshold | Tidak dapat request; threshold/next action terlihat | Screenshot | ☐ |
-| M-24 | Payout eligibility | Balance settled di atas threshold | Eligible hanya bila route/risk/hold lulus | Screenshot | ☐ |
-| M-25 | Transparency | Membuka halaman publik | Data agregat, timestamp, status environment, dan privacy boundary terlihat | Screenshot | ☐ |
-| M-26 | Transparency | Data belum tersedia | Empty state menjelaskan alasan; tidak menggunakan angka 0 yang misleading | Screenshot | ☐ |
-| M-27 | Responsive | 320, 375, 768, 1440 px | Tidak ada overflow/clipping; table/card dapat dipakai | Screenshot per breakpoint | ☐ |
-| M-28 | Loading | Slow API/WebSocket unavailable | Skeleton/loading dan retry actionable; tidak ada stale claim tanpa timestamp | Screen recording | ☐ |
-| M-29 | Error | 401/403/409/429/5xx | Copy berbeda sesuai error, request ID/support path tersedia | Screenshot + response | ☐ |
-| M-30 | Accessibility | Keyboard/focus/contrast/labels | Primary flow dapat digunakan tanpa mouse dan label screen-reader masuk akal | Accessibility notes | ☐ |
+| ID   | Area               | Skenario                                      | Expected result                                                                  | Evidence                  | Status |
+| ---- | ------------------ | --------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------- | ------ |
+| M-01 | Registrasi         | Daftar dengan data valid                      | Account dibuat, status verification terlihat, tidak ada token sensitif di UI/log | Screenshot + request ID   | ☐      |
+| M-02 | Registrasi         | Email invalid/duplikat/password lemah         | Error spesifik dan tidak membocorkan account existence berlebihan                | Screenshot                | ☐      |
+| M-03 | Login              | Login valid                                   | Session/access flow berhasil, redirect aman                                      | Screenshot + log          | ☐      |
+| M-04 | Login              | Password salah berulang                       | Rate limit/lock policy berlaku, pesan tidak membocorkan detail                   | Screenshot + audit event  | ☐      |
+| M-05 | Logout             | Logout current session                        | Token/session tidak lagi dapat mengakses protected route                         | Request evidence          | ☐      |
+| M-06 | Session            | Refresh session normal                        | Refresh berhasil dan rotation berjalan sesuai policy                             | Network capture sanitized | ☐      |
+| M-07 | Session            | Replay refresh token                          | Family/session dicabut atau ditolak; incident tercatat                           | Audit event               | ☐      |
+| M-08 | Worker             | Membuat worker                                | Worker tampil hanya pada akun pemilik, status awal jelas                         | Screenshot                | ☐      |
+| M-09 | Worker             | Rename/delete worker                          | Ownership check, confirmation, audit, dan UI state konsisten                     | Screenshot + audit        | ☐      |
+| M-10 | Credential         | Create credential                             | Secret hanya tampil sekali; plaintext tidak muncul lagi                          | Sanitized capture         | ☐      |
+| M-11 | Credential         | Rotate credential                             | Credential lama invalid, credential baru dapat dipakai sesuai delay              | Miner/log evidence        | ☐      |
+| M-12 | Credential         | Revoke credential                             | Connection/auth baru ditolak; audit tercatat                                     | Log + screenshot          | ☐      |
+| M-13 | Wallet             | Menyimpan BTC address valid                   | Network/checksum benar, masked read, cooldown, step-up                           | Screenshot                | ☐      |
+| M-14 | Wallet             | BTC address invalid/wrong network             | Ditolak sebelum persistence; pesan actionable                                    | Screenshot                | ☐      |
+| M-15 | Wallet             | Menyimpan BEP20 address pada route kompatibel | Network warning, route policy, cooldown, dan fingerprint tampil                  | Screenshot                | ☐      |
+| M-16 | Wallet             | Address change selama cooldown                | Aktivasi/payout ditolak sampai cooldown selesai                                  | Screenshot + API result   | ☐      |
+| M-17 | Wallet             | Address ganda/active address                  | One-active-address rule konsisten dan audit tersedia                             | DB/API evidence           | ☐      |
+| M-18 | Auto payout        | Toggle OFF → ON                               | Preference tersimpan; effective status dan blocker list jujur                    | Screenshot                | ☐      |
+| M-19 | Auto payout        | ON saat executor/global gate mati             | Tidak ada payout request; UI menampilkan gated reason                            | Screenshot + audit        | ☐      |
+| M-20 | Referral           | Kode valid saat onboarding                    | Attribution sticky; fee 0,375% dan beneficiary 0,125% hanya setelah settled      | Reward fixture/screenshot | ☐      |
+| M-21 | Referral           | Kode invalid/attempt override                 | Tidak ada discount/commission yang tidak sah; audit/event jelas                  | Screenshot                | ☐      |
+| M-22 | Payout eligibility | Balance pending/immature                      | Tidak eligible dan alasan terlihat                                               | Screenshot                | ☐      |
+| M-23 | Payout eligibility | Balance settled di bawah threshold            | Tidak dapat request; threshold/next action terlihat                              | Screenshot                | ☐      |
+| M-24 | Payout eligibility | Balance settled di atas threshold             | Eligible hanya bila route/risk/hold lulus                                        | Screenshot                | ☐      |
+| M-25 | Transparency       | Membuka halaman publik                        | Data agregat, timestamp, status environment, dan privacy boundary terlihat       | Screenshot                | ☐      |
+| M-26 | Transparency       | Data belum tersedia                           | Empty state menjelaskan alasan; tidak menggunakan angka 0 yang misleading        | Screenshot                | ☐      |
+| M-27 | Responsive         | 320, 375, 768, 1440 px                        | Tidak ada overflow/clipping; table/card dapat dipakai                            | Screenshot per breakpoint | ☐      |
+| M-28 | Loading            | Slow API/WebSocket unavailable                | Skeleton/loading dan retry actionable; tidak ada stale claim tanpa timestamp     | Screen recording          | ☐      |
+| M-29 | Error              | 401/403/409/429/5xx                           | Copy berbeda sesuai error, request ID/support path tersedia                      | Screenshot + response     | ☐      |
+| M-30 | Accessibility      | Keyboard/focus/contrast/labels                | Primary flow dapat digunakan tanpa mouse dan label screen-reader masuk akal      | Accessibility notes       | ☐      |
 
 ### Manual test exit criteria
 

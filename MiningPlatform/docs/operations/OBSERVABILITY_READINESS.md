@@ -73,52 +73,52 @@ Required common labels: `environment`, `service`, `region`, `asset`, `network`, 
 
 ### 3.1 Payout metrics
 
-| Metric | Type | Required labels | Purpose |
-|---|---|---|---|
-| `miningplatform_payout_requests_total` | Counter | asset, network, result | Request volume and rejection rate |
-| `miningplatform_payout_state_transitions_total` | Counter | asset, network, from_state, to_state | State machine health |
-| `miningplatform_payout_queue_age_seconds` | Gauge/histogram | asset, network, state | Stuck queue detection |
-| `miningplatform_payout_reservations_active` | Gauge | asset, network | Funds currently held |
-| `miningplatform_payout_reservation_expiry_total` | Counter | asset, network, reason | Expiry/release behavior |
-| `miningplatform_payout_approval_latency_seconds` | Histogram | asset, network | Maker-checker latency |
-| `miningplatform_payout_signing_total` | Counter | asset, network, result | Signer activity/failure |
-| `miningplatform_payout_broadcast_total` | Counter | asset, network, result | Broadcast result |
-| `miningplatform_payout_confirmation_latency_seconds` | Histogram | asset, network | Chain finality latency |
-| `miningplatform_payout_amount_atomic_total` | Counter | asset, network, state | Amount flow by state; never use float |
-| `miningplatform_payout_exceptions_open` | Gauge | asset, network, reason | Open operational/financial exceptions |
+| Metric                                               | Type            | Required labels                      | Purpose                               |
+| ---------------------------------------------------- | --------------- | ------------------------------------ | ------------------------------------- |
+| `miningplatform_payout_requests_total`               | Counter         | asset, network, result               | Request volume and rejection rate     |
+| `miningplatform_payout_state_transitions_total`      | Counter         | asset, network, from_state, to_state | State machine health                  |
+| `miningplatform_payout_queue_age_seconds`            | Gauge/histogram | asset, network, state                | Stuck queue detection                 |
+| `miningplatform_payout_reservations_active`          | Gauge           | asset, network                       | Funds currently held                  |
+| `miningplatform_payout_reservation_expiry_total`     | Counter         | asset, network, reason               | Expiry/release behavior               |
+| `miningplatform_payout_approval_latency_seconds`     | Histogram       | asset, network                       | Maker-checker latency                 |
+| `miningplatform_payout_signing_total`                | Counter         | asset, network, result               | Signer activity/failure               |
+| `miningplatform_payout_broadcast_total`              | Counter         | asset, network, result               | Broadcast result                      |
+| `miningplatform_payout_confirmation_latency_seconds` | Histogram       | asset, network                       | Chain finality latency                |
+| `miningplatform_payout_amount_atomic_total`          | Counter         | asset, network, state                | Amount flow by state; never use float |
+| `miningplatform_payout_exceptions_open`              | Gauge           | asset, network, reason               | Open operational/financial exceptions |
 
 ### 3.2 Ledger and reward metrics
 
-| Metric | Type | Alert meaning |
-|---|---|---|
-| `miningplatform_ledger_postings_total` | Counter | Posting throughput and result |
-| `miningplatform_ledger_unbalanced_total` | Counter | Any non-zero value is critical |
-| `miningplatform_ledger_trial_balance_atomic` | Gauge | Must remain zero by currency/asset |
-| `miningplatform_ledger_reversal_total` | Counter | Monitor correction volume and reason |
-| `miningplatform_ledger_projection_lag_seconds` | Gauge | Read model freshness |
-| `miningplatform_reward_allocations_total` | Counter | Allocation result/state |
-| `miningplatform_reward_settlement_variance_atomic` | Gauge | Upstream/internal variance |
-| `miningplatform_referral_liability_atomic` | Gauge | Includes 0.125% beneficiary liability and MP05 donation liability |
-| `miningplatform_user_liability_atomic` | Gauge | Reconcile to posted journal and source settlement |
-| `miningplatform_reconciliation_mismatch_total` | Counter | Any unexplained mismatch requires incident |
+| Metric                                             | Type    | Alert meaning                                                     |
+| -------------------------------------------------- | ------- | ----------------------------------------------------------------- |
+| `miningplatform_ledger_postings_total`             | Counter | Posting throughput and result                                     |
+| `miningplatform_ledger_unbalanced_total`           | Counter | Any non-zero value is critical                                    |
+| `miningplatform_ledger_trial_balance_atomic`       | Gauge   | Must remain zero by currency/asset                                |
+| `miningplatform_ledger_reversal_total`             | Counter | Monitor correction volume and reason                              |
+| `miningplatform_ledger_projection_lag_seconds`     | Gauge   | Read model freshness                                              |
+| `miningplatform_reward_allocations_total`          | Counter | Allocation result/state                                           |
+| `miningplatform_reward_settlement_variance_atomic` | Gauge   | Upstream/internal variance                                        |
+| `miningplatform_referral_liability_atomic`         | Gauge   | Includes 0.125% beneficiary liability and MP05 donation liability |
+| `miningplatform_user_liability_atomic`             | Gauge   | Reconcile to posted journal and source settlement                 |
+| `miningplatform_reconciliation_mismatch_total`     | Counter | Any unexplained mismatch requires incident                        |
 
 No dashboard may hide a non-zero `ledger_unbalanced_total` or mismatch behind a green aggregate status.
 
 ### 3.3 Wallet and node metrics
 
-| Metric | Type | Required labels |
-|---|---|---|
-| `miningplatform_wallet_balance_atomic` | Gauge | wallet class, asset, network; no address label |
-| `miningplatform_wallet_reserve_ratio` | Gauge | asset, network |
-| `miningplatform_wallet_signer_requests_total` | Counter | result, policy |
-| `miningplatform_wallet_signer_denials_total` | Counter | reason |
-| `miningplatform_wallet_key_rotation_total` | Counter | result |
-| `miningplatform_node_tip_lag_blocks` | Gauge | node role, region |
-| `miningplatform_node_tip_disagreement_total` | Counter | asset/network |
-| `miningplatform_node_rpc_errors_total` | Counter | method, safe error class |
-| `miningplatform_node_broadcast_total` | Counter | result |
-| `miningplatform_node_confirmation_depth` | Gauge | asset/network |
-| `miningplatform_node_reorgs_total` | Counter | asset/network |
+| Metric                                        | Type    | Required labels                                |
+| --------------------------------------------- | ------- | ---------------------------------------------- |
+| `miningplatform_wallet_balance_atomic`        | Gauge   | wallet class, asset, network; no address label |
+| `miningplatform_wallet_reserve_ratio`         | Gauge   | asset, network                                 |
+| `miningplatform_wallet_signer_requests_total` | Counter | result, policy                                 |
+| `miningplatform_wallet_signer_denials_total`  | Counter | reason                                         |
+| `miningplatform_wallet_key_rotation_total`    | Counter | result                                         |
+| `miningplatform_node_tip_lag_blocks`          | Gauge   | node role, region                              |
+| `miningplatform_node_tip_disagreement_total`  | Counter | asset/network                                  |
+| `miningplatform_node_rpc_errors_total`        | Counter | method, safe error class                       |
+| `miningplatform_node_broadcast_total`         | Counter | result                                         |
+| `miningplatform_node_confirmation_depth`      | Gauge   | asset/network                                  |
+| `miningplatform_node_reorgs_total`            | Counter | asset/network                                  |
 
 Wallet metrics must not expose private-key identity, seed material, or full address. A signer failure metric is not permission to retry blindly.
 
@@ -126,22 +126,22 @@ Wallet metrics must not expose private-key identity, seed material, or full addr
 
 RandomX metrics are documented here for cross-service observability only. This branch does not alter `apps/randomx-gateway/**` or `packages/randomx/**`.
 
-| Metric | Type | Required labels | Notes |
-|---|---|---|---|
-| `miningplatform_miner_connections_active` | Gauge | algorithm, region, transport | Active Stratum sessions |
-| `miningplatform_share_submissions_total` | Counter | algorithm, result, region | accepted/rejected/stale/duplicate |
-| `miningplatform_share_validation_latency_seconds` | Histogram | algorithm, result | Validator latency |
-| `miningplatform_hashrate_calculated` | Gauge | algorithm, region, window | Share-derived, not decorative |
-| `miningplatform_hashrate_reported` | Gauge | algorithm, region | Miner-reported value |
-| `miningplatform_randomx_jobs_active` | Gauge | network/region | RandomX job lifecycle |
-| `miningplatform_randomx_job_age_seconds` | Gauge | network/region | Template/job staleness |
-| `miningplatform_randomx_hashrate_calculated` | Gauge | region, window | RandomX calculated hashrate |
-| `miningplatform_randomx_share_submissions_total` | Counter | result, region | RandomX share outcomes |
-| `miningplatform_randomx_verification_latency_seconds` | Histogram | result, region | Verification cost |
-| `miningplatform_randomx_gateway_errors_total` | Counter | safe error class, region | Gateway failures |
-| `miningplatform_randomx_upstream_reconnects_total` | Counter | region, reason | Upstream resilience |
-| `miningplatform_randomx_template_age_seconds` | Gauge | region | Template freshness |
-| `miningplatform_randomx_projection_lag_seconds` | Gauge | projection, region | Event/read model lag |
+| Metric                                                | Type      | Required labels              | Notes                             |
+| ----------------------------------------------------- | --------- | ---------------------------- | --------------------------------- |
+| `miningplatform_miner_connections_active`             | Gauge     | algorithm, region, transport | Active Stratum sessions           |
+| `miningplatform_share_submissions_total`              | Counter   | algorithm, result, region    | accepted/rejected/stale/duplicate |
+| `miningplatform_share_validation_latency_seconds`     | Histogram | algorithm, result            | Validator latency                 |
+| `miningplatform_hashrate_calculated`                  | Gauge     | algorithm, region, window    | Share-derived, not decorative     |
+| `miningplatform_hashrate_reported`                    | Gauge     | algorithm, region            | Miner-reported value              |
+| `miningplatform_randomx_jobs_active`                  | Gauge     | network/region               | RandomX job lifecycle             |
+| `miningplatform_randomx_job_age_seconds`              | Gauge     | network/region               | Template/job staleness            |
+| `miningplatform_randomx_hashrate_calculated`          | Gauge     | region, window               | RandomX calculated hashrate       |
+| `miningplatform_randomx_share_submissions_total`      | Counter   | result, region               | RandomX share outcomes            |
+| `miningplatform_randomx_verification_latency_seconds` | Histogram | result, region               | Verification cost                 |
+| `miningplatform_randomx_gateway_errors_total`         | Counter   | safe error class, region     | Gateway failures                  |
+| `miningplatform_randomx_upstream_reconnects_total`    | Counter   | region, reason               | Upstream resilience               |
+| `miningplatform_randomx_template_age_seconds`         | Gauge     | region                       | Template freshness                |
+| `miningplatform_randomx_projection_lag_seconds`       | Gauge     | projection, region           | Event/read model lag              |
 
 Algorithm-specific instrumentation must follow the same ID propagation and redaction rules. Do not introduce high-cardinality labels simply because the RandomX gateway has many workers.
 
@@ -149,16 +149,16 @@ Algorithm-specific instrumentation must follow the same ID propagation and redac
 
 Nama canonical berikut wajib tersedia sebagai metric family setelah instrumentation diimplementasikan. Prefix `miningplatform_` adalah namespace wajib; nama pendek di kolom pertama adalah business alias untuk dashboard/query review.
 
-| Business alias | Canonical metric name | Type | Required labels | Meaning |
-|---|---|---|---|---|
-| `payout_eligibility_failures` | `miningplatform_payout_eligibility_failures_total` | Counter | `asset`, `network`, `reason` | Eligibility checks yang gagal; reason harus allowlisted |
-| `payout_reservation_conflicts` | `miningplatform_payout_reservation_conflicts_total` | Counter | `asset`, `network`, `reason` | Concurrent/duplicate/insufficient reservation conflict |
-| `payout_broadcast_failures` | `miningplatform_payout_broadcast_failures_total` | Counter | `asset`, `network`, `provider`, `reason` | Broadcast failure yang diklasifikasikan safe |
-| `ledger_reconciliation_delta` | `miningplatform_ledger_reconciliation_delta_atomic` | Gauge | `asset`, `network`, `source` | Selisih internal versus source dalam atomic units; target normal `0` |
-| `randomx_validation_latency` | `miningplatform_randomx_validation_latency_seconds` | Histogram | `result`, `region` | Latency validasi RandomX tanpa worker/request ID label |
-| `template_age_seconds` | `miningplatform_template_age_seconds` | Gauge | `algorithm`, `region`, `source` | Umur template/job terbaru |
-| `stratum_share_rejection_rate` | `miningplatform_stratum_share_rejection_rate` | Gauge | `algorithm`, `region` | `rejected / total` pada measurement window |
-| `wallet_balance_variance` | `miningplatform_wallet_balance_variance_atomic` | Gauge | `wallet_class`, `asset`, `network` | Selisih wallet/node versus expected internal balance |
+| Business alias                 | Canonical metric name                               | Type      | Required labels                          | Meaning                                                              |
+| ------------------------------ | --------------------------------------------------- | --------- | ---------------------------------------- | -------------------------------------------------------------------- |
+| `payout_eligibility_failures`  | `miningplatform_payout_eligibility_failures_total`  | Counter   | `asset`, `network`, `reason`             | Eligibility checks yang gagal; reason harus allowlisted              |
+| `payout_reservation_conflicts` | `miningplatform_payout_reservation_conflicts_total` | Counter   | `asset`, `network`, `reason`             | Concurrent/duplicate/insufficient reservation conflict               |
+| `payout_broadcast_failures`    | `miningplatform_payout_broadcast_failures_total`    | Counter   | `asset`, `network`, `provider`, `reason` | Broadcast failure yang diklasifikasikan safe                         |
+| `ledger_reconciliation_delta`  | `miningplatform_ledger_reconciliation_delta_atomic` | Gauge     | `asset`, `network`, `source`             | Selisih internal versus source dalam atomic units; target normal `0` |
+| `randomx_validation_latency`   | `miningplatform_randomx_validation_latency_seconds` | Histogram | `result`, `region`                       | Latency validasi RandomX tanpa worker/request ID label               |
+| `template_age_seconds`         | `miningplatform_template_age_seconds`               | Gauge     | `algorithm`, `region`, `source`          | Umur template/job terbaru                                            |
+| `stratum_share_rejection_rate` | `miningplatform_stratum_share_rejection_rate`       | Gauge     | `algorithm`, `region`                    | `rejected / total` pada measurement window                           |
+| `wallet_balance_variance`      | `miningplatform_wallet_balance_variance_atomic`     | Gauge     | `wallet_class`, `asset`, `network`       | Selisih wallet/node versus expected internal balance                 |
 
 Rules tambahan:
 
@@ -171,16 +171,16 @@ Rules tambahan:
 
 ### 3.6 Required alert mapping
 
-| Metric/condition | Warning | Critical | Action |
-|---|---:|---:|---|
-| `payout_eligibility_failures` | >1% dari checks/10m | >5%/10m atau `reason` financial/risk spike | Inspect route/policy/ledger; page owner bila financial |
-| `payout_reservation_conflicts` | >10/10m | >50/10m atau conflict berulang pada account scope | Pause reservation scope; inspect idempotency/concurrency |
-| `payout_broadcast_failures` | >1%/15m | >5%/15m atau any ambiguous broadcast | Pause broadcast; reconcile node/provider; no blind retry |
-| `ledger_reconciliation_delta` | Any non-zero 1 evaluation | Any non-zero unexplained | Sev-1; freeze affected financial scope |
-| `randomx_validation_latency` | p95 >1s/10m | p95 >3s/10m atau error rate spike | Inspect validator capacity/gateway; no direct code change from this branch |
-| `template_age_seconds` | >60s | >120s | Mark mining degraded; inspect template/upstream |
-| `stratum_share_rejection_rate` | >2× 30-day baseline/10m | >5% and >2× baseline/10m | Inspect difficulty/job/provider; notify affected region |
-| `wallet_balance_variance` | Any non-zero pending review | Any non-zero unexplained | Pause payout; reconcile wallet/node/ledger |
+| Metric/condition               |                     Warning |                                          Critical | Action                                                                     |
+| ------------------------------ | --------------------------: | ------------------------------------------------: | -------------------------------------------------------------------------- |
+| `payout_eligibility_failures`  |         >1% dari checks/10m |        >5%/10m atau `reason` financial/risk spike | Inspect route/policy/ledger; page owner bila financial                     |
+| `payout_reservation_conflicts` |                     >10/10m | >50/10m atau conflict berulang pada account scope | Pause reservation scope; inspect idempotency/concurrency                   |
+| `payout_broadcast_failures`    |                     >1%/15m |              >5%/15m atau any ambiguous broadcast | Pause broadcast; reconcile node/provider; no blind retry                   |
+| `ledger_reconciliation_delta`  |   Any non-zero 1 evaluation |                          Any non-zero unexplained | Sev-1; freeze affected financial scope                                     |
+| `randomx_validation_latency`   |                 p95 >1s/10m |                 p95 >3s/10m atau error rate spike | Inspect validator capacity/gateway; no direct code change from this branch |
+| `template_age_seconds`         |                        >60s |                                             >120s | Mark mining degraded; inspect template/upstream                            |
+| `stratum_share_rejection_rate` |     >2× 30-day baseline/10m |                          >5% and >2× baseline/10m | Inspect difficulty/job/provider; notify affected region                    |
+| `wallet_balance_variance`      | Any non-zero pending review |                          Any non-zero unexplained | Pause payout; reconcile wallet/node/ledger                                 |
 
 Thresholds are initial defaults and must be calibrated after baseline collection; an approved exception must include owner, reason, expiry, and audit ID.
 
@@ -188,40 +188,40 @@ Thresholds are initial defaults and must be calibrated after baseline collection
 
 Thresholds are initial internal defaults and require calibration from baseline data. They are not public SLA commitments until approved in the product readiness decision log.
 
-| Alert | Initial threshold | Severity | Action |
-|---|---:|---|---|
-| Ledger unbalanced | Any non-zero for 1 evaluation | Sev-1 | Pause affected financial scope; page finance/security/IC |
-| Reconciliation mismatch | Any unexplained non-zero | Sev-1 | Freeze affected asset/period/payout; open exception |
-| Unknown payout state | Any item >15 minutes | Sev-1 | Pause payout executor; inspect state machine and provider |
-| Payout queue age | >30 minutes normal; >2 hours critical | Sev-2/Sev-1 | Inspect provider, approval, signer, and node |
-| Payout reservation near expiry | >5% in 15 minutes | Sev-2 | Review eligibility/reservation latency |
-| Node tip lag | >3 blocks for 5 minutes | Sev-2 | Remove node from quorum; fail over if safe |
-| Node disagreement | Any conflicting tip/hash | Sev-1 | Pause broadcast/confirmation decisions |
-| Reorg detected | Any in confirmed payout/reward scope | Sev-1 | Start reorg runbook; freeze affected scope |
-| Wallet balance variance | Any unexplained variance | Sev-1 | Pause payout; reconcile wallet/node/ledger |
-| API 5xx | >2% for 5 minutes | Sev-2 | Page API owner; inspect dependency |
-| Stratum connection failures | >5% for 10 minutes | Sev-2 | Check edge, provider, region, and gateway |
-| Share reject/stale | >2× 30-day baseline for 10 minutes | Sev-2 | Check job/template/difficulty/provider |
-| Event lag | >60 seconds warning; >5 minutes critical | Sev-2/Sev-1 | Inspect outbox/Redis/consumer health |
-| RandomX job/template age | >60 seconds warning; >120 seconds critical | Sev-2 | Inspect gateway/template source; no code change from this branch |
-| DB replication lag | >30 seconds warning; >5 minutes critical | Sev-2/Sev-1 | Protect writes; evaluate failover/RPO |
-| Redis pending entries | >10,000 or growing 10 minutes | Sev-2 | Apply backpressure; preserve durable source |
+| Alert                          |                          Initial threshold | Severity    | Action                                                           |
+| ------------------------------ | -----------------------------------------: | ----------- | ---------------------------------------------------------------- |
+| Ledger unbalanced              |              Any non-zero for 1 evaluation | Sev-1       | Pause affected financial scope; page finance/security/IC         |
+| Reconciliation mismatch        |                   Any unexplained non-zero | Sev-1       | Freeze affected asset/period/payout; open exception              |
+| Unknown payout state           |                       Any item >15 minutes | Sev-1       | Pause payout executor; inspect state machine and provider        |
+| Payout queue age               |      >30 minutes normal; >2 hours critical | Sev-2/Sev-1 | Inspect provider, approval, signer, and node                     |
+| Payout reservation near expiry |                          >5% in 15 minutes | Sev-2       | Review eligibility/reservation latency                           |
+| Node tip lag                   |                    >3 blocks for 5 minutes | Sev-2       | Remove node from quorum; fail over if safe                       |
+| Node disagreement              |                   Any conflicting tip/hash | Sev-1       | Pause broadcast/confirmation decisions                           |
+| Reorg detected                 |       Any in confirmed payout/reward scope | Sev-1       | Start reorg runbook; freeze affected scope                       |
+| Wallet balance variance        |                   Any unexplained variance | Sev-1       | Pause payout; reconcile wallet/node/ledger                       |
+| API 5xx                        |                          >2% for 5 minutes | Sev-2       | Page API owner; inspect dependency                               |
+| Stratum connection failures    |                         >5% for 10 minutes | Sev-2       | Check edge, provider, region, and gateway                        |
+| Share reject/stale             |         >2× 30-day baseline for 10 minutes | Sev-2       | Check job/template/difficulty/provider                           |
+| Event lag                      |   >60 seconds warning; >5 minutes critical | Sev-2/Sev-1 | Inspect outbox/Redis/consumer health                             |
+| RandomX job/template age       | >60 seconds warning; >120 seconds critical | Sev-2       | Inspect gateway/template source; no code change from this branch |
+| DB replication lag             |   >30 seconds warning; >5 minutes critical | Sev-2/Sev-1 | Protect writes; evaluate failover/RPO                            |
+| Redis pending entries          |              >10,000 or growing 10 minutes | Sev-2       | Apply backpressure; preserve durable source                      |
 
 Every alert needs an owner, runbook link, deduplication key, severity, for/resolve behavior, and a safe test procedure.
 
 ## 5. Log and trace retention
 
-| Data | Hot retention | Archive/retention target | Redaction |
-|---|---:|---:|---|
-| API/access logs | 14 days | 90 days | No token, secret, full address, or raw IP unless separately approved |
-| Stratum connection/share logs | 7 days | 30 days | Worker ID may be pseudonymous; no password |
-| Application error logs | 30 days | 180 days | Stack traces sanitized for user-facing output |
-| Audit events | 90 days queryable | Per legal/ledger retention policy | Immutable; sensitive metadata minimized |
-| Ledger/reward/payout events | 180 days queryable | Per accounting/legal retention policy | Amounts allowed; private key/address secrets forbidden |
-| Signer/KMS audit | 180 days queryable | Per security/legal retention policy | Key reference only; never key material |
-| Deployment/CI logs | 30 days | 180 days | Secret scanning before archive |
-| Metrics | 30 days high resolution | 13 months downsampled | No user/payout/request ID labels |
-| Traces | 7 days sampled | 30 days error traces | Payload capture disabled for sensitive routes |
+| Data                          |           Hot retention |              Archive/retention target | Redaction                                                            |
+| ----------------------------- | ----------------------: | ------------------------------------: | -------------------------------------------------------------------- |
+| API/access logs               |                 14 days |                               90 days | No token, secret, full address, or raw IP unless separately approved |
+| Stratum connection/share logs |                  7 days |                               30 days | Worker ID may be pseudonymous; no password                           |
+| Application error logs        |                 30 days |                              180 days | Stack traces sanitized for user-facing output                        |
+| Audit events                  |       90 days queryable |     Per legal/ledger retention policy | Immutable; sensitive metadata minimized                              |
+| Ledger/reward/payout events   |      180 days queryable | Per accounting/legal retention policy | Amounts allowed; private key/address secrets forbidden               |
+| Signer/KMS audit              |      180 days queryable |   Per security/legal retention policy | Key reference only; never key material                               |
+| Deployment/CI logs            |                 30 days |                              180 days | Secret scanning before archive                                       |
+| Metrics                       | 30 days high resolution |                 13 months downsampled | No user/payout/request ID labels                                     |
+| Traces                        |          7 days sampled |                  30 days error traces | Payload capture disabled for sensitive routes                        |
 
 Retention is subject to legal review, data-subject rights, incident hold, and backup deletion policy. Log archival does not override deletion of prohibited secrets; if a secret is accidentally logged, rotate it and follow compromise procedure rather than relying on retention expiry.
 

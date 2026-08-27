@@ -10,15 +10,15 @@ VarDiff menjaga interval share tetap berada di sekitar target sambil mencegah di
 
 ## 2. Initial policy defaults
 
-| Parameter | Initial value | Rule |
-|---|---:|---|
-| Target share interval | 15 seconds | Target rata-rata, bukan jaminan |
-| Retarget interval | 90 seconds | Tidak ada retarget sebelum interval berlalu |
-| Minimum samples | 4 | Tidak ada retarget dari sampel yang terlalu kecil |
-| Minimum difficulty | 1 | Lower bound policy |
-| Maximum difficulty | 1,000,000,000 | Upper bound policy |
-| Maximum adjustment factor | 4x per retarget | Factor di-clamp ke `[0.25, 4]` |
-| Minimum adjustment ratio | 5% | Perubahan lebih kecil dianggap hysteresis/no-op |
+| Parameter                 |   Initial value | Rule                                              |
+| ------------------------- | --------------: | ------------------------------------------------- |
+| Target share interval     |      15 seconds | Target rata-rata, bukan jaminan                   |
+| Retarget interval         |      90 seconds | Tidak ada retarget sebelum interval berlalu       |
+| Minimum samples           |               4 | Tidak ada retarget dari sampel yang terlalu kecil |
+| Minimum difficulty        |               1 | Lower bound policy                                |
+| Maximum difficulty        |   1,000,000,000 | Upper bound policy                                |
+| Maximum adjustment factor | 4x per retarget | Factor di-clamp ke `[0.25, 4]`                    |
+| Minimum adjustment ratio  |              5% | Perubahan lebih kecil dianggap hysteresis/no-op   |
 
 Nilai di atas adalah baseline implementasi dan tetap memerlukan kalibrasi dari data produksi. Perubahan harus versioned, effective-dated, dan diaudit.
 
@@ -45,16 +45,16 @@ Retarget request tidak boleh dipicu oleh client secara langsung. Sampel diterima
 
 ## 6. Test vectors
 
-| Case | Input | Expected result |
-|---|---|---|
-| Too early | `now - lastRetarget < 90s` | `NO_CHANGE/WAITING_FOR_INTERVAL` |
-| Too few samples | `<4` samples setelah interval | `NO_CHANGE/WAITING_FOR_SAMPLES` |
-| Fast shares | 5s observed, current 100 | Retarget to 300 |
-| Slow shares | 60s observed, current 100 | Retarget to 25 |
-| Adjustment clamp | 0.001s observed, current 100 | Retarget to 400, not unbounded |
-| Upstream floor | Calculated next below floor 8 | Next difficulty 8 |
-| Hysteresis | Difference below 5% | `NO_CHANGE/WITHIN_HYSTERESIS` |
-| Invalid time | Negative/non-finite timestamp | Reject input |
+| Case             | Input                         | Expected result                  |
+| ---------------- | ----------------------------- | -------------------------------- |
+| Too early        | `now - lastRetarget < 90s`    | `NO_CHANGE/WAITING_FOR_INTERVAL` |
+| Too few samples  | `<4` samples setelah interval | `NO_CHANGE/WAITING_FOR_SAMPLES`  |
+| Fast shares      | 5s observed, current 100      | Retarget to 300                  |
+| Slow shares      | 60s observed, current 100     | Retarget to 25                   |
+| Adjustment clamp | 0.001s observed, current 100  | Retarget to 400, not unbounded   |
+| Upstream floor   | Calculated next below floor 8 | Next difficulty 8                |
+| Hysteresis       | Difference below 5%           | `NO_CHANGE/WITHIN_HYSTERESIS`    |
+| Invalid time     | Negative/non-finite timestamp | Reject input                     |
 
 ## 7. Observability and rollback
 

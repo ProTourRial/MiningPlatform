@@ -10,13 +10,13 @@
 
 ## 1. Wallet roles and terminology
 
-| Istilah | Fungsi | Siapa yang mengendalikan | Boleh menerima payout pengguna? | Boleh menjadi fallback pengguna? |
-|---|---|---|---:|---:|
-| **Wallet deposit** | Address untuk menerima deposit dari pengguna, bila fitur deposit diaktifkan pada masa depan | User/platform sesuai custody model yang disetujui | Tidak secara implisit | **Tidak** |
-| **Wallet payout** | Destination address yang didaftarkan user per account, asset, dan network untuk menerima payout | Pengguna/wallet tujuan | **Ya, jika route ACTIVE dan payout gate lulus** | **Tidak otomatis** |
-| **Pool treasury** | Wallet operasional untuk settlement, reserve, fee, liquidity, atau controlled payout | Treasury/operator dengan maker-checker | Bukan tujuan payout user biasa | **Tidak** |
-| **Wallet donasi situs** | Beneficiary untuk referral code default `MP05` dan donasi yang diumumkan | Beneficiary/site owner sesuai policy dan approval | Hanya sebagai beneficiary yang dinyatakan, bukan user payout | **Tidak** |
-| **Wallet hot/warm/cold** | Klasifikasi custody treasury berdasarkan exposure dan limit | Treasury/security | Tidak sebagai default user destination | **Tidak** |
+| Istilah                  | Fungsi                                                                                          | Siapa yang mengendalikan                          |                              Boleh menerima payout pengguna? | Boleh menjadi fallback pengguna? |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------------- | -----------------------------------------------------------: | -------------------------------: |
+| **Wallet deposit**       | Address untuk menerima deposit dari pengguna, bila fitur deposit diaktifkan pada masa depan     | User/platform sesuai custody model yang disetujui |                                        Tidak secara implisit |                        **Tidak** |
+| **Wallet payout**        | Destination address yang didaftarkan user per account, asset, dan network untuk menerima payout | Pengguna/wallet tujuan                            |              **Ya, jika route ACTIVE dan payout gate lulus** |               **Tidak otomatis** |
+| **Pool treasury**        | Wallet operasional untuk settlement, reserve, fee, liquidity, atau controlled payout            | Treasury/operator dengan maker-checker            |                               Bukan tujuan payout user biasa |                        **Tidak** |
+| **Wallet donasi situs**  | Beneficiary untuk referral code default `MP05` dan donasi yang diumumkan                        | Beneficiary/site owner sesuai policy dan approval | Hanya sebagai beneficiary yang dinyatakan, bukan user payout |                        **Tidak** |
+| **Wallet hot/warm/cold** | Klasifikasi custody treasury berdasarkan exposure dan limit                                     | Treasury/security                                 |                       Tidak sebagai default user destination |                        **Tidak** |
 
 Istilah yang dilarang pada UI/API: `default wallet` jika maksudnya adalah payout destination, `fallback wallet` untuk menggambarkan treasury/donasi, atau `wallet` tanpa asset/network. Gunakan istilah eksplisit seperti **BTC payout destination**, **BEP20 payout destination**, **pool treasury wallet**, atau **site donation wallet**.
 
@@ -50,13 +50,13 @@ Istilah yang dilarang pada UI/API: `default wallet` jika maksudnya adalah payout
 
 ## 4. Network separation matrix
 
-| Address/route | Valid network | Invalid examples | Required behavior |
-|---|---|---|---|
-| BTC native payout | Bitcoin mainnet route | BTC testnet, BEP20/EVM address, arbitrary string | Reject before persistence; `NETWORK_MISMATCH` atau `INVALID_ADDRESS_CHECKSUM` |
-| BEP20 payout | BNB Smart Chain chain ID/policy | Bitcoin address, unsupported EVM chain, wrong token contract | Reject before persistence; show exact network expected |
-| Deposit route (future) | Only explicitly enabled asset/network | Payout/treasury/donation address | Separate route and custody policy; never reuse payout destination silently |
-| Pool treasury | Internal approved network/asset policy | User-selected arbitrary destination | Not exposed as user payout fallback |
-| Site donation wallet for MP05 | Approved donation asset/network | User wallet or pool treasury substitution | Fixed through approved versioned beneficiary config; audited change only |
+| Address/route                 | Valid network                          | Invalid examples                                             | Required behavior                                                             |
+| ----------------------------- | -------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| BTC native payout             | Bitcoin mainnet route                  | BTC testnet, BEP20/EVM address, arbitrary string             | Reject before persistence; `NETWORK_MISMATCH` atau `INVALID_ADDRESS_CHECKSUM` |
+| BEP20 payout                  | BNB Smart Chain chain ID/policy        | Bitcoin address, unsupported EVM chain, wrong token contract | Reject before persistence; show exact network expected                        |
+| Deposit route (future)        | Only explicitly enabled asset/network  | Payout/treasury/donation address                             | Separate route and custody policy; never reuse payout destination silently    |
+| Pool treasury                 | Internal approved network/asset policy | User-selected arbitrary destination                          | Not exposed as user payout fallback                                           |
+| Site donation wallet for MP05 | Approved donation asset/network        | User wallet or pool treasury substitution                    | Fixed through approved versioned beneficiary config; audited change only      |
 
 A valid address on one network is invalid for another network even if the textual format looks similar. Never send funds merely because checksum validation succeeded.
 
@@ -64,12 +64,12 @@ A valid address on one network is invalid for another network even if the textua
 
 Checksum/network validation proves syntax and route compatibility, not private-key ownership. Before a route becomes payout-capable, product/security must choose and document an ownership confirmation method:
 
-| Method | Assurance | Trade-off | Initial policy |
-|---|---|---|---|
-| Signed challenge message | Strong address control proof | Not supported by every wallet/asset flow | Recommended where wallet supports it |
-| Micro-transfer confirmation | Stronger operational proof | Costs network fee; can create accounting complexity | Optional controlled pilot |
-| User confirmation checkbox | No cryptographic proof | Low friction but weak assurance | Never sufficient alone for high-risk payout |
-| Exchange/wallet provider verification | Provider-dependent | Requires integration and privacy review | Optional B2B route |
+| Method                                | Assurance                    | Trade-off                                           | Initial policy                              |
+| ------------------------------------- | ---------------------------- | --------------------------------------------------- | ------------------------------------------- |
+| Signed challenge message              | Strong address control proof | Not supported by every wallet/asset flow            | Recommended where wallet supports it        |
+| Micro-transfer confirmation           | Stronger operational proof   | Costs network fee; can create accounting complexity | Optional controlled pilot                   |
+| User confirmation checkbox            | No cryptographic proof       | Low friction but weak assurance                     | Never sufficient alone for high-risk payout |
+| Exchange/wallet provider verification | Provider-dependent           | Requires integration and privacy review             | Optional B2B route                          |
 
 If ownership proof is unavailable, address may remain registered but must be marked `UNVERIFIED` and `payoutCapable=false` unless risk/compliance owner explicitly approves a lower-assurance route. Never label checksum-only registration as “verified owner”.
 
