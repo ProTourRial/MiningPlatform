@@ -12,6 +12,8 @@
     "test": "node -e \"console.log('validation tests not configured')\""
   },
   "dependencies": {
+    "@mining/blockchain-adapters": "workspace:*",
+    "@noble/hashes": "1.8.0",
     "zod": "4.0.0"
   },
   "devDependencies": {

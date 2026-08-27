@@ -16,3 +16,5 @@ export const btcAddressInputSchema = z.object({
   address: z.string().min(14).max(90),
   label: z.string().max(80).optional(),
 });
+
+export * from './wallet-network.js';
