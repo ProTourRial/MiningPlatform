@@ -1,5 +1,5 @@
 {
-  "name": "@mining/validation",
+  "name": "@mining/vardiff-policy",
   "version": "0.3.0-alpha.7",
   "private": true,
   "type": "module",
@@ -9,16 +9,12 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('validation tests not configured')\""
-  },
-  "dependencies": {
-    "@mining/blockchain-adapters": "workspace:*",
-    "@noble/hashes": "1.8.0",
-    "zod": "4.0.0"
+    "test": "node --import tsx --test src/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "22.0.0",
     "eslint": "9.39.5",
+    "tsx": "4.19.0",
     "typescript": "5.6.3"
   },
   "exports": {

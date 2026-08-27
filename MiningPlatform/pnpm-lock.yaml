@@ -714,6 +714,21 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
 
+  packages/observability-contract:
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
   packages/randomx:
     dependencies:
       '@mining/shared':
@@ -847,6 +862,12 @@ importers:
 
   packages/validation:
     dependencies:
+      '@mining/blockchain-adapters':
+        specifier: workspace:*
+        version: link:../blockchain-adapters
+      '@noble/hashes':
+        specifier: 1.8.0
+        version: 1.8.0
       zod:
         specifier: 4.0.0
         version: 4.0.0
@@ -857,6 +878,21 @@ importers:
       eslint:
         specifier: 9.39.5
         version: 9.39.5(jiti@2.7.0)
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
+  packages/vardiff-policy:
+    devDependencies:
+      '@types/node':
+        specifier: 22.0.0
+        version: 22.0.0
+      eslint:
+        specifier: 9.39.5
+        version: 9.39.5(jiti@2.7.0)
+      tsx:
+        specifier: 4.19.0
+        version: 4.19.0
       typescript:
         specifier: 5.6.3
         version: 5.6.3
@@ -1695,6 +1731,10 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@noble/hashes@1.8.0':
+    resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
+    engines: {node: ^14.21.3 || >=16}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3009,6 +3049,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -5812,6 +5853,8 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@16.3.2':
     optional: true
+
+  '@noble/hashes@1.8.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
