@@ -18,6 +18,17 @@
 
 Response JSON di bawah ini adalah contoh shape yang disarankan. Field `id`, timestamp, status, dan numeric amount harus diperlakukan sebagai string-safe values pada client; amount finansial tidak boleh diparse menjadi floating-point number.
 
+### 1.1 Contract identity and compatibility
+
+- **Contract version:** `v1.0.0-draft`.
+- **Path version:** `/api/v1`.
+- **Baseline main commit:** `770e38c5e119102635aefa97893cdcbdbc345da9`.
+- **Baseline date:** 27 Agustus 2026.
+- **Source of truth for current implementation:** controller/DTO pada baseline commit main; dokumen ini tidak mengubah route.
+- **Status:** documentation-only proposal. Endpoint berlabel **Implemented** berarti route ditemukan pada baseline; endpoint **Target** belum boleh dipanggil frontend.
+
+Perubahan compatible seperti penambahan optional response field menaikkan patch/minor contract revision sesuai changelog API. Perubahan method/path, required field, semantic meaning, permission, status code, atau enum yang dapat memutus client memerlukan contract major review dan path version baru atau migration window. Setiap implementasi backend harus mencatat commit source yang digunakan saat contract dikunci.
+
 ## 2. Payout destination
 
 ### 2.1 List payout routes — Implemented
@@ -618,7 +629,173 @@ Authorization: Bearer <access-token>
 }
 ```
 
-## 9. Error contract
+## 9. API contract hardening
+
+### 9.1 Normative response envelope
+
+Public contract `v1.0.0-draft` menggunakan envelope berikut untuk response baru. Alpha route yang saat ini mengembalikan raw domain payload boleh tetap raw selama statusnya internal/alpha, tetapi adapter publik harus memetakannya ke envelope ini tanpa mengubah makna domain.
+
+**Success:**
+
+```json
+{
+  "data": {
+    "payoutId": "payout-uuid",
+    "status": "RESERVED"
+  },
+  "meta": {
+    "contractVersion": "v1.0.0-draft",
+    "requestId": "req-uuid",
+    "asOf": "2026-08-27T08:00:00Z"
+  }
+}
+```
+
+**Collection:**
+
+```json
+{
+  "data": [],
+  "meta": {
+    "contractVersion": "v1.0.0-draft",
+    "requestId": "req-uuid",
+    "pagination": {
+      "page": 1,
+      "pageSize": 50,
+      "totalItems": 0,
+      "totalPages": 0,
+      "hasNext": false,
+      "hasPrevious": false
+    }
+  }
+}
+```
+
+**Failure:**
+
+```json
+{
+  "error": {
+    "code": "PAYOUT_GATED",
+    "message": "Payout is temporarily unavailable.",
+    "requestId": "req-uuid",
+    "retryable": false,
+    "details": {
+      "blockers": ["GLOBAL_PAYOUT_GATE_DISABLED"]
+    }
+  },
+  "meta": {
+    "contractVersion": "v1.0.0-draft"
+  }
+}
+```
+
+`message` harus aman untuk user dan tidak mengandung secret, raw address, SQL detail, stack trace, atau internal host. `details` hanya boleh berisi data yang dapat dibocorkan kepada caller dengan permission tersebut.
+
+### 9.2 Normative status codes and error codes
+
+| HTTP status | Normative meaning | Error code examples | Retry guidance |
+|---:|---|---|---|
+| `200` | Read atau mutation selesai dan state dapat dibaca | — | Tidak perlu retry otomatis |
+| `201` | Resource baru berhasil dibuat | — | Jangan ulangi tanpa idempotency |
+| `202` | Request diterima untuk asynchronous processing | — | Poll resource/status dengan backoff |
+| `204` | Mutation berhasil tanpa response body | — | Tidak perlu retry |
+| `400` | Request malformed atau semantic input invalid | `INVALID_REQUEST`, `VALIDATION_ERROR` | Perbaiki request |
+| `401` | Credential/token tidak ada atau invalid | `UNAUTHENTICATED`, `TOKEN_EXPIRED` | Refresh interactive session; jangan loop tanpa batas |
+| `403` | Identity valid tetapi tidak punya permission | `FORBIDDEN_SCOPE`, `ROLE_NOT_ALLOWED` | Jangan retry tanpa perubahan permission |
+| `404` | Resource tidak ada atau tidak terlihat oleh caller | `RESOURCE_NOT_FOUND` | Jangan menebak ID lain |
+| `409` | State conflict atau idempotency conflict | `STATE_CONFLICT`, `IDEMPOTENCY_CONFLICT`, `ADDRESS_ALREADY_ACTIVE` | Re-read resource; jangan blind retry |
+| `412` | `If-Match` tidak cocok | `VERSION_MISMATCH` | Re-read, tampilkan diff, minta konfirmasi ulang |
+| `428` | Optimistic concurrency wajib tetapi header tidak ada | `PRECONDITION_REQUIRED` | Kirim ulang setelah GET terbaru |
+| `429` | Rate limit terlampaui | `RATE_LIMITED` | Ikuti `Retry-After` dan exponential backoff |
+| `500` | Kesalahan internal tidak terklasifikasi | `INTERNAL_ERROR` | Retry terbatas hanya untuk safe/idempotent request |
+| `502/503/504` | Dependency/provider unavailable atau timeout | `UPSTREAM_UNAVAILABLE`, `DEPENDENCY_TIMEOUT` | Retry bounded dengan jitter; mutation harus idempotent |
+
+Error code adalah kontrak machine-readable; HTTP status tidak boleh menjadi satu-satunya input untuk frontend branching.
+
+### 9.3 Idempotency key rules
+
+- Semua mutation yang membuat payout, reservation, ledger-side effect, referral attribution, wallet destination, atau asynchronous job wajib menerima `Idempotency-Key`.
+- Key adalah opaque string 16–128 karakter, case-sensitive, tanpa data pribadi atau secret. Client membuat UUID/ULID; server tidak membuat key diam-diam untuk mutation.
+- Scope key minimal: authenticated principal + endpoint + resource/operation. TTL minimum yang disarankan: 24 jam untuk payout/financial mutation dan 1 jam untuk non-financial mutation.
+- Server menyimpan request hash, first response status/body, resource ID, created-at, expiry, dan final state reference. Replay request yang identik mengembalikan response yang ekuivalen.
+- Key yang sama dengan body/path berbeda harus menghasilkan `409 IDEMPOTENCY_CONFLICT`; server tidak boleh menjalankan operation kedua.
+- Timeout client tidak berarti operation gagal. Client harus query resource/status menggunakan key atau operation ID sebelum retry.
+- Idempotency record tidak boleh dihapus sebelum retention window berakhir atau final state direkonsiliasi.
+- `GET`, `HEAD`, dan safe read tidak memerlukan key, tetapi tetap harus memiliki request ID.
+
+### 9.4 Permission matrix
+
+| Operation | Guest | User | Admin | Owner/approved operator | Required scope |
+|---|---:|---:|---:|---:|---|
+| Read public status/metadata | Allow | Allow | Allow | Allow | None |
+| Read own workers | — | Allow | Scoped support only | Scoped support only | `workers:read` |
+| Create/update/delete own worker | — | Allow | Scoped support only | Scoped support only | `workers:write` |
+| Read own reward/ledger/balance | — | Allow | Scoped support only | Scoped support only | `rewards:read`, `ledger:read` |
+| Register/activate/disable own payout destination | — | Allow with step-up | No implicit access | Break-glass only with audit | `profile:write` + step-up |
+| Toggle own auto-withdrawal preference | — | Allow interactive session | No implicit access | Break-glass only with audit | `profile:write` |
+| Read own payout eligibility | — | Allow | Scoped support only | Scoped support only | `payouts:read` |
+| Request payout | — | Target; interactive + step-up | No implicit access | Approved operator workflow | `payouts:write` + idempotency |
+| Approve/sign/broadcast payout | — | Deny | Deny by default | Maker-checker role separation | `treasury:approve`, `treasury:sign` |
+| Read referral attribution/rewards | — | Allow own data | Scoped support only | Scoped support only | `referrals:read` |
+| Manage referral program/policy | — | Deny | Deny by default | Owner + finance approval | `referrals:admin` |
+| Read audit events | — | Own security events only | Scoped support | Full operational scope | `audit:read` |
+| Change fee/route/payout policy | — | Deny | Deny by default | Owner + finance/security/legal approval | `policy:write` |
+
+Role membership alone is insufficient for treasury actions. Resource ownership, scope, interactive session, step-up, maker-checker, and audit policy must all be evaluated.
+
+### 9.5 Pagination, filter, and sort rules
+
+Collection endpoints use cursor pagination for high-volume streams and page pagination only for bounded/admin views. Until cursor support is implemented, the page contract is:
+
+```text
+?page=1&pageSize=50&sort=createdAt&order=desc
+```
+
+- `page` default `1`, minimum `1`.
+- `pageSize` default `50`, minimum `1`, maximum `100` unless endpoint-specific policy is stricter.
+- `sort` must be an allowlisted field; unknown field returns `400 INVALID_SORT_FIELD`.
+- `order` accepts only `asc` or `desc`.
+- Every sort must include a stable unique-ID tie breaker to avoid duplicate/missing rows between pages.
+- Filters must be typed and allowlisted: `status`, `asset`, `network`, `workerId`, `dateFrom`, `dateTo`, `online`, and endpoint-approved fields only.
+- Date filters use ISO-8601 UTC; inclusive/exclusive boundary must be documented. Recommended: `dateFrom` inclusive and `dateTo` exclusive.
+- Response returns `pagination` metadata and `asOf`; callers must not infer total from the current page length.
+- Financial exports must state whether totals are snapshot-consistent; pagination across a moving ledger requires a snapshot/cursor token.
+
+### 9.6 Optimistic concurrency
+
+Sensitive mutable resources use an opaque `version` or `ETag` returned by GET. Update/delete requests must send `If-Match: "<etag>"` or the documented `version` field.
+
+- Missing precondition returns `428 PRECONDITION_REQUIRED` when the endpoint requires concurrency protection.
+- Stale precondition returns `412 VERSION_MISMATCH` and does not mutate state.
+- Server must not silently last-write-wins for payout destination, auto-withdrawal policy, payout request, approval, fee policy, or referral attribution.
+- A successful mutation returns the new version/ETag and audit ID.
+- Idempotency and optimistic concurrency are complementary: idempotency prevents duplicate execution; `If-Match` prevents overwriting a newer state.
+
+### 9.7 Audit events for wallet and payout changes
+
+Every wallet or payout mutation emits an immutable audit event in the same transaction as the state change or its durable outbox record.
+
+| Event | Trigger | Minimum metadata |
+|---|---|---|
+| `PAYOUT_DESTINATION_REGISTERED` | New address stored | `auditId`, actor, user/resource ID, route ID/version, asset/network, address fingerprint, step-up authorization ID, cooldown, request ID |
+| `PAYOUT_DESTINATION_ACTIVATED` | Address becomes active | `auditId`, actor, destination ID, route version, prior active ID, step-up ID, request ID |
+| `PAYOUT_DESTINATION_DISABLED` | Address disabled | `auditId`, actor, destination ID, reason, step-up ID, request ID |
+| `AUTO_WITHDRAWAL_ENABLED` | Preference set ON | `auditId`, actor, mining account ID, prior/new value, effective flag, blockers, request ID |
+| `AUTO_WITHDRAWAL_DISABLED` | Preference set OFF | `auditId`, actor, mining account ID, prior/new value, request ID |
+| `PAYOUT_ELIGIBILITY_EVALUATED` | Eligibility read/decision | `auditId` or decision ID, account, asset/network, balance snapshot, threshold, blockers, policy version, request ID |
+| `PAYOUT_REQUESTED` | Payout intent accepted | `auditId`, payout ID, idempotency key hash, amount, asset/network, destination fingerprint, request ID |
+| `PAYOUT_RESERVED` | Balance held | `auditId`, payout ID, journal/reservation ID, amount, expiry, request ID |
+| `PAYOUT_APPROVED` | Maker-checker approval | `auditId`, approver ID, payout ID, approval policy/version, reason, request ID |
+| `PAYOUT_SIGNING_STARTED` | Signer receives approved intent | `auditId`, payout ID, signer key reference (not key), policy version, request ID |
+| `PAYOUT_BROADCAST` | Transaction submitted | `auditId`, payout ID, tx hash, node/provider reference, request ID |
+| `PAYOUT_CONFIRMED` | Confirmation/finality reached | `auditId`, payout ID, tx hash, block hash/height, confirmation count, request ID |
+| `PAYOUT_FAILED` | Terminal failure | `auditId`, payout ID, safe error code, retryable, recovery action, request ID |
+| `PAYOUT_PAUSED` | Gate/operator pause | `auditId`, actor/system, scope, reason, incident ID, request ID |
+
+Never include private key, seed phrase, worker secret, full payout address, raw authentication token, or sensitive raw IP in event metadata. `auditId`, `requestId`, and `correlationId` must be searchable across API, worker, outbox, ledger, signer, node, and incident records.
+
+## 10. Error contract
 
 All endpoints should converge on a machine-readable error shape before becoming public:
 
@@ -638,7 +815,7 @@ All endpoints should converge on a machine-readable error shape before becoming 
 
 Minimum error codes for frontend mapping: `UNAUTHENTICATED`, `FORBIDDEN_SCOPE`, `VALIDATION_ERROR`, `RESOURCE_NOT_FOUND`, `CONFLICT`, `STEP_UP_REQUIRED`, `STEP_UP_REPLAYED`, `COOLDOWN_ACTIVE`, `PAYOUT_GATED`, `BELOW_MINIMUM_PAYOUT`, `PENDING_SETTLEMENT`, `REORG_REVIEW`, `RATE_LIMITED`, `UPSTREAM_UNAVAILABLE`, and `INTERNAL_ERROR`.
 
-## 10. Contract review checklist
+## 11. Contract review checklist
 
 - [ ] Every **Implemented** route above matches the controller path, method, auth guard, and scope.
 - [ ] Every **Target** route is visibly marked as target in API docs and frontend copy.
