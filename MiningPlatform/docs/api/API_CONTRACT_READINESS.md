@@ -22,12 +22,27 @@ Response JSON di bawah ini adalah contoh shape yang disarankan. Field `id`, time
 
 - **Contract version:** `v1.0.0-draft`.
 - **Path version:** `/api/v1`.
-- **Baseline main commit:** `770e38c5e119102635aefa97893cdcbdbc345da9`.
+- **Source commit dokumen ini:** `4061e2ab0193d7508807a655f9d52201c8d09bfb` sebelum metadata drift update; commit baru setelah update harus dicatat pada PR.
+- **Runtime source baseline:** `main` pada `770e38c5e119102635aefa97893cdcbdbc345da9`.
+- **Readiness reference commit:** `feat/product-readiness-planning` pada `96417739824585dd7861d37b3a0d6cfa387fac10`.
 - **Baseline date:** 27 Agustus 2026.
-- **Source of truth for current implementation:** controller/DTO pada baseline commit main; dokumen ini tidak mengubah route.
+- **Source of truth for current implementation:** controller/DTO pada runtime source baseline; dokumen ini tidak mengubah route.
 - **Status:** documentation-only proposal. Endpoint berlabel **Implemented** berarti route ditemukan pada baseline; endpoint **Target** belum boleh dipanggil frontend.
 
 Perubahan compatible seperti penambahan optional response field menaikkan patch/minor contract revision sesuai changelog API. Perubahan method/path, required field, semantic meaning, permission, status code, atau enum yang dapat memutus client memerlukan contract major review dan path version baru atau migration window. Setiap implementasi backend harus mencatat commit source yang digunakan saat contract dikunci.
+
+### 1.2 Source drift check
+
+Dokumen ini sengaja dibekukan terhadap source baseline tertentu. Setelah RandomX v20 selesai di-merge, atau setelah backend/API berubah materially, lakukan pemeriksaan drift sebelum kontrak dipakai sebagai acuan implementasi:
+
+1. Catat commit `main`, commit API/backend aktual, commit RandomX hasil merge, dan commit readiness reference.
+2. Bandingkan semua controller/DTO/guard/version prefix dengan endpoint dan scope pada dokumen ini.
+3. Bandingkan enum/status/error code, required field, serialization amount, idempotency behavior, concurrency/version field, dan audit event.
+4. Jalankan contract test untuk endpoint **Implemented** serta tandai endpoint yang berubah menjadi `DRIFTED`, `REMOVED`, atau `UNVERIFIED`.
+5. Perbarui `Source commit dokumen ini`, `Runtime source baseline`, dan `Contract version` hanya melalui review/PR dokumentasi.
+6. Jangan mengubah frontend atau mengaktifkan payout berdasarkan dokumen lama ketika drift belum ditutup.
+
+**Drift result:** `NOT_CHECKED` sampai pemeriksaan pasca-merge selesai. Hasil yang valid harus menyertakan commit comparison, daftar file/controller yang diperiksa, test run, mismatch, owner, dan keputusan compatibility.
 
 ## 2. Payout destination
 
