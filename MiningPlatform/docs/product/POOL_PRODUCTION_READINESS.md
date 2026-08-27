@@ -14,6 +14,25 @@ MiningPlatform harus mempertahankan batas yang sudah ditetapkan oleh Product Con
 
 Pada fase alpha, jalur yang boleh disebut tersedia adalah **development/upstream gateway dan control-plane foundation**. Jalur yang belum boleh diaktifkan untuk dana nyata adalah conversion, custody, payout executor, wallet signing, dan auto-withdrawal. Penamaan UI harus mengikuti status `FOUNDATION`, `PILOT`, `ACTIVE`, `REGISTRATION_ONLY`, atau `DISABLED`; jangan memakai kata “ready”, “paid”, atau “earning” jika hanya ada schema atau preference.
 
+## Open Decisions / Pending Approval
+
+Nilai dan pilihan berikut **belum final**. Angka di kolom “usulan kerja” hanya boleh digunakan untuk simulasi, fixture, atau desain UI sementara; bukan sebagai public commitment. Setiap keputusan final memerlukan owner approval, ADR, update policy, dan bukti bahwa histori settlement tetap dapat direproduksi.
+
+| Decision | Usulan kerja sementara | Status | Approver yang diperlukan | Dampak bila belum diputuskan |
+|---|---|---|---|---|
+| Minimum payout BTC native | `0.001 BTC` sebagai baseline konfigurasi awal | **Pending** | Product + Treasury + Finance + Legal | UI/API hanya boleh menampilkan “belum final”; payout tidak boleh aktif |
+| Minimum payout BEP20 | Ditentukan per asset/network berdasarkan gas, operational cost, reserve, dan user threshold; belum ada angka final | **Pending** | Product + Treasury + Finance + Legal | Tidak boleh mengaktifkan route BEP20 atau menjanjikan threshold |
+| Konfirmasi BTC | Baseline simulasi `3 confirmations` | **Pending** | Security + Treasury + Operations | Payout finality, reorg risk, dan incident alert belum memiliki policy final |
+| Coinbase maturity | Baseline own-pool `100 blocks` sebelum spendable | **Pending** | Product + Pool Operations + Treasury | Reward maturity dan eligibility belum boleh dikunci pada UI/API |
+| Reward scheme awal | Gateway: `FOLLOW_UPSTREAM`; own-pool kandidat: **PPLNS** | **Pending** | Product + Pool Operations + Finance | Perhitungan reward, disclosure, dan simulator belum final |
+| Batas reserve pool | Belum ditentukan; harus berbasis worst-case payout exposure, settlement lag, hot-wallet limit, dan stress scenario | **Pending** | Treasury + Risk + Security + Owner | PPS/FPPS dan auto-payout tidak boleh dipertimbangkan sebagai ACTIVE |
+| SLA target | Target internal: Stratum 99,90%; API/control plane 99,95%; RPO ≤5m; RTO ≤30m | **Pending** | Operations + Product + Legal | Belum boleh disebut SLA kontraktual atau warranty |
+| Wilayah legal operasi | Belum ditentukan; wajib mencakup legal entity, custody/conversion analysis, sanctions, KYC/AML, dan tax review | **Pending** | Legal + Compliance + Owner | Dana nyata, conversion, referral liability, dan public launch tetap gated |
+| Default payout wallet | BTC native sebagai UX default untuk BTC; BEP20 hanya pada asset/network yang kompatibel | **Pending** | Product + Security + Treasury | Default tidak boleh di-hard-code sebagai custody permission |
+| Auto-withdrawal | Default `OFF`; baru efektif setelah payout executor, route, risk, approval, dan reconciliation ACTIVE | **Pending** | Product + Security + Treasury + Operations | Toggle preference tidak boleh membuat payout request |
+
+**Decision log minimum:** tanggal keputusan, decision owner, approver, policy version, effective time, affected asset/network/algorithm, rollback/expiry condition, dan link ADR. Jika nilai belum final, gunakan label `TBD — pending approval`, bukan angka yang tampak final.
+
 ### Definition of Done milestone produksi pertama
 
 Milestone produksi pertama hanya tercapai bila satu trace terkontrol berikut dapat dibuktikan dengan correlation ID, automated tests, operational evidence, dan runbook:
@@ -99,7 +118,10 @@ Konfigurasi saat ini mencantumkan baseline `MINIMUM_PAYOUT_BTC=0.001` dan `PAYOU
 | Standar | 100% | **0,50%** | 0% | **99,50%** sebelum biaya upstream/network lain | Policy default terversi |
 | Referral valid | 100% | **0,375%** dibebankan ke miner | **0,125%** dari gross reward kepada beneficiary | **99,625%** sebelum biaya lain | Hanya dari reward yang sudah settled |
 | Referral tidak valid/kedaluwarsa | 100% | **0,50%** | 0% | **99,50%** sebelum biaya lain | Attribution tidak boleh berubah retroaktif |
+| **Kode default `MP05`** | 100% | Mengikuti policy akun: **0,50%** atau **0,375%** bila attribution valid | **0,125%** dialokasikan sebagai liability ke **wallet donasi situs** | Sesuai skenario fee yang berlaku | MP05 bukan saldo platform; liability harus dapat direkonsiliasi dan payout-nya tetap tunduk pada approval |
 | Fee/network/upstream tambahan | 100% | Mengikuti route policy | Mengikuti referral policy | Gross dikurangi seluruh komponen yang ditampilkan | Tidak boleh ada potongan tersembunyi |
+
+**Kontrak fee yang wajib dipertahankan:** fee standar platform adalah **0,50%**; fee miner dengan referral valid adalah **0,375%**; bagian pemilik kode referral adalah **0,125% dari gross reward**. Untuk kode default **MP05**, beneficiary tersebut diarahkan ke wallet donasi situs yang ditetapkan melalui konfigurasi terversi. Pengarahan ini adalah liability accounting, bukan izin untuk mengkredit saldo user, dan wallet tujuan tidak boleh diubah tanpa audit, approval, serta disclosure.
 
 Acceptance criteria fee:
 
@@ -110,7 +132,28 @@ Acceptance criteria fee:
 - Total posting selalu seimbang: user allocation + platform fee + referral liability + clearing/source amount.
 - Test mencakup zero amount, minimum amount, rounding, duplicate delivery, retry, reversal, dan referral attribution conflict.
 
-## 5. Payout nyata acceptance criteria
+## 5. Traceability matrix
+
+Matriks ini adalah kontrak review lintas produk, API, komponen, dan evidence. Nama komponen yang belum ada ditandai **target**; keberadaan interface atau halaman saja tidak dianggap sebagai implementasi.
+
+| Goal | Requirement | API/komponen | Test | Acceptance evidence |
+|---|---|---|---|---|
+| Miner dapat memulai dengan aman | Account, alias, worker, credential, dan setup dapat dibuat tanpa mencampur password akun | Auth API; Worker API; `workers-manager`; **target:** Mining Setup Wizard | Registration/login; worker CRUD; credential create/rotate/revoke | Sanitized request/response, audit event, screenshot onboarding, owner isolation proof |
+| Share menjadi fakta mining | Session, job, difficulty, share, duplicate/stale, dan upstream decision punya correlation ID | Stratum gateway; mining-core; upstream adapter; **target:** provider fixture layer | Subscribe/authorize/submit; duplicate/stale; provider reconnect/failover | Redacted protocol fixture, accepted/rejected trace, soak/load report |
+| Reward dapat direkonsiliasi | Contribution hanya berasal dari accepted upstream work dan settlement period | Reward engine; accounting worker; reward API | Duplicate delivery, retry, rounding, settlement conflict, period close | Immutable contribution, settlement source checksum, period report |
+| Fee selalu transparan | 0,50% standard; 0,375% referral; 0,125% beneficiary; MP05 → donation liability | Fee policy resolver; reward detail API; **target:** fee disclosure UI | Standard/referral/MP05 allocation, historical policy snapshot, reversal | Balanced journal, policy version, UI/API gross-to-net breakdown |
+| Balance tidak fiktif | Spendable balance hanya berasal dari posted, reconciled ledger | Ledger package; balance projection; wallet/reward read model | Unbalanced journal rejection; reversal; concurrent posting | Trial balance, journal immutability, end-to-end share-to-balance trace |
+| User memahami payout readiness | Threshold, maturity, confirmation, hold, route, dan blocker terlihat sebelum request | Payout route/destination API; `PayoutAddressPanel`; **target:** eligibility API | Below threshold; immature/orphan/reorg; gated route; address cooldown | Eligibility decision record, screenshot status, negative payout assertion |
+| Payout tidak double-spend | Reservation, idempotency, approval, signing, broadcast, confirmation, reconciliation | **Target:** payout orchestrator; isolated signer; blockchain adapter | Concurrent payout; provider timeout; signer unavailable; broadcast retry; reorg | State-machine trace, tx hash, approval audit, node comparison, reconciliation report |
+| Auto-withdrawal aman | Preference default OFF dan tidak efektif sebelum seluruh gate ACTIVE | Auto-withdrawal API/panel; payout scheduler; **target:** executor | ON/OFF; executor disabled; route disabled; recovery | Preference audit, blocker list, no-payout proof when gated |
+| Worker dapat dipantau | Hashrate, share quality, status, telemetry, lag, dan event freshness memiliki definisi | Monitoring API/WebSocket; `realtime-mining-panel`; mining projection | Online/offline/degraded; event delay; WebSocket reconnect | Dashboard screenshot, metric query, event-lag/SLO report |
+| Publik dapat memverifikasi layanan | Aggregate stats, fee policy, status upstream, uptime, incident, dan data timestamp tersedia | Transparency page/API; status page; **target:** public read model | Empty/loading/error; privacy redaction; stale data | Timestamped public response, privacy review, incident timeline |
+| Integrator dapat membangun tooling | Versioned public API memiliki auth/signature, scope, pagination, quota, and webhook contract | **Target:** API contract package; API gateway; SDK/examples | Invalid signature/timestamp/scope; rate limit; idempotency; webhook retry | OpenAPI/contract document, conformance tests, signed example requests |
+| Operasi dapat pulih | Node/DB/Redis failure, backup restore, payout pause, compromise, reorg, mismatch memiliki runbook | Operations runbooks; alerts; on-call; DR tooling | Game-day scenarios and restore drill | Incident timeline, RPO/RTO measurement, postmortem/action items |
+
+Matriks ini harus diperbarui setiap requirement berubah. Pull request fitur tidak boleh dianggap lengkap bila kolom `Test` atau `Acceptance evidence` masih `TBD`.
+
+## 6. Payout nyata acceptance criteria
 
 Payout nyata tidak boleh diaktifkan hanya dengan mengubah `PAYOUTS_ENABLED=true`. Gate berikut harus disetujui secara eksplisit oleh owner, finance/treasury, security, dan operations.
 
@@ -129,9 +172,9 @@ Payout nyata tidak boleh diaktifkan hanya dengan mengubah `PAYOUTS_ENABLED=true`
 
 Auto payout baru dapat diaktifkan setelah manual pilot terkontrol lulus, bukan sebelum itu.
 
-## 6. Operational pool specification
+## 7. Operational pool specification
 
-### 6.1 SLA dan SLO target
+### 7.1 SLA dan SLO target
 
 Target di bawah adalah **internal production target** untuk direncanakan dan diukur. Tidak boleh dipublikasikan sebagai SLA kontraktual sebelum tersedia 90 hari evidence dan persetujuan legal.
 
@@ -147,7 +190,7 @@ Target di bawah adalah **internal production target** untuk direncanakan dan diu
 
 Scheduled maintenance, upstream outage yang terbukti berasal dari provider, force majeure, chain halt, dan tindakan keamanan darurat harus memiliki definisi pengecualian yang tertulis.
 
-### 6.2 Rencana node Bitcoin Core redundan
+### 7.2 Rencana node Bitcoin Core redundan
 
 - Operasikan minimal dua node Bitcoin Core pada failure domain berbeda; jangan berbagi host, disk, dan jalur jaringan tunggal.
 - Pisahkan node query/validation dari node broadcast/signing boundary. API tidak boleh langsung memegang wallet private key.
@@ -157,13 +200,13 @@ Scheduled maintenance, upstream outage yang terbukti berasal dari provider, forc
 - Dokumentasikan policy untuk pruned versus full node; payout/reconciliation tidak boleh bergantung pada asumsi data historis yang tidak tersedia.
 - Uji node restart, disk pressure, chain reindex, network partition, stale tip, mempool divergence, dan reorg.
 
-### 6.3 Rencana PostgreSQL/Redis HA
+### 7.3 Rencana PostgreSQL/Redis HA
 
 **PostgreSQL:** gunakan primary + standby pada failure domain terpisah, streaming replication dengan lag alert, connection pooler, managed backups plus periodic restore test, PITR/WAL retention, migration rehearsal pada disposable clone, dan explicit failover ownership. Financial tables memerlukan constraint, serializable/appropriate isolation, idempotency keys, immutable audit, serta read model yang dapat dibangun ulang.
 
 **Redis:** gunakan managed Redis atau Sentinel/Cluster sesuai workload; bedakan cache, duplicate reservation, event transport, dan ephemeral coordination. Redis tidak boleh menjadi sumber kebenaran saldo atau payout. Jika Redis hilang, sistem harus fail safe: boleh menahan aksi sensitif atau kembali ke Postgres-backed guard, tetapi tidak boleh menghasilkan double credit/double payout.
 
-### 6.4 Backup, disaster recovery, DDoS, dan monitoring
+### 7.4 Backup, disaster recovery, DDoS, dan monitoring
 
 - Backup encrypted untuk PostgreSQL, object storage, configuration metadata, dan audit evidence; secret backup menggunakan key management terpisah.
 - Lakukan restore drill berkala dan ukur RPO/RTO, bukan hanya membuat file dump.
@@ -172,7 +215,7 @@ Scheduled maintenance, upstream outage yang terbukti berasal dari provider, forc
 - Gunakan structured logs, metrics, traces, error tracking, alert routing, on-call, incident timeline, dan status-page workflow.
 - Dashboard operator harus membedakan service down, upstream degraded, database lag, event backlog, payout hold, dan blockchain lag.
 
-### 6.5 Minimum metric catalog
+### 7.5 Minimum metric catalog
 
 | Domain | Metric wajib | Alert contoh |
 |---|---|---|
@@ -185,11 +228,11 @@ Scheduled maintenance, upstream outage yang terbukti berasal dari provider, forc
 | Payout | Eligible, reserved, approved, signed, broadcast, confirmed, failed, exception age | Queue menua; duplicate attempt; signer unavailable |
 | Infrastructure | CPU, memory, disk, DB/Redis lag, event backlog, WebSocket disconnect | Capacity threshold atau recovery budget terlampaui |
 
-## 7. Frontend/UX review notes
+## 8. Frontend/UX review notes
 
 Catatan berikut ditujukan untuk diterapkan pada branch `feat/professional-frontend-redesign`; dokumen ini tidak mengubah branch tersebut.
 
-### 7.1 Urutan menu dashboard yang disarankan
+### 8.1 Urutan menu dashboard yang disarankan
 
 1. **Overview** — ringkasan hashrate, worker online, accepted/rejected share, reward pending/confirmed, dan incident banner.
 2. **Workers** — daftar worker, status, hashrate, share quality, telemetry, credentials, dan setup instructions.
@@ -206,7 +249,7 @@ Catatan berikut ditujukan untuk diterapkan pada branch `feat/professional-fronte
 
 Navigation should keep **Overview, Workers, Mining Setup, Rewards, and Payouts** visible as the primary path. Admin/owner operations must be separated from miner-facing navigation.
 
-### 7.2 Landing page copy draft
+### 8.2 Landing page copy draft
 
 **Hero headline:**
 
@@ -226,7 +269,7 @@ Navigation should keep **Overview, Workers, Mining Setup, Rewards, and Payouts**
 
 > Payout nyata belum aktif pada rilis alpha. Jangan kirim perangkat produksi atau dana nyata sebelum status route dan payout gate berubah menjadi ACTIVE.
 
-### 7.3 FAQ copy draft
+### 8.3 FAQ copy draft
 
 | Pertanyaan | Jawaban yang disarankan |
 |---|---|
@@ -239,7 +282,7 @@ Navigation should keep **Overview, Workers, Mining Setup, Rewards, and Payouts**
 | Apakah auto-withdrawal langsung mengirim dana? | Tidak selalu. Preference dapat tersimpan, tetapi efektivitasnya bergantung pada address aktif, route, risk gate, payout executor, approval, dan global payout gate. |
 | Apa yang terjadi saat reorg atau orphan? | Reward yang belum final tetap pending. Jika reward sebelumnya terkena reorg, platform membuat koreksi melalui event/reversal yang dapat diaudit; histori tidak dihapus. |
 
-### 7.4 Transparency page copy draft
+### 8.4 Transparency page copy draft
 
 > Statistik publik menampilkan data agregat dan timestamp pembaruan. Data privat seperti IP, lokasi farm, credential, address lengkap, dan saldo individu tidak dipublikasikan.
 
@@ -258,7 +301,7 @@ Kartu yang sebaiknya tersedia:
 
 Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada environment ini — terakhir diperbarui <timestamp>`. Hindari angka `0` yang dapat disalahartikan sebagai aktivitas nol.
 
-### 7.5 Payout and wallet copy draft
+### 8.5 Payout and wallet copy draft
 
 **Payout status:**
 
@@ -276,7 +319,7 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 
 > Auto-withdrawal default OFF. Mengaktifkan preference tidak menjamin payout langsung; payout tetap tunduk pada threshold, route availability, risk review, approval, dan global payout gate.
 
-### 7.6 Screenshot dan contoh tampilan yang diinginkan
+### 8.6 Screenshot dan contoh tampilan yang diinginkan
 
 | Screenshot | Tujuan | Elemen wajib |
 |---|---|---|
@@ -294,11 +337,37 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 | Error/loading states | Reliability perception | Skeleton, retry, request ID, actionable message, support link |
 | Responsive 320/375/768/1440 px | Cross-device quality | No clipped cards, readable tables, accessible focus and touch target |
 
-## 8. Legal and compliance preparation drafts
+### 8.7 Frontend review checklist untuk `feat/professional-frontend-redesign`
+
+Checklist ini digunakan saat review branch frontend dan tidak meminta perubahan pada backend dalam branch readiness.
+
+| Check | Pertanyaan review | Evidence yang diminta | Status |
+|---|---|---|---|
+| Tombol punya endpoint nyata | Apakah setiap CTA submit/action memiliki API route yang benar, method, auth, scope, dan failure mapping? | Link ke contract/API handler atau label `disabled — no endpoint` | ☐ |
+| Tidak ada fake success | Apakah UI tidak menampilkan success/paid/active dari mock state atau optimistic update yang tidak dikonfirmasi server? | Network capture dan state transition | ☐ |
+| Loading state | Apakah first load, refetch, mutation, WebSocket connect, dan slow response memiliki skeleton/spinner yang tidak mengubah angka menjadi nol? | Screenshot desktop/mobile | ☐ |
+| Error state | Apakah 401, 403, 409, 422, 429, 5xx, timeout, dan offline memiliki pesan actionable serta request ID? | Error matrix + screenshot | ☐ |
+| Empty state | Apakah akun baru tanpa worker/reward/payout memiliki CTA langkah berikutnya dan bukan halaman kosong? | Screenshot empty state | ☐ |
+| Mobile navigation | Apakah menu primary dapat dibuka/ditutup dengan keyboard/touch, tidak menutup konten, dan mempertahankan route aktif? | Screenshot 320/375 px + keyboard check | ☐ |
+| Worker flow | Apakah create, rename, delete, credential rotate/revoke, ownership, dan status worker mengarah ke endpoint nyata? | Endpoint map + screen recording | ☐ |
+| Wallet destination | Apakah BTC/BEP20 network, checksum, memo/tag, mask, fingerprint, cooldown, dan step-up dijelaskan sebelum submit? | Screenshot + copy review | ☐ |
+| Payout destination state | Apakah `REGISTRATION_ONLY`, `COOLDOWN`, `ACTIVE`, `DISABLED`, dan route unavailable dibedakan dengan jelas? | State catalogue + screenshot | ☐ |
+| Auto-withdrawal ON/OFF | Apakah toggle menunjukkan preference dan effective status secara terpisah, termasuk blocker executor/global gate? | Screenshot ON/OFF/gated | ☐ |
+| Payout gated | Apakah CTA payout dinonaktifkan atau aman ketika balance pending, threshold belum tercapai, risk hold, route inactive, atau executor belum ada? | Negative test + screenshot | ☐ |
+| Reward/fee display | Apakah gross, 0,50%, 0,375%, 0,125%, MP05 donation liability, net, dan status settlement tidak ambigu? | Example fixture + screenshot | ☐ |
+| Security | Apakah secret, full wallet address, raw IP, token, dan sensitive metadata tidak bocor di UI, URL, analytics, atau clipboard? | Redaction review | ☐ |
+| Accessibility | Apakah focus order, semantic labels, contrast, keyboard action, reduced motion, form errors, dan touch targets memenuhi baseline aksesibilitas? | Accessibility report | ☐ |
+| Responsive data display | Apakah table/chart/card tidak overflow, clipped, atau kehilangan unit/timestamp pada mobile? | Breakpoint screenshots | ☐ |
+| Copy/status consistency | Apakah istilah `foundation`, `pilot`, `gated`, `active`, dan `production` konsisten dengan backend status? | Content diff + API enum map | ☐ |
+| Observability UX | Apakah loading/error state menyediakan retry, last updated, data delay, dan support/incident link? | Screenshot + request ID | ☐ |
+
+Review frontend tidak lulus jika ada tombol yang tampak aktif tetapi tidak memiliki endpoint nyata, payout gated yang terlihat seperti payout sukses, atau wallet action tanpa network/risk disclosure.
+
+## 9. Legal and compliance preparation drafts
 
 > Draft berikut adalah bahan kerja produk dan bukan nasihat hukum. Sebelum publikasi atau custody, minta review penasihat hukum di setiap wilayah operasi.
 
-### 8.1 Privacy Policy — outline minimum
+### 9.1 Privacy Policy — outline minimum
 
 1. **Scope and controller:** entitas operator, domain, service, dan contact privacy.
 2. **Data collected:** account/email, session/security events, worker metadata, hashrate/share/telemetry, payout destination fingerprint, support records, API logs, and device/browser data.
@@ -313,7 +382,7 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 11. **Children/prohibited jurisdictions:** age and jurisdiction restrictions.
 12. **Change notice:** effective date and material-change communication.
 
-### 8.2 Terms of Service — outline minimum
+### 9.2 Terms of Service — outline minimum
 
 - Eligibility, legal capacity, prohibited jurisdictions, sanctions, and acceptable use.
 - Description of mining gateway, supported algorithms/assets/routes, and feature availability.
@@ -327,11 +396,11 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 - Suspension/termination, dormant account policy, dispute resolution, limitation of liability, governing law, and contact.
 - Versioning, effective date, and how material changes are communicated.
 
-### 8.3 Risk disclosure copy
+### 9.3 Risk disclosure copy
 
 > Mining dan payout aset digital memiliki risiko teknis, pasar, jaringan, custody, keamanan, reorg, orphan, provider, likuiditas, pajak, dan perubahan regulasi. Hashrate atau estimasi simulator bukan janji pendapatan. Accepted share tidak selalu menjadi reward spendable. Payout dapat tertunda, ditahan, ditolak, atau memerlukan verifikasi tambahan. Address dan network yang salah dapat menyebabkan transfer tidak dapat dipulihkan. Selama alpha, payout nyata masih gated dan pengguna tidak boleh mengirim dana atau menghubungkan perangkat produksi tanpa pemberitahuan bahwa route tersebut telah ACTIVE.
 
-### 8.4 KYC/AML, sanctions, dan tax review checklist
+### 9.4 KYC/AML, sanctions, dan tax review checklist
 
 - Tentukan legal entity, beneficial owner, operating jurisdictions, dan jurisdictions yang dilarang.
 - Tentukan apakah model upstream gateway, custody, conversion, referral, atau payout memerlukan licensing/registration.
@@ -344,7 +413,7 @@ Jika data belum tersedia, gunakan copy spesifik: `Belum ada data produksi pada e
 - Tinjau consumer disclosures untuk fee, conversion rate, minimum payout, spread, network fee, and lost-address risk.
 - Dapatkan sign-off legal/compliance sebelum menerima dana nyata, mengaktifkan conversion, atau menawarkan payout otomatis.
 
-## 9. Manual test checklist
+## 10. Manual test checklist
 
 Checklist berikut sengaja hanya meminta verifikasi manual dan evidence capture; tidak mengubah kode.
 
@@ -385,7 +454,7 @@ Checklist berikut sengaja hanya meminta verifikasi manual dan evidence capture; 
 
 Checklist hanya lulus jika seluruh item P0 tidak memiliki status `Fail`, evidence disanitasi dari secret/address penuh, environment dan commit dicatat, serta defect severity/owner/due date ditetapkan. Test manual tidak menggantikan integration, load, chaos, security, migration, atau provider compatibility test.
 
-## 10. Release decision checklist
+## 11. Release decision checklist
 
 Sebelum public production pilot, owner harus menandai semua item berikut:
 
@@ -402,7 +471,7 @@ Sebelum public production pilot, owner harus menandai semua item berikut:
 - [ ] Security assessment independen atau sign-off security internal selesai sebelum custody.
 - [ ] `PAYOUTS_ENABLED` dan auto-withdrawal tetap OFF sampai semua approver menandatangani go/no-go.
 
-## 11. Change control
+## 12. Change control
 
 Perubahan terhadap reward scheme, fee, minimum payout, maturity, reorg handling, custody, payout route, default wallet, KYC/AML scope, atau SLA memerlukan:
 
