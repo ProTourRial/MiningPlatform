@@ -391,7 +391,10 @@ try {
       '20260827010000_randomx_authoritative_dispatch_binding',
       'migration.sql',
     );
-    const randomXDispatchMigration = readFileSync(randomXDispatchMigrationPath, 'utf8');
+    const randomXDispatchMigration = readFileSync(randomXDispatchMigrationPath, 'utf8').replace(
+      /\r\n/g,
+      '\n',
+    );
     const enableIntentTrigger = `ALTER TABLE "RandomXShareSubmissionIntent"
   ENABLE TRIGGER "RandomXShareSubmissionIntent_immutable_trigger";`;
     const failureMessage = 'intentional RandomX dispatch migration failure';

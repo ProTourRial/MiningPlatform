@@ -70,6 +70,8 @@
 
 ### Fixed
 
+- Fresh-checkout script typechecking now resolves `@mining/signer-protocol` directly from source instead of depending on stale declaration output, and the schema-v21 failure-injection rehearsal normalizes CRLF/LF before locating its rollback marker.
+- Wallet-network validation tests are now connected to the workspace test graph instead of being present but silently reported as “not configured.”
 - Controlled-payout integration now creates its fail-closed payout-control and reward-clearing fixtures idempotently, so an exact fresh-migration test run no longer depends on a later database seed step.
 - Immediate native-Bitcoin unresolved-intent listing no longer round-trips a microsecond PostgreSQL timestamp through JavaScript millisecond precision; a zero minimum age now omits the redundant time predicate, while positive recovery ages remain database-clock based and conservative.
 - RandomX job normalization now clones the adapter clock value, so mutating a caller-owned `Date` cannot silently alter retained job evidence or its expiry.
@@ -89,8 +91,8 @@
 - Migration atomicity rehearsal intentionally aborts the schema-v20 RandomX backfill after its immutable trigger is disabled and proves PostgreSQL rolls back the new column, historical data mutation, and trigger state; the native-submission and RandomX dispatch backfills now have explicit whole-file transaction boundaries.
 - RandomX mining/accounting integration persists evidence plus its contribution hand-off atomically, rejects conflicting retries and rollback leakage, posts one immutable RandomX contribution after exact source verification, and rejects mutation or a second credit.
 - RandomX unit coverage passes 16/16, CryptoNote upstream adapter coverage passes 19/19, and gateway integration passes 10/10 across authenticated identity/account/pool binding, authoritative target/job/session evidence, cross-worker duplicate suppression, durable retry after job eviction, authorization and session races, local/upstream rejection, transport ambiguity, transaction rollback, immutable envelopes, and explicit absence of contribution, reward, journal, reservation, or balance effects.
-- Frozen offline installation passes across all 33 workspaces; repository lint and production build pass 32/32, while the full typecheck and test dependency graphs pass 50/50 with 21 generated Next.js routes.
-- Docker E2E applies all 20 migrations to a clean PostgreSQL volume, builds the API, web, outbox, mining, and accounting images from the frozen lockfile, starts the production reverse-proxy stack, reaches API readiness, and verifies public version plus fail-closed wallet-status responses before deleting the disposable containers and volumes.
+- Frozen installation passes across all 35 workspaces; repository lint and production build pass 34/34, while the full typecheck and test dependency graphs pass 52/52 with 21 generated Next.js routes. The newly connected wallet-network validator coverage passes 7/7.
+- Docker E2E is configured to apply all 21 migrations to a clean PostgreSQL volume, build the API, web, outbox, mining, and accounting images from the frozen lockfile, start the production reverse-proxy stack, reach API readiness, and verify public version plus fail-closed wallet-status responses before deleting the disposable containers and volumes.
 
 ### Development assistance
 

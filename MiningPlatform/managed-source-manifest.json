@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 671,
-  "managedFilesChecksum": "a5097bb79cdcdbe34b9db5ade350271ceaf98b25eec70b3016e66531401c3159",
+  "managedFilesChecksum": "c42c2617aa5476fbf22409eb597981666bc3e51f6f6eb6dc1ce1cb40f733ac07",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1261,8 +1261,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "096b044a965d67768bb527aae32808bb16acfe483a2a2c6ac614021899aad2eb",
-      "size": 56492
+      "sha256": "7fc54e114458cf6a73c457f70b955f9e0cd28e800cf3930c29e07f9195718771",
+      "size": 56961
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3006,8 +3006,8 @@
     },
     {
       "path": "packages/validation/package.json",
-      "sha256": "9ce687360817e878ff6124a8548dccd7d1423219509a0ce1ef49b231d9e43ab9",
-      "size": 776
+      "sha256": "48999a914120f3cc7fd84799d0a7041630115a5338abd271cc94d713fb6ea8a8",
+      "size": 777
     },
     {
       "path": "packages/validation/src/index.ts",
@@ -3051,8 +3051,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "a35f37f1599ce02c92bf6a80a70727dbef92099aac3b0ee6d2020f851f90b41e",
-      "size": 302056
+      "sha256": "4420c7fc1a6926473c972c96053b078b066d001b31cdca6b3e78c9a5de865ea9",
+      "size": 302117
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3246,8 +3246,8 @@
     },
     {
       "path": "scripts/tsconfig.json",
-      "sha256": "39f146de220ea60673259636a05a7cef35260735157d74042ee421d13b3b5db3",
-      "size": 814
+      "sha256": "1a457f29e6b2621ed7f92f04ac286cdc59c2b52b8d51651c70ef449d0e088197",
+      "size": 890
     },
     {
       "path": "scripts/user-role-cli.ts",
@@ -3336,8 +3336,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "cb7122a1316e629de73e73feec3f4df0b7669e9ef4b2022082c59392ed2c7e02",
-      "size": 39604
+      "sha256": "59b21c793ef8b51fafcb266f9effe65928ca295140bf4e3407d59b1f27421c27",
+      "size": 39646
     },
     {
       "path": "scripts/wait-for-http.mjs",
