@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 671,
-  "managedFilesChecksum": "f9a05cabe52741b7170f36ee7d792bba8a33c69d68595abbd7775bef4d16bbf3",
+  "managedFilesChecksum": "84a0ff48429c39e126699dcf86832aaad720acb44ead9057a0716ab2f28757b3",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1261,8 +1261,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "41864b78c70947ec739ef1051589a85b6786915fb7c825bc97f0261d03935b0b",
-      "size": 57170
+      "sha256": "92189e75e66c0ec80001a270ae277f518064e8fb076474d46f3134ae109ece13",
+      "size": 57435
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3336,8 +3336,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "59b21c793ef8b51fafcb266f9effe65928ca295140bf4e3407d59b1f27421c27",
-      "size": 39646
+      "sha256": "1ce1ded6542a5de0902d4a347480bb9a4ac8f14c9350188afe0e8315fe524bdf",
+      "size": 39963
     },
     {
       "path": "scripts/wait-for-http.mjs",
@@ -3361,8 +3361,8 @@
     },
     {
       "path": "vercel.json",
-      "sha256": "43280925c856cd86b112f12b08c5ecb64e6c89f8410c8e3ef02277c98f428cb3",
-      "size": 243
+      "sha256": "86783c0004655c28b952769537d5c2c00a4eceb8a49e4895db9582e9324e21bf",
+      "size": 281
     }
   ]
 }

@@ -812,6 +812,10 @@ try {
 
   process.env.AUTH_JWT_SECRET ??= 'alpha8-migration-test-jwt-secret-at-least-32-bytes';
   process.env.AUTH_ENCRYPTION_KEY ??= Buffer.alloc(32, 17).toString('base64url');
+  // Migration rehearsals run in a clean checkout in CI. Build the API dependency
+  // graph before importing workspace packages whose exports intentionally point
+  // at dist/, so this evidence never depends on artifacts from an earlier job.
+  run('pnpm', ['exec', 'turbo', 'run', 'build', '--filter=@mining/api']);
   run('pnpm', [
     '--filter',
     '@mining/api',
