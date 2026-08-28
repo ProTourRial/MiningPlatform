@@ -70,7 +70,7 @@
 
 ### Fixed
 
-- Clean-checkout migration rehearsals now build the API workspace dependency graph before executing post-migration integration evidence, and Vercel explicitly builds `@mining/shared` before the web application; neither gate depends on stale local `dist` artifacts.
+- Clean-checkout migration rehearsals now build every post-migration test workspace graph before executing API, mining, accounting, and RandomX evidence, and Vercel explicitly builds `@mining/shared` before the web application; neither gate depends on stale local `dist` artifacts.
 - Vercel install and build commands now work whether the project Root Directory is the repository root or `MiningPlatform`, preventing a nested `cd MiningPlatform` from failing before dependency installation.
 - Fresh-checkout script typechecking now resolves `@mining/signer-protocol` directly from source instead of depending on stale declaration output, and the schema-v21 failure-injection rehearsal normalizes CRLF/LF before locating its rollback marker.
 - Wallet-network validation tests are now connected to the workspace test graph instead of being present but silently reported as “not configured.”

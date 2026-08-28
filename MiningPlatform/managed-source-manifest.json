@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 671,
-  "managedFilesChecksum": "84a0ff48429c39e126699dcf86832aaad720acb44ead9057a0716ab2f28757b3",
+  "managedFilesChecksum": "b1272f1ce985adcd89bce8dda043dfcbde893050c9904949874516b68e11bd93",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1261,8 +1261,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "92189e75e66c0ec80001a270ae277f518064e8fb076474d46f3134ae109ece13",
-      "size": 57435
+      "sha256": "061df8d54fef989abd5a1d0d25c6e73a4a6e02732d66689ef53d1e4ec88ff3aa",
+      "size": 57452
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3336,8 +3336,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "1ce1ded6542a5de0902d4a347480bb9a4ac8f14c9350188afe0e8315fe524bdf",
-      "size": 39963
+      "sha256": "be30319aa07eb2e525807f0e1f7ef0a3cd6fc5928c7831e69df65694fcfa097d",
+      "size": 40112
     },
     {
       "path": "scripts/wait-for-http.mjs",
