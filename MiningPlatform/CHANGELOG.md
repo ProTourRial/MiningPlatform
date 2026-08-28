@@ -70,6 +70,7 @@
 
 ### Fixed
 
+- Vercel install and build commands now work whether the project Root Directory is the repository root or `MiningPlatform`, preventing a nested `cd MiningPlatform` from failing before dependency installation.
 - Fresh-checkout script typechecking now resolves `@mining/signer-protocol` directly from source instead of depending on stale declaration output, and the schema-v21 failure-injection rehearsal normalizes CRLF/LF before locating its rollback marker.
 - Wallet-network validation tests are now connected to the workspace test graph instead of being present but silently reported as “not configured.”
 - Controlled-payout integration now creates its fail-closed payout-control and reward-clearing fixtures idempotently, so an exact fresh-migration test run no longer depends on a later database seed step.
