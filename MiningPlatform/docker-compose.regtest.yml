@@ -1,0 +1,94 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: mining-platform-regtest
+
+services:
+  bitcoin-core-regtest:
+    profiles: ['native-regtest']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/bitcoin-core-regtest.Dockerfile
+      args:
+        BITCOIN_CORE_VERSION: '31.0'
+    restart: 'no'
+    command:
+      - -regtest=1
+      - -server=1
+      - -printtoconsole=1
+      - -listen=0
+      - -discover=0
+      - -dnsseed=0
+      - -dbcache=128
+      - -fallbackfee=0.00001000
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=miningplatform-regtest
+      - -rpcpassword=miningplatform-regtest-disposable-only
+    ports:
+      - '127.0.0.1:${BITCOIN_REGTEST_RPC_PORT:-18443}:18443'
+    volumes:
+      - bitcoin_regtest_data:/home/bitcoin/.bitcoin
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bitcoin-cli',
+          '-regtest',
+          '-rpcuser=miningplatform-regtest',
+          '-rpcpassword=miningplatform-regtest-disposable-only',
+          'getblockchaininfo',
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+  bitcoin-core-fork-regtest:
+    profiles: ['native-regtest']
+    build:
+      context: .
+      dockerfile: infrastructure/docker/bitcoin-core-regtest.Dockerfile
+      args:
+        BITCOIN_CORE_VERSION: '31.0'
+    restart: 'no'
+    command:
+      - -regtest=1
+      - -server=1
+      - -printtoconsole=1
+      - -listen=0
+      - -discover=0
+      - -dnsseed=0
+      - -dbcache=128
+      - -fallbackfee=0.00001000
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=miningplatform-regtest
+      - -rpcpassword=miningplatform-regtest-disposable-only
+    ports:
+      - '127.0.0.1:${BITCOIN_FORK_REGTEST_RPC_PORT:-18444}:18443'
+    volumes:
+      - bitcoin_fork_regtest_data:/home/bitcoin/.bitcoin
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bitcoin-cli',
+          '-regtest',
+          '-rpcuser=miningplatform-regtest',
+          '-rpcpassword=miningplatform-regtest-disposable-only',
+          'getblockchaininfo',
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  bitcoin_regtest_data:
+  bitcoin_fork_regtest_data:

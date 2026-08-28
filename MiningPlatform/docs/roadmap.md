@@ -49,6 +49,52 @@ Release blockers:
 - Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
+RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
+accounting projection. Schema v18 now preserves accepted-share evidence through an immutable,
+algorithm-discriminated boundary with account/asset/upstream correlation and unique retry identity.
+A strict mining-worker event consumer now validates the versioned accepted-share contract and commits
+event idempotency plus evidence atomically under a PostgreSQL advisory lock. Its fingerprint binds the
+full bounded work blob, target, and height. No miner-facing producer emits the event yet; contribution
+creation, reward assignment, settlement, and ledger effects remain deliberately blocked until their
+own invariants and failure tests are proven. A canonical producer-side factory now revalidates and
+freezes the exact envelope, while durable pre-RPC intent and transactional outbox delivery remain the
+next mandatory boundary before any authenticated gateway may publish it.
+
+## Active Native Pool Laboratory Track
+
+The native-pool track now runs alongside controlled payout completion. Its canonical gap register is
+[`product/NATIVE_POOL_GAP_REGISTER.md`](product/NATIVE_POOL_GAP_REGISTER.md).
+
+Execution order:
+
+1. Bitcoin Core regtest readiness and authoritative `getblocktemplate` adapter.
+2. Deterministic coinbase, merkle root, and native mining-job builder.
+3. Block-candidate reconstruction, validation, and `submitblock` evidence.
+4. Pool round plus immature/mature/orphan/reorg lifecycle.
+5. Native PPLNS/PROP allocation, versioned fee resolution, and balanced immutable ledger.
+6. Coinbase UTXO, wallet, user-liability, fee, clearing, and reserve reconciliation.
+7. Production Stratum capacity, global extranonce, HA, DDoS, monitoring, security, and legal gates.
+
+Current fixture evidence covers the fail-closed RPC/template boundary plus the offline deterministic
+coinbase, merkle, native-job, block-candidate, proposal, guarded `submitblock`, private Redis job
+retention, and Redis-time global extranonce boundaries. Two-client Redis 7 integration proves shared
+job visibility, 128 unique leases, and monotonic TTL extension. Schemas v15-v17 add append-only,
+idempotent, digest-correlated candidate/proposal/pre-RPC-intent/submission/recovery records. The
+offline coordinators prove intent-before-RPC, durable-outcome replay, fail-closed unresolved-intent
+detection, and read-only active/stale/not-found block observation, with fresh and alpha.7 upgrade
+migration evidence. A checksum-pinned Bitcoin Core 31.0 two-node regtest trace now proves a live
+witness transaction in the authoritative template, wallet-owned coinbase, network-target candidate,
+valid proposal, accepted `submitblock`, exact transaction inclusion, and two confirmations.
+The trace also proves long-poll replacement, deterministic reorganization to a longer isolated-node
+chain, `STALE_CHAIN` observation for the original native block, and exact reorg-tip persistence across
+a healthy process restart. In-flight restart, deeper/partitioned fork, version-upgrade, Redis
+restart/partition/failover evidence, Stratum wiring, durable raw-block retrieval, reward reversal, and
+an explicitly approved operator resubmission policy for still-not-found intents remain mandatory
+before steps 1-3 can be declared complete.
+
+PPS/FPPS remains outside the active scope until a funded reserve, exposure limits, variance model, and
+independent risk approval exist. Regtest success never authorizes mainnet custody or payout.
+
 ## v0.2.0-alpha.6: Upstream Resilience — Implemented foundation
 
 - Pool adapter layer.

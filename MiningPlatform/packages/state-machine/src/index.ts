@@ -20,3 +20,5 @@ export class FiniteStateMachine<TState extends string> {
     return to;
   }
 }
+
+export * from './financial-state-machines.js';

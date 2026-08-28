@@ -1,0 +1,73 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: Native Bitcoin Regtest
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-bitcoin-regtest-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: MiningPlatform
+
+jobs:
+  canonical-native-block:
+    name: Bitcoin Core 31 template to confirmation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mining/bitcoin-template... build
+      - name: Start checksum-pinned disposable Bitcoin Core
+        run: >-
+          docker compose -p miningplatform_native_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          up -d --build --wait bitcoin-core-regtest bitcoin-core-fork-regtest
+      - name: Prove template, proposal, submitblock, and confirmation
+        env:
+          NATIVE_BITCOIN_REGTEST_ACK: disposable-bitcoin-core-31-regtest-only
+        run: pnpm test:integration:native-bitcoin-regtest
+      - name: Prove node restart preserves the canonical tip
+        shell: bash
+        run: |
+          compose=(docker compose -p miningplatform_native_regtest -f docker-compose.regtest.yml --profile native-regtest)
+          cli=(bitcoin-cli -regtest -rpcuser=miningplatform-regtest -rpcpassword=miningplatform-regtest-disposable-only)
+          before_height="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getblockcount)"
+          before_tip="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getbestblockhash)"
+          "${compose[@]}" restart bitcoin-core-regtest
+          "${compose[@]}" up -d --no-build --wait bitcoin-core-regtest
+          after_height="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getblockcount)"
+          after_tip="$("${compose[@]}" exec -T bitcoin-core-regtest "${cli[@]}" getbestblockhash)"
+          test "$before_height" = "$after_height"
+          test "$before_tip" = "$after_tip"
+      - name: Capture Bitcoin Core logs on failure
+        if: failure()
+        run: >-
+          docker compose -p miningplatform_native_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          logs --no-color bitcoin-core-regtest
+      - name: Clean disposable regtest state
+        if: always()
+        run: >-
+          docker compose -p miningplatform_native_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          down -v --rmi local --remove-orphans

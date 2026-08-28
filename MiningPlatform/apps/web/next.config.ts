@@ -8,18 +8,29 @@ import type { NextConfig } from 'next';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const monorepoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const appRoot = dirname(fileURLToPath(import.meta.url));
+const monorepoRoot = resolve(appRoot, '../..');
+const repositoryRoot = resolve(appRoot, '../../..');
+const standaloneOutput = process.env.NEXT_OUTPUT_MODE === 'standalone';
+const vercelBuild = process.env.VERCEL === '1';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
   transpilePackages: ['@mining/shared'],
-  output: process.env.NEXT_OUTPUT_MODE === 'standalone' ? 'standalone' : undefined,
-  outputFileTracingRoot: monorepoRoot,
-  turbopack: {
-    root: monorepoRoot,
-  },
+  output: standaloneOutput ? 'standalone' : undefined,
+  ...(vercelBuild
+    ? {
+        outputFileTracingRoot: repositoryRoot,
+        turbopack: { root: repositoryRoot },
+      }
+    : standaloneOutput
+    ? {
+        outputFileTracingRoot: monorepoRoot,
+        turbopack: { root: monorepoRoot },
+      }
+    : {}),
 };
 
 export default nextConfig;

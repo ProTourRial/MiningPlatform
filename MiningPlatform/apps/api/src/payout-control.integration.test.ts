@@ -108,7 +108,7 @@ test('payout address changes require replay-safe step-up, checksum validation, c
   const feePolicy = await prisma.miningFeePolicy.findFirstOrThrow({
     where: { policyKey: 'platform-default', version: 1 },
   });
-  await prisma.miningAccount.create({
+  const miningAccount = await prisma.miningAccount.create({
     data: {
       userId: user.id,
       assetId: btc.id,
@@ -278,8 +278,8 @@ test('payout address changes require replay-safe step-up, checksum validation, c
 
   const preferences = await payouts.preferences(user.id);
   assert.equal(preferences[0]?.effective, false);
-  assert.ok(preferences[0]?.blockers.includes('GLOBAL_PAYOUT_GATE_DISABLED'));
-  assert.ok(preferences[0]?.blockers.includes('PAYOUT_ROUTE_NOT_ACTIVE'));
+  assert.ok(preferences[0]?.blockers.includes('PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED'));
+  assert.ok(preferences[0]?.blockers.includes('NO_SELECTED_PAYOUT_DESTINATION'));
 
   await assert.rejects(
     prisma.payoutAddress.update({
@@ -293,24 +293,34 @@ test('payout address changes require replay-safe step-up, checksum validation, c
       data: {
         idempotencyKey: `payout-mismatch-${suffix}`,
         userId: user.id,
+        miningAccountId: miningAccount.id,
         assetId: btc.id,
         payoutAddressId: first.id,
         payoutRouteId: route.id,
         amount: '0.00000001',
+        amountAtomic: 1n,
+        executionVersion: 2,
         scheduledAt: new Date(),
       },
     }),
-    /active verified address/,
+    /selected active verified destination|active verified address/,
   );
+  await prisma.miningAccount.update({
+    where: { id: miningAccount.id },
+    data: { selectedPayoutAddressId: second.id },
+  });
   await assert.rejects(
     prisma.payout.create({
       data: {
         idempotencyKey: `payout-route-gated-${suffix}`,
         userId: user.id,
+        miningAccountId: miningAccount.id,
         assetId: btc.id,
         payoutAddressId: second.id,
         payoutRouteId: route.id,
         amount: '0.00000001',
+        amountAtomic: 1n,
+        executionVersion: 2,
         scheduledAt: new Date(),
       },
     }),

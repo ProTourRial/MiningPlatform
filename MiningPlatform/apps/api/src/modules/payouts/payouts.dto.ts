@@ -4,7 +4,15 @@
  * Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
  */
 
-import { IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class UpdateAutoWithdrawalDto {
   @IsBoolean()
@@ -27,4 +35,40 @@ export class RegisterPayoutAddressDto {
   @IsString()
   @MaxLength(80)
   label?: string;
+}
+
+export class SelectPayoutDestinationDto {
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  payoutAddressId!: string;
+}
+
+export class RequestPayoutDto {
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  miningAccountId!: string;
+
+  @IsString()
+  @Matches(/^[1-9][0-9]{0,18}$/)
+  amountAtomic!: string;
+}
+
+export class PayoutDecisionDto {
+  @IsString()
+  @IsIn(['APPROVED', 'REJECTED'])
+  decision!: 'APPROVED' | 'REJECTED';
+
+  @IsString()
+  @MinLength(10)
+  @MaxLength(500)
+  reason!: string;
+}
+
+export class CancelPayoutDto {
+  @IsString()
+  @MinLength(10)
+  @MaxLength(500)
+  reason!: string;
 }

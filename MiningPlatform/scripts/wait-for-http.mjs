@@ -8,17 +8,27 @@ if (!url || !Number.isSafeInteger(timeoutMilliseconds) || timeoutMilliseconds < 
 }
 const deadline = Date.now() + timeoutMilliseconds;
 let lastError;
+let ready = false;
 while (Date.now() < deadline) {
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (response.ok) {
-      process.stdout.write(`Ready: ${url}\n`);
-      process.exit(0);
+      await response.body?.cancel();
+      ready = true;
+      break;
     }
     lastError = new Error(`HTTP ${response.status}`);
+    await response.body?.cancel();
   } catch (error) {
     lastError = error;
   }
   await sleep(2_000);
 }
-throw new Error(`Timed out waiting for ${url}: ${lastError instanceof Error ? lastError.message : 'unknown error'}`);
+if (!ready) {
+  throw new Error(
+    `Timed out waiting for ${url}: ${
+      lastError instanceof Error ? lastError.message : 'unknown error'
+    }`,
+  );
+}
+process.stdout.write(`Ready: ${url}\n`);

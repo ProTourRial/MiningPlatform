@@ -16,5 +16,7 @@ export * from './gateway-job-router.js';
 export * from './health-coordinator.js';
 export * from './pool-adapter.js';
 export * from './pool-manager.js';
+export * from './randomx-pool-adapter.js';
+export * from './randomx-protocol.js';
 export * from './share-queue.js';
 export * from './vardiff.js';

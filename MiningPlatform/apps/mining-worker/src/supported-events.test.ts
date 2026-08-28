@@ -7,7 +7,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MiningEvents } from '@mining/shared';
-import { assertSupportedMiningEvent, supportedMiningEvents } from './supported-events.js';
+import {
+  assertSupportedMiningEvent,
+  supportedMiningEvents,
+  supportedMiningProjectionEvents,
+} from './supported-events.js';
 
 test('workerDeviceDetected is accepted by the mining projection event gate', () => {
   assert.equal(supportedMiningEvents.has(MiningEvents.workerDeviceDetected), true);
@@ -23,7 +27,17 @@ test('unsupported event versions are rejected before projection', () => {
 
 test('accounting events are not claimed by the mining projection', () => {
   assert.equal(supportedMiningEvents.has(MiningEvents.contributionAccepted), false);
+  assert.equal(supportedMiningEvents.has(MiningEvents.randomXContributionAccepted), false);
   assert.equal(supportedMiningEvents.has(MiningEvents.settlementImported), false);
+});
+
+test('RandomX accepted evidence is owned by its dedicated accounting projection', () => {
+  assert.equal(supportedMiningEvents.has(MiningEvents.randomXShareAccepted), true);
+  assert.equal(supportedMiningProjectionEvents.has(MiningEvents.randomXShareAccepted), false);
+  assert.throws(
+    () => assertSupportedMiningEvent(MiningEvents.randomXShareAccepted, 1),
+    /Unsupported mining event/,
+  );
 });
 
 test('upstream resilience events are accepted by the mining projection event gate', () => {
