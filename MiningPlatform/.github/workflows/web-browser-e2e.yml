@@ -38,3 +38,94 @@ jobs:
       - run: pnpm --filter @mining/web build
       - run: pnpm --filter @mining/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e:web:smoke
+
+  authenticated-journey:
+    name: Real registration, session, worker, and payout controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: browser-e2e-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      CI: 'true'
+      APP_URL: http://localhost:3000
+      PORT: '4400'
+      DATABASE_URL: postgresql://mining:browser-e2e-postgres@127.0.0.1:5432/mining_platform?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      AUTH_JWT_SECRET: browser-e2e-jwt-secret-at-least-32-bytes
+      AUTH_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      AUTH_IP_HASH_KEY: browser-e2e-ip-hash-key-at-least-32-bytes
+      AUTH_EXPOSE_TEST_TOKENS: 'true'
+      AUTH_EXPOSE_DEV_TOKENS: 'true'
+      AUTH_SECURE_COOKIES: 'false'
+      ENABLE_SWAGGER: 'false'
+      EMAIL_PROVIDER: disabled
+      SUPPORT_PAYMENTS_ENABLED: 'false'
+      PAYOUTS_ENABLED: 'false'
+      PAYOUT_REQUESTS_ENABLED: 'false'
+      PAYOUT_SIGNING_ENABLED: 'false'
+      PAYOUT_BROADCAST_ENABLED: 'false'
+      NEXT_PUBLIC_API_URL: http://localhost:4400/api/v1
+      E2E_FULL_STACK: 'true'
+      E2E_WEB_COMMAND: pnpm start
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate:deploy
+      - run: pnpm db:seed
+      - run: pnpm --filter @mining/api... build
+      - run: pnpm --filter @mining/shared build
+      - run: pnpm --filter @mining/web build
+      - name: Start real Control Plane API
+        run: |
+          pnpm --filter @mining/api start > "$RUNNER_TEMP/mining-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/mining-api.pid"
+      - name: Wait for API dependency readiness
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4400/api/v1/health/ready >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/mining-api.log"
+          exit 1
+      - run: pnpm --filter @mining/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @mining/web exec playwright test e2e/authenticated-control-plane.spec.ts
+      - name: Capture API log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/mining-api.log"
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/mining-api.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/mining-api.pid")" || true
+          fi

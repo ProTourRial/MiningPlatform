@@ -846,6 +846,14 @@ for (const expected of [
   'pnpm --filter @mining/web build',
   'playwright install --with-deps chromium',
   'pnpm test:e2e:web:smoke',
+  'authenticated-journey:',
+  'postgres:17-alpine',
+  'AUTH_EXPOSE_TEST_TOKENS:',
+  'PAYOUTS_ENABLED:',
+  'pnpm db:migrate:deploy',
+  'pnpm --filter @mining/api... build',
+  'http://127.0.0.1:4400/api/v1/health/ready',
+  'playwright test e2e/authenticated-control-plane.spec.ts',
 ]) {
   requireText(browserWorkflow, expected, 'Active browser E2E workflow');
   requireText(packagedBrowserWorkflow, expected, 'Packaged browser E2E workflow');
