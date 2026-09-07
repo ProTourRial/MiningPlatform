@@ -10,9 +10,7 @@ import './globals.css';
 import { AppProviders } from '@/components/providers/app-providers';
 
 const metadataBase = new URL(
-  process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000',
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000',
 );
 
 export const metadata: Metadata = {
@@ -63,7 +61,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="id">
+    <html lang="id" data-scroll-behavior="smooth">
       <body>
         <AppProviders>{children}</AppProviders>
       </body>

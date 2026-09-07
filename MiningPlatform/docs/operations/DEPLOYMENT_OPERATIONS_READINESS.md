@@ -34,15 +34,16 @@ Local `.env.example` is a template only. Any `change-me`, test token, `AUTH_EXPO
 
 Vercel should hold only browser-safe build/runtime configuration for the web project. Values prefixed `NEXT_PUBLIC_` are public by design and must never contain secrets.
 
-| Variable                                   |                        Required | Example/meaning                                                        |              Secret? |
-| ------------------------------------------ | ------------------------------: | ---------------------------------------------------------------------- | -------------------: |
-| `NEXT_PUBLIC_API_URL`                      |                             Yes | `https://api.example.com/api/v1` or `/api/v1` behind same-origin proxy |                   No |
-| `NEXT_PUBLIC_SOCKET_URL`                   |             If realtime enabled | `https://api.example.com` or same-origin socket path                   |                   No |
-| `NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD` | No; must be false in production | `false`                                                                |                   No |
-| `NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN`  |                Never production | Local-only test token                                                  | **Do not configure** |
-| `NEXT_PUBLIC_DEVELOPMENT_WORKER_ID`        |                Never production | Local-only fixture ID                                                  | **Do not configure** |
+| Variable                                   |                        Required | Example/meaning                                                                       |                Secret? |
+| ------------------------------------------ | ------------------------------: | ------------------------------------------------------------------------------------- | ---------------------: |
+| `API_UPSTREAM_ORIGIN`                      |   Yes for Vercel + external API | Server-only `https://api.example.com`; Next proxies `/api/*` same-origin              | No; server-only config |
+| `NEXT_PUBLIC_API_URL`                      |                    No on Vercel | Leave unset to use `/api/v1`; local direct API may use `http://localhost:4000/api/v1` |                     No |
+| `NEXT_PUBLIC_SOCKET_URL`                   |             If realtime enabled | `https://api.example.com` or same-origin socket path                                  |                     No |
+| `NEXT_PUBLIC_ENABLE_DEVELOPMENT_DASHBOARD` | No; must be false in production | `false`                                                                               |                     No |
+| `NEXT_PUBLIC_DEVELOPMENT_DASHBOARD_TOKEN`  |                Never production | Local-only test token                                                                 |   **Do not configure** |
+| `NEXT_PUBLIC_DEVELOPMENT_WORKER_ID`        |                Never production | Local-only fixture ID                                                                 |   **Do not configure** |
 
-Vercel build settings must pin Node/pnpm versions, use the repository lockfile, and record the commit/image/source version shown in the deployment. Vercel must not receive `DATABASE_URL`, `REDIS_URL`, `AUTH_JWT_SECRET`, wallet/RPC credentials, signing references, or any server-only secret.
+Vercel build settings must pin Node/pnpm versions, use the repository lockfile, and record the commit/image/source version shown in the deployment. Configure `API_UPSTREAM_ORIGIN` as a server-only environment variable and leave `NEXT_PUBLIC_API_URL` unset so secure, SameSite cookies remain on the Vercel origin through the `/api/*` rewrite. Vercel must not receive `DATABASE_URL`, `REDIS_URL`, `AUTH_JWT_SECRET`, wallet/RPC credentials, signing references, or any signer/RPC secret.
 
 ### 2.2 API and worker variables
 

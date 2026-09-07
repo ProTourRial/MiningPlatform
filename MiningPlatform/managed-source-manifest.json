@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 677,
-  "managedFilesChecksum": "c01fb066eabd636c391510c13e584ddeb4490806d36d38ec58adc2dc5b591d2c",
+  "managedFileCount": 685,
+  "managedFilesChecksum": "48b300817a84c6c05b23920cb958f551bf9d9c13b55fb6c17d8cb8be6d3548c4",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -43,6 +43,11 @@
       "path": ".github/workflows/payout-regtest.yml",
       "sha256": "22bba65d8de67c5727fee76bd4afa58157dfb8220d56cf04f2dc73bfad56d5ec",
       "size": 2775
+    },
+    {
+      "path": ".github/workflows/web-browser-e2e.yml",
+      "sha256": "e452544216ef72dfdf6cb6e314e3caa83aad16956fbf2d7b4eafec1734eba655",
+      "size": 1393
     },
     {
       "path": ".gitignore",
@@ -426,8 +431,8 @@
     },
     {
       "path": "apps/api/src/modules/payouts/payouts.service.ts",
-      "sha256": "b845173b614249f584b06c907218fe4b2d5db1225308f73e6d8e3774730f9bff",
-      "size": 45385
+      "sha256": "40026aede35f95b1d34e6dc833e85db9b3ac8cd6fcc70929f665e2f98662a24e",
+      "size": 45433
     },
     {
       "path": "apps/api/src/modules/rewards/rewards.controller.ts",
@@ -546,8 +551,8 @@
     },
     {
       "path": "apps/api/src/payout-control.integration.test.ts",
-      "sha256": "5b192aca3a0b662b8c224f869fbb1ff961bdc0bf10cadbc8c41ce6031bca05fb",
-      "size": 11526
+      "sha256": "bef6525b9eaa48f55efe6288524df0f0836c1e4e668761dcc59ec80634c4a8a1",
+      "size": 11614
     },
     {
       "path": "apps/api/src/payout-execution.integration.test.ts",
@@ -955,6 +960,26 @@
       "size": 135
     },
     {
+      "path": "apps/web/AGENTS.md",
+      "sha256": "63f2c50380ed6303237cce215ce27af1d620d094c215e28d1b1538a3c070e3bb",
+      "size": 678
+    },
+    {
+      "path": "apps/web/CLAUDE.md",
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
+      "size": 11
+    },
+    {
+      "path": "apps/web/e2e/authenticated-control-plane.spec.ts",
+      "sha256": "7bcfc01ade07abad8f7684980b2bab8a1f17b66910018eb01d207594f2bc46c8",
+      "size": 6315
+    },
+    {
+      "path": "apps/web/e2e/public-smoke.spec.ts",
+      "sha256": "ef1511bd27775f549ebab539b3ae5a60f08525fac3860c854b97000048db4253",
+      "size": 1854
+    },
+    {
       "path": "apps/web/eslint.config.mjs",
       "sha256": "ad4c8ba04b372f30767644d881466bc41cc12c509507e520e91bd152bcd92558",
       "size": 401
@@ -966,13 +991,18 @@
     },
     {
       "path": "apps/web/next.config.ts",
-      "sha256": "0cc4074c02ae312050ccdf8bc736301d0752b2d7c562a668bc9364086b0ba5eb",
-      "size": 1018
+      "sha256": "e46a7ab6d3485584bcce0a6f0e67c8116c0796f55e9488a8271de760bf353609",
+      "size": 1663
     },
     {
       "path": "apps/web/package.json",
-      "sha256": "6f40aa1e4743b1040bb2220ad976627512708cbafd35da517bd074d7bd6e234b",
-      "size": 1054
+      "sha256": "ed936b4473749a267beefecf55716641e05291d2fb4925e32541c8adf801cb41",
+      "size": 1197
+    },
+    {
+      "path": "apps/web/playwright.config.ts",
+      "sha256": "591ed2ad77c61e7a4910f3190ffa491fd7cc9485e2871497e11f445e265d3337",
+      "size": 1473
     },
     {
       "path": "apps/web/postcss.config.mjs",
@@ -1031,8 +1061,8 @@
     },
     {
       "path": "apps/web/src/app/dashboard/rewards/page.tsx",
-      "sha256": "872042eab5cb641e87a8f0b78499c88d2b3e7a4550944e79a636c3608d2b6477",
-      "size": 495
+      "sha256": "d3136aa04f0d5da5d1b59485fbc3e59d3ce5c5c23ada7b0bc7f523ead67b65ed",
+      "size": 680
     },
     {
       "path": "apps/web/src/app/dashboard/security/page.tsx",
@@ -1046,8 +1076,8 @@
     },
     {
       "path": "apps/web/src/app/dashboard/wallet/page.tsx",
-      "sha256": "6ed21e67c0ca80a20194556ca75bbf6fdf1a831f506749d056cf46f5ab9e2a97",
-      "size": 792
+      "sha256": "ec88e50b883735b74f374b140f9a30be579674b5d5a79739c20e69fe13962be4",
+      "size": 914
     },
     {
       "path": "apps/web/src/app/dashboard/workers/page.tsx",
@@ -1066,8 +1096,8 @@
     },
     {
       "path": "apps/web/src/app/layout.tsx",
-      "sha256": "7feeb33a2de16544f5cb22fe53f8def9353f9ac5f33da78457f8e2b2a9d431ca",
-      "size": 1998
+      "sha256": "1ed4d9f28eb61c7674bed3a88aa17c0d0975ff2d98573fffedc852789ed2597d",
+      "size": 2020
     },
     {
       "path": "apps/web/src/app/login/page.tsx",
@@ -1081,8 +1111,8 @@
     },
     {
       "path": "apps/web/src/app/register/page.tsx",
-      "sha256": "e24984682653c67fa0d3036b72efb0bdd0c09ca7a0cf9783657149f8a84b7af8",
-      "size": 3633
+      "sha256": "419923d90e5be4ccf1f561d3a6b606190c75154b147998a1459f4a009a84d78b",
+      "size": 406
     },
     {
       "path": "apps/web/src/app/reset-password/page.tsx",
@@ -1111,8 +1141,8 @@
     },
     {
       "path": "apps/web/src/components/auth/register-form.tsx",
-      "sha256": "e313f0e2fc1efdfc364a90c4098f13d37bcda2ea833c73ec48f821425296e4fa",
-      "size": 3181
+      "sha256": "ed5e70ffaa01cd081dab7be88d94b74c12e494d5cc1de2738714a2ad90832df8",
+      "size": 4031
     },
     {
       "path": "apps/web/src/components/dashboard/admin-management-panel.tsx",
@@ -1126,8 +1156,8 @@
     },
     {
       "path": "apps/web/src/components/dashboard/auto-withdrawal-panel.tsx",
-      "sha256": "ab90623a7dafc40779da6cd29913243355ad988471333b001debc5bd2664119a",
-      "size": 5446
+      "sha256": "8f71efce4d0dddb3c70f72101ef78dfd123156f2e9d2a3112061d338fe965d98",
+      "size": 6993
     },
     {
       "path": "apps/web/src/components/dashboard/bitcoin-reward-feed.tsx",
@@ -1171,8 +1201,8 @@
     },
     {
       "path": "apps/web/src/components/dashboard/financial-readiness-panel.tsx",
-      "sha256": "c6405e554e50722639276b4f10ee2c2e3791e3e53b3472de938fa7c688aa17a1",
-      "size": 4822
+      "sha256": "e9e3078a484aca7f1182ca74fda1773d55c1b168907029283ee1116e53ae2011",
+      "size": 5861
     },
     {
       "path": "apps/web/src/components/dashboard/hashrate-insights-panel.tsx",
@@ -1196,8 +1226,13 @@
     },
     {
       "path": "apps/web/src/components/dashboard/payout-address-panel.tsx",
-      "sha256": "b728ef2c3bc07ed7a8d74e30ad6b67ddc76dd0f672da93084162105e230243d8",
-      "size": 12289
+      "sha256": "29b05906d03a0f87d781b03c392c8f11c1bc1b76e7a67d84e340e1082d21bd65",
+      "size": 15385
+    },
+    {
+      "path": "apps/web/src/components/dashboard/payout-operations-panel.tsx",
+      "sha256": "34fdabe1996f4ab8c51502872fcdd8394d3259de5459fb2c389777c060c37251",
+      "size": 13404
     },
     {
       "path": "apps/web/src/components/dashboard/profile-management-panel.tsx",
@@ -1208,6 +1243,11 @@
       "path": "apps/web/src/components/dashboard/realtime-mining-panel.tsx",
       "sha256": "9ba841c90a1b24e10d07afbcb6a539dfb065a7d8ac1f69a85761d5287fea1d52",
       "size": 14017
+    },
+    {
+      "path": "apps/web/src/components/dashboard/reward-history-panel.tsx",
+      "sha256": "9eb8c92cd49340918e1e80930414f30070d22f5acd7d9a8028f3b3692d9bd0a5",
+      "size": 7604
     },
     {
       "path": "apps/web/src/components/dashboard/security-management-panel.tsx",
@@ -1281,8 +1321,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "b28ba636408db0550cd3c83eb5e6255fbc0ea09d9b33f7229f8d16f682cbe1df",
-      "size": 61672
+      "sha256": "12e27883f08801ab08c3f9a778d39bfbf0469f3442dc18c3c4c9875e00a730bf",
+      "size": 63325
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1596,8 +1636,8 @@
     },
     {
       "path": "docs/operations/DEPLOYMENT_OPERATIONS_READINESS.md",
-      "sha256": "c067016617cd020ccf90244f270149d828b4cc285ef43cb3de292055e8da7290",
-      "size": 19167
+      "sha256": "331af4dfd865e0876e02445415153375d75e54a25abbadbf9ccabe417661e4f6",
+      "size": 19673
     },
     {
       "path": "docs/operations/DEPLOYMENT_SMOKE_TESTS.md",
@@ -2126,8 +2166,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "4987c8e8922eef7097b3ea69420f1fa9ede5dac08a187a469c839cf8117c1840",
-      "size": 7459
+      "sha256": "ede082fb942230c139ee947af8df2aa9c6a9d33cab15011fe8bf41fb408026a1",
+      "size": 7595
     },
     {
       "path": "packages/bitcoin-template/package.json",
@@ -3076,8 +3116,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "4420c7fc1a6926473c972c96053b078b066d001b31cdca6b3e78c9a5de865ea9",
-      "size": 302117
+      "sha256": "f22b4de77ff1d32a2f325d93d3ff608f118c38c144c4b757c54f5833267f6b27",
+      "size": 303038
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3181,8 +3221,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "be0c17c208b68aa5932e1ba30b599f40573b58adafd9bc858f45196a71156dce",
-      "size": 31346
+      "sha256": "fcbdbfd6246ef067bc2d3e90a3bc3396b67f1996412a9fe5a97495e7e9340ecc",
+      "size": 34015
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -3211,8 +3251,8 @@
     },
     {
       "path": "scripts/generate-managed-source-manifest.mjs",
-      "sha256": "693b213d904bb0891a72dc67fa68d00bb64ab9beb611aefb745cad59c9c85f75",
-      "size": 2491
+      "sha256": "e4c106c8b950b8d9a81e7bb3234b6b621df0f415627b52440f1d8b45a56640b1",
+      "size": 2524
     },
     {
       "path": "scripts/generate-release-manifest.mjs",

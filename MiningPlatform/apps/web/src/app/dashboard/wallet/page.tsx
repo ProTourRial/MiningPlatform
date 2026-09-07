@@ -2,6 +2,7 @@
 import { FinancialReadinessPanel } from '@/components/dashboard/financial-readiness-panel';
 import { AutoWithdrawalPanel } from '@/components/dashboard/auto-withdrawal-panel';
 import { PayoutAddressPanel } from '@/components/dashboard/payout-address-panel';
+import { PayoutOperationsPanel } from '@/components/dashboard/payout-operations-panel';
 import { PageShell } from '@/components/dashboard/page-shell';
 
 export default function Page() {
@@ -14,6 +15,7 @@ export default function Page() {
       <div className="space-y-6">
         <PayoutAddressPanel />
         <AutoWithdrawalPanel />
+        <PayoutOperationsPanel />
         <FinancialReadinessPanel module="wallet" />
       </div>
     </PageShell>

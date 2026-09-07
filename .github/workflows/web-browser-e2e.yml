@@ -1,0 +1,58 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: Web Browser E2E
+
+on:
+  push:
+    branches: [main, develop, "codex/**"]
+    paths:
+      - "MiningPlatform/apps/web/**"
+      - "MiningPlatform/packages/shared/**"
+      - "MiningPlatform/package.json"
+      - "MiningPlatform/pnpm-lock.yaml"
+      - ".github/workflows/web-browser-e2e.yml"
+  pull_request:
+    paths:
+      - "MiningPlatform/apps/web/**"
+      - "MiningPlatform/packages/shared/**"
+      - "MiningPlatform/package.json"
+      - "MiningPlatform/pnpm-lock.yaml"
+      - ".github/workflows/web-browser-e2e.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-browser-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: MiningPlatform
+
+jobs:
+  public-smoke:
+    name: Public routes and auth boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      E2E_WEB_COMMAND: pnpm start
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mining/shared build
+      - run: pnpm --filter @mining/web build
+      - run: pnpm --filter @mining/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:web:smoke

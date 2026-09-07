@@ -19,6 +19,8 @@ const excludedDirectories = new Set([
   '.git',
   '.next',
   '.turbo',
+  '.artifacts',
+  '.pnpm-store',
   'node_modules',
   'dist',
   'coverage',

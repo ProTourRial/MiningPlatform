@@ -1171,6 +1171,7 @@ export class PayoutsService {
             healthMaximumAgeSeconds * 1_000,
       );
       const blockers = [
+        'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED',
         ...(!payoutEnvironmentGate('requests') ? ['PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED'] : []),
         ...(!payoutEnvironmentGate('signing') ? ['PAYOUT_SIGNING_ENVIRONMENT_GATE_DISABLED'] : []),
         ...(!payoutEnvironmentGate('broadcast')

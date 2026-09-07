@@ -6,6 +6,8 @@
 
 - Integrated production-readiness corpus covering API contracts, financial state machines, wallet/network policy, fee and reward decisions, payout acceptance, observability, Stratum/VarDiff readiness, HA/backup/DR, legal/compliance, release evidence, manual QA, safe E2E, and bounded load-test plans.
 - Professional graphite-mineral frontend redesign across the landing page, public transparency board, authentication shell, and responsive dashboard navigation, with accessible status presentation and repository-root Vercel build support.
+- Real Control Plane web flows for registration, worker provisioning, reward allocation history, user-owned payout destinations, auto-withdrawal preferences, payout eligibility/blockers, request history, manual request, and cancellation; unavailable backend capabilities remain visibly gated instead of being represented by active placeholders.
+- Playwright browser coverage for desktop and mobile public routes plus an opt-in, no-mock authenticated journey from registration and email verification through session establishment, worker creation, reward reads, TOTP enrollment, payout-destination registration, auto-withdrawal controls, payout gating, logout, and unauthorized redirect.
 - Reusable observability-contract and VarDiff-policy packages plus wallet-network validators and executable financial state-machine guards, each with focused unit coverage.
 - Controlled payout execution foundation with database-backed eligibility snapshots, exact journal balance reservation, append-only approval evidence, user-owned selected payout destinations, cancellation/rejection reversal journals, and fail-closed request/signing/broadcast controls.
 - Schema v14 evidence records for signing requests, broadcast attempts, chain observations, payout reconciliation, wallet reconciliation, and per-asset emergency payout controls; historical alpha.7 payouts remain preserved as execution version 1.
@@ -54,6 +56,7 @@
 ### Changed
 
 - Vercel delivery retains the patched Next.js 16.3.2 runtime while adopting the redesign's aligned Tailwind CSS 4.3.3 and PostCSS configuration; the workspace lockfile is regenerated from the combined package graph.
+- Vercel web deployments can keep secure SameSite session cookies on one origin by leaving `NEXT_PUBLIC_API_URL` unset and proxying `/api/*` to the server-only, HTTPS-validated `API_UPSTREAM_ORIGIN`.
 - RandomX submission validation now resolves worker, mining account, asset, and upstream pool from the authenticated connection and database, rechecks that authorization after hashing and inside the intent transaction, derives difficulty from the authoritative target, and retrieves the still-active job directly from the upstream adapter at authoritative database time. Callers can no longer supply account, asset, pool, difficulty, job blob, seed, target, height, or session evidence.
 - RandomX durable replay now identifies the actual upstream proof independently from request correlation, receipt time, or local worker attribution; a second worker cannot dispatch the same pool/session/job/nonce/result under a different local identity, while a decided network retry can still replay after the live job has expired or been evicted.
 - RandomX upstream dispatch now requires the exact active session and immutable job-lease fingerprint immediately before socket write. Session replacement, disconnect, job mutation/expiry, invalid serialization, and stale sockets fail closed without writing a share request.
@@ -68,12 +71,15 @@
 - `PILOT` and `ACTIVE` payout routes now bind an explicit asset-matched hot wallet, eliminating nondeterministic wallet selection when an asset has multiple treasury wallets.
 - One payout may have only one append-only approval decision, enforced by both the service state machine and a database uniqueness constraint.
 - Payout preference reads expose explicit blockers for request, signing, and broadcast gates; auto withdrawal remains ineffective whenever any required gate or destination prerequisite is missing.
+- Auto-withdrawal preferences remain explicitly ineffective while the automatic payout scheduler is not implemented, preventing a saved ON preference from being represented as an operational executor.
 - Active root CI and the packaged workflow now run isolated schema-v20 fresh and representative alpha.7/schema-v18/v19 upgrade rehearsals instead of stopping at the released schema-v13 verifier.
 - Active root and packaged CI now include an isolated native-Bitcoin regtest job that rebuilds the checksum-verified Core image, runs the canonical block trace, and destroys its image, volume, and network on every outcome.
 - Deployment HTTP readiness polling now drains responses and exits naturally instead of forcing process termination, avoiding a Windows libuv shutdown assertion while preserving the Linux CI behavior.
 
 ### Fixed
 
+- Managed source manifests now exclude local Playwright reports and browser artifacts, keeping release checksums independent from disposable test output.
+- Playwright disables request tracing whenever a Vercel protection-bypass header is configured, preventing that credential from entering retained failure traces.
 - Payout execution rechecks database emergency controls immediately before signing and every initial or recovery broadcast, verifies persisted signed-PSBT and raw-transaction digests before use, releases watch-wallet PSBT input locks before pre-broadcast financial rollback, and serializes active execution per hot wallet under a PostgreSQL advisory lock so independently confirmed spends cannot deadlock physical reconciliation.
 - Wallet executor candidate selection is restricted at query time to enabled BTC regtest evidence, so preserved mainnet or other-network payout rows cannot enter the disposable execution loop.
 - Active payout processing and completed-payout reorg monitoring now use independent bounded lanes, preventing either queue from starving the other; Bitcoin Core and isolated-signer fetch transports cancel oversized streamed responses before buffering them in full, even when `Content-Length` is missing or false.
@@ -99,6 +105,7 @@
 
 ### Validation evidence
 
+- Public browser smoke coverage passes 12/12 across desktop Chrome and Pixel 7 profiles, while the authenticated no-mock journey passes independently on both profiles against a disposable API, Redis, and PostgreSQL database after all 22 migrations.
 - Exact-tree schema-v22 fresh and representative schema-v18/v19/v20/v21 upgrade rehearsals apply all 22 migrations, preserve historical payout, native-submission, accepted-share, submission-intent, and financial evidence fixtures, verify dispatch-fingerprint, contribution-event, and payout-recovery backfills, and exercise all RandomX submission/outbox/contribution plus payout-control triggers.
 - Migration atomicity rehearsal intentionally aborts the schema-v20 RandomX backfill after its immutable trigger is disabled and proves PostgreSQL rolls back the new column, historical data mutation, and trigger state; the native-submission and RandomX dispatch backfills now have explicit whole-file transaction boundaries.
 - RandomX mining/accounting integration persists evidence plus its contribution hand-off atomically, rejects conflicting retries and rollback leakage, posts one immutable RandomX contribution after exact source verification, and rejects mutation or a second credit.

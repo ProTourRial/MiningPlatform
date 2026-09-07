@@ -94,7 +94,13 @@ const requiredFiles = [
   'apps/api/src/payout-control.integration.test.ts',
   'apps/api/src/payout-execution.integration.test.ts',
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
+  'apps/web/src/components/dashboard/payout-operations-panel.tsx',
+  'apps/web/src/components/dashboard/reward-history-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
+  'apps/web/e2e/public-smoke.spec.ts',
+  'apps/web/e2e/authenticated-control-plane.spec.ts',
+  'apps/web/playwright.config.ts',
+  '.github/workflows/web-browser-e2e.yml',
   'scripts/verify-v030-alpha7-migration.mjs',
   'scripts/verify-v030-alpha8-migration.mjs',
   'apps/mining-worker/src/native-bitcoin-evidence.ts',
@@ -774,6 +780,75 @@ for (const expected of [
 ]) {
   requireText(regtestWorkflow, expected, 'Active native Bitcoin regtest workflow');
   requireText(packagedRegtestWorkflow, expected, 'Packaged native Bitcoin regtest workflow');
+}
+
+const nextConfig = await text('apps/web/next.config.ts');
+for (const expected of [
+  'API_UPSTREAM_ORIGIN',
+  'parsed.origin !== apiUpstreamOrigin',
+  "process.env.NODE_ENV === 'production'",
+  "source: '/api/:path*'",
+])
+  requireText(nextConfig, expected, 'Web same-origin API proxy');
+
+requireText(
+  payoutService,
+  "'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED'",
+  'Auto-withdrawal fail-closed readiness',
+);
+
+const browserConfig = await text('apps/web/playwright.config.ts');
+for (const expected of [
+  "process.env.E2E_BASE_URL ?? 'http://localhost:3000'",
+  'VERCEL_AUTOMATION_BYPASS_SECRET',
+  "trace: vercelBypass ? 'off' : 'retain-on-failure'",
+  "devices['Desktop Chrome']",
+  "devices['Pixel 7']",
+])
+  requireText(browserConfig, expected, 'Playwright browser configuration');
+
+const publicBrowserSmoke = await text('apps/web/e2e/public-smoke.spec.ts');
+for (const expected of [
+  "const publicRoutes = ['/', '/transparency', '/login', '/register']",
+  '404: NOT_FOUND',
+  'No framework detected',
+  'protected dashboard redirects to login',
+])
+  requireText(publicBrowserSmoke, expected, 'Public browser smoke coverage');
+
+const authenticatedBrowserJourney = await text('apps/web/e2e/authenticated-control-plane.spec.ts');
+for (const expected of [
+  "process.env.E2E_FULL_STACK !== 'true'",
+  'Development: buka verifikasi email',
+  'Kredensial siap digunakan',
+  'Aktifkan 2FA',
+  'Daftarkan alamat dengan step-up',
+  'Ajukan payout',
+  'Keluar dari session',
+])
+  requireText(authenticatedBrowserJourney, expected, 'Authenticated browser journey');
+
+const packagedBrowserWorkflow = await text('.github/workflows/web-browser-e2e.yml');
+const activeBrowserWorkflow = await parentWorkflow('web-browser-e2e.yml');
+const browserWorkflow = activeBrowserWorkflow ?? packagedBrowserWorkflow;
+if (activeBrowserWorkflow) {
+  requireText(
+    activeBrowserWorkflow,
+    'working-directory: MiningPlatform',
+    'Active browser E2E workflow',
+  );
+}
+for (const expected of [
+  'actions/checkout@v7',
+  'pnpm/action-setup@v6',
+  'actions/setup-node@v7',
+  'pnpm --filter @mining/shared build',
+  'pnpm --filter @mining/web build',
+  'playwright install --with-deps chromium',
+  'pnpm test:e2e:web:smoke',
+]) {
+  requireText(browserWorkflow, expected, 'Active browser E2E workflow');
+  requireText(packagedBrowserWorkflow, expected, 'Packaged browser E2E workflow');
 }
 
 process.stdout.write('v0.3.0-alpha.7 static payout-control checks passed.\n');
