@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 685,
-  "managedFilesChecksum": "21cacdcd471a43acad8d02ceaa20011fe2a02771cf282ea429dd55251be9e6d3",
+  "managedFilesChecksum": "7926c1f87169fbd1738e0e8ec80c06d64df09f7373b48dac587830beb1a38aaa",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -971,8 +971,8 @@
     },
     {
       "path": "apps/web/e2e/authenticated-control-plane.spec.ts",
-      "sha256": "7bcfc01ade07abad8f7684980b2bab8a1f17b66910018eb01d207594f2bc46c8",
-      "size": 6315
+      "sha256": "e6c764c6f78aca6d5df078326ab7f94b9e4e21b96e43a8e63e658b754d37d82c",
+      "size": 7779
     },
     {
       "path": "apps/web/e2e/public-smoke.spec.ts",
@@ -1321,8 +1321,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "9649730115e36b04f1c138d5479cba7dacfb89e7bd4e884bfb37ba49c0d051fd",
-      "size": 63566
+      "sha256": "bfe0ff83a16946aea5e1abd7204e8688e6dd11e5ed73bf3fc007b1fa30c54f8a",
+      "size": 63808
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3221,8 +3221,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "c16f55c5c10d3029a220727e0894975e67bcf84c44757523aeb9263041ad8193",
-      "size": 34295
+      "sha256": "fd711b9977ee0869b299f857e33cd2b341ee95fa1548a1a0c1b671fc11c6dea9",
+      "size": 34422
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

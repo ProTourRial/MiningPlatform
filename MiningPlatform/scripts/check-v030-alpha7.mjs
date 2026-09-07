@@ -820,6 +820,9 @@ const authenticatedBrowserJourney = await text('apps/web/e2e/authenticated-contr
 for (const expected of [
   "process.env.E2E_FULL_STACK !== 'true'",
   'Development: buka verifikasi email',
+  'expired-access-token-e2e-simulation',
+  "response.url().endsWith('/api/v1/auth/refresh')",
+  "rotatedRefreshCookie?.value",
   'Kredensial siap digunakan',
   'Aktifkan 2FA',
   'Daftarkan alamat dengan step-up',

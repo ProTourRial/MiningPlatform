@@ -94,7 +94,40 @@ test('registers, verifies, authenticates, provisions a worker, and exercises pay
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Overview', level: 1 })).toBeVisible();
 
+  const cookiesBeforeRefresh = await page.context().cookies();
+  const accessCookie = cookiesBeforeRefresh.find((cookie) => cookie.name === 'mp_access');
+  const refreshCookie = cookiesBeforeRefresh.find((cookie) => cookie.name === 'mp_refresh');
+  if (!accessCookie || !refreshCookie) {
+    throw new Error('Login did not establish both access and refresh cookies');
+  }
+
+  await page.context().addCookies([
+    {
+      name: accessCookie.name,
+      value: 'expired-access-token-e2e-simulation',
+      domain: accessCookie.domain,
+      path: accessCookie.path,
+      expires: accessCookie.expires,
+      httpOnly: accessCookie.httpOnly,
+      secure: accessCookie.secure,
+      sameSite: accessCookie.sameSite,
+    },
+  ]);
+  const refreshResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/v1/auth/refresh') &&
+      response.request().method() === 'POST',
+  );
   await page.goto('/dashboard/workers');
+  await expect((await refreshResponse).status()).toBe(200);
+  await expect(page.getByRole('heading', { name: 'Workers', level: 1 })).toBeVisible();
+
+  const cookiesAfterRefresh = await page.context().cookies();
+  const rotatedAccessCookie = cookiesAfterRefresh.find((cookie) => cookie.name === 'mp_access');
+  const rotatedRefreshCookie = cookiesAfterRefresh.find((cookie) => cookie.name === 'mp_refresh');
+  expect(rotatedAccessCookie?.value).not.toBe('expired-access-token-e2e-simulation');
+  expect(rotatedRefreshCookie?.value).not.toBe(refreshCookie.value);
+
   await page.getByLabel('Nama worker').fill(`cpu-${suffix}`);
   await page.getByLabel('Jenis hardware').selectOption('CPU');
   await page.getByRole('button', { name: /Tambah worker/i }).click();
