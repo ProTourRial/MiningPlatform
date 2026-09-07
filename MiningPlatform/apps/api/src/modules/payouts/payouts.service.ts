@@ -792,28 +792,30 @@ export class PayoutsService {
           causationId: input.idempotencyKey,
           status: 'PENDING',
           effectiveAt: now,
-          lines: {
-            create: [
-              {
-                ledgerAccountId: availableAccount.id,
-                assetId: account.assetId,
-                debit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
-                credit: '0',
-                debitAtomic: reservationAmountAtomic,
-                creditAtomic: 0n,
-              },
-              {
-                ledgerAccountId: reservedAccount.id,
-                assetId: account.assetId,
-                debit: '0',
-                credit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
-                debitAtomic: 0n,
-                creditAtomic: reservationAmountAtomic,
-              },
-            ],
-          },
         },
       });
+      for (const line of [
+        {
+          journalEntryId: journal.id,
+          ledgerAccountId: availableAccount.id,
+          assetId: account.assetId,
+          debit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
+          credit: '0',
+          debitAtomic: reservationAmountAtomic,
+          creditAtomic: 0n,
+        },
+        {
+          journalEntryId: journal.id,
+          ledgerAccountId: reservedAccount.id,
+          assetId: account.assetId,
+          debit: '0',
+          credit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
+          debitAtomic: 0n,
+          creditAtomic: reservationAmountAtomic,
+        },
+      ]) {
+        await tx.journalLine.create({ data: line });
+      }
       await tx.journalEntry.update({
         where: { id: journal.id },
         data: { status: 'POSTED', postedAt: now },
@@ -1064,18 +1066,21 @@ export class PayoutsService {
         causationId: reservation.journalEntryId,
         status: 'PENDING',
         effectiveAt: now,
-        lines: {
-          create: reservation.journalEntry.lines.map((line) => ({
-            ledgerAccountId: line.ledgerAccountId,
-            assetId: line.assetId,
-            debit: line.credit,
-            credit: line.debit,
-            debitAtomic: line.creditAtomic,
-            creditAtomic: line.debitAtomic,
-          })),
-        },
       },
     });
+    for (const line of reservation.journalEntry.lines) {
+      await tx.journalLine.create({
+        data: {
+          journalEntryId: reversal.id,
+          ledgerAccountId: line.ledgerAccountId,
+          assetId: line.assetId,
+          debit: line.credit,
+          credit: line.debit,
+          debitAtomic: line.creditAtomic,
+          creditAtomic: line.debitAtomic,
+        },
+      });
+    }
     await tx.journalEntry.update({
       where: { id: reversal.id },
       data: { status: 'POSTED', postedAt: now },

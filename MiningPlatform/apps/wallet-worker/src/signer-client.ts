@@ -34,6 +34,29 @@ function isLoopback(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }
 
+async function readBoundedSignerResponse(response: Response): Promise<string> {
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      receivedBytes += value.byteLength;
+      if (receivedBytes > MAXIMUM_SIGNER_RESPONSE_BYTES) {
+        await reader.cancel('Signer response exceeded configured limit');
+        throw new Error('Signer response is too large');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 export class IsolatedSignerClient {
   private readonly endpoint: URL;
   private readonly timeoutMilliseconds: number;
@@ -129,7 +152,7 @@ export class IsolatedSignerClient {
         ok: response.ok,
         status: response.status,
         declaredLength: Number(response.headers.get('content-length') ?? 0),
-        body: await response.text(),
+        body: await readBoundedSignerResponse(response),
       };
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {

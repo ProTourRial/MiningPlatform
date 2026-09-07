@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 671,
-  "managedFilesChecksum": "b1272f1ce985adcd89bce8dda043dfcbde893050c9904949874516b68e11bd93",
+  "managedFileCount": 677,
+  "managedFilesChecksum": "9a7d3a3d4dcfab3f4667df1ded3de221fa3c8806a05b0bb82d8823d586f43520",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -16,13 +16,13 @@
     },
     {
       "path": ".env.ci.example",
-      "sha256": "e5191d703955664c34b9ff48f1da180dce6ce90caa9c1d6e7026fe391a980682",
-      "size": 6362
+      "sha256": "98a784bf55b17ea8b5416408a7b74eafd69c5116e12ba3e0dd2762f04a1d4af2",
+      "size": 6604
     },
     {
       "path": ".env.example",
-      "sha256": "2953cc64517359afa19aa5d1e6854012625ebca5674fdd688a1fce2cda7dea4e",
-      "size": 6599
+      "sha256": "7200cddd26ade33684f1dbaeb510276ec97a42304ef619aa6034cd9fdd2fe2b4",
+      "size": 6841
     },
     {
       "path": ".gitattributes",
@@ -38,6 +38,11 @@
       "path": ".github/workflows/native-bitcoin-regtest.yml",
       "sha256": "8fdd7a66757025bae0e8696330d003cfa9729524e7a38561914db148a8b39f8c",
       "size": 2779
+    },
+    {
+      "path": ".github/workflows/payout-regtest.yml",
+      "sha256": "f741353b208f630987650a37ffad0bd6506227107caa86e6d56a0701219f6a68",
+      "size": 2706
     },
     {
       "path": ".gitignore",
@@ -421,8 +426,8 @@
     },
     {
       "path": "apps/api/src/modules/payouts/payouts.service.ts",
-      "sha256": "f8af0c1d6fb176bcee0fc9cc0bd71064b3f0af0691696c2a69fc76c850de1508",
-      "size": 45321
+      "sha256": "b845173b614249f584b06c907218fe4b2d5db1225308f73e6d8e3774730f9bff",
+      "size": 45385
     },
     {
       "path": "apps/api/src/modules/rewards/rewards.controller.ts",
@@ -901,13 +906,13 @@
     },
     {
       "path": "apps/wallet-worker/src/artifact-crypto.test.ts",
-      "sha256": "96ceeaa0cab3bc52a5650701eb1c1aa83e8ae1f9b326f38a7f98cb3687568115",
-      "size": 1039
+      "sha256": "f71ce5322b54919402459f76910a15e846e3d16075fd97025bd693391c3c9853",
+      "size": 1258
     },
     {
       "path": "apps/wallet-worker/src/artifact-crypto.ts",
-      "sha256": "db378ae1beedbaa363cd87e29227736a526f19dd86f12f2749c9c069430ba059",
-      "size": 2343
+      "sha256": "7d64c80088c536494585ccc2230841af0529a58d42aa01616bf0bd5a0faf161d",
+      "size": 2626
     },
     {
       "path": "apps/wallet-worker/src/main.ts",
@@ -915,19 +920,34 @@
       "size": 290
     },
     {
+      "path": "apps/wallet-worker/src/payout-boundary.test.ts",
+      "sha256": "e66e9998c722d29a71c9d875892cd35d3c5191ee79bfe0b762aeec8a0661fe76",
+      "size": 2100
+    },
+    {
+      "path": "apps/wallet-worker/src/payout-boundary.ts",
+      "sha256": "c28423105306a39a5d4e17ecc86edbbc089cf4ea2a81d77b29ed98fd7770fb73",
+      "size": 1958
+    },
+    {
+      "path": "apps/wallet-worker/src/payout-executor.ts",
+      "sha256": "671394029fbedc23e8ac6b438f84cb82c97fcf48eaada818429c9d4f66ec50f5",
+      "size": 49566
+    },
+    {
       "path": "apps/wallet-worker/src/runtime.ts",
-      "sha256": "53b61ae10edd6fd895f4f5c2fffd98f021a68281b85f4aea61fbe29c0328619d",
-      "size": 644
+      "sha256": "7ab3907051ecf21c991867815be44ad6fbbe07eb6f8db70ab8418859d2e606a4",
+      "size": 3972
     },
     {
       "path": "apps/wallet-worker/src/signer-client.test.ts",
-      "sha256": "648550419c1b539b7469b0b659218ad0994374ffc5fd828bd60c6d239e142383",
-      "size": 3765
+      "sha256": "b5ef7a7aefbd7947aed8e9a1388d4e55c1b9a59c51cb63f559db3141223f55db",
+      "size": 5171
     },
     {
       "path": "apps/wallet-worker/src/signer-client.ts",
-      "sha256": "3aa36a4481233294948d95a14975b34bbab443338469e0b928dfd303b307ff89",
-      "size": 5910
+      "sha256": "25e7732236c611ee30319554105807c017d279245fe6de9bf23caffd753ba638",
+      "size": 6643
     },
     {
       "path": "apps/wallet-worker/tsconfig.json",
@@ -1261,8 +1281,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "061df8d54fef989abd5a1d0d25c6e73a4a6e02732d66689ef53d1e4ec88ff3aa",
-      "size": 57452
+      "sha256": "2a7fafdd181d1d3cdb65c93600dfe64a5a4796b8b48dbf0cb7aaa03190299027",
+      "size": 61517
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1286,8 +1306,8 @@
     },
     {
       "path": "docker-compose.yml",
-      "sha256": "637e9b2935bf218f5fde6aea778fdf558dd12b97422c503f86df063ec5844fee",
-      "size": 14658
+      "sha256": "71faaf2dc0f57dbecf021756351147fdb8df89db1ee9d7c09094baf0850321d7",
+      "size": 14929
     },
     {
       "path": "docs/adr/0001-core-mining-foundation.md",
@@ -2106,8 +2126,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "7c660241eb8f17dff41c81a94211f9f7ea184cadd92f23a1419f4e93c32ce893",
-      "size": 7342
+      "sha256": "4987c8e8922eef7097b3ea69420f1fa9ede5dac08a187a469c839cf8117c1840",
+      "size": 7459
     },
     {
       "path": "packages/bitcoin-template/package.json",
@@ -2196,13 +2216,13 @@
     },
     {
       "path": "packages/blockchain-adapters/src/bitcoin-rpc.test.ts",
-      "sha256": "739407efd66bdd1a192bf98f58bca64739ff70221faa71dbe6b40efac64149f4",
-      "size": 5399
+      "sha256": "fc6e16f593f38cfd3a1ce8384265f48d33865a993a7fb92dc999c6b75f6c87b8",
+      "size": 7454
     },
     {
       "path": "packages/blockchain-adapters/src/bitcoin-rpc.ts",
-      "sha256": "6fe65a502a356c5a7b0d7d8708b143cb1cd5bd429a180c5bad3f5fa76b61aa7e",
-      "size": 15069
+      "sha256": "234f7fa471aafe31de1a87aadf23a467bb9e5281082d548671904740736fbc24",
+      "size": 18004
     },
     {
       "path": "packages/blockchain-adapters/src/index.ts",
@@ -2370,6 +2390,11 @@
       "size": 4889
     },
     {
+      "path": "packages/database/prisma/migrations/20260829010000_payout_regtest_reorg_recovery/migration.sql",
+      "sha256": "3abae0cb42a9df79b775118172428add99137f93f9c7099c444573efba5d4ec3",
+      "size": 12592
+    },
+    {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
       "sha256": "9b677f26a93c15274b40945c3e021811da0c86523606ad9c47b51affe98cfa38",
       "size": 127
@@ -2381,8 +2406,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "51c7302b35b67365a5a6c360d8b34bf6ffdd6751001aec5c5d3ca0d04a8dbf2b",
-      "size": 77000
+      "sha256": "dfed83f8b693ebd4fcd44ab99fd27ced68f1fbcc26f8d0c424ed7e068380c7dd",
+      "size": 77175
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -3156,8 +3181,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "e738008fa8d58ce8b0ce6d6713f9ef52f451ac225e3f3be4dbd6d2bb789999a2",
-      "size": 28366
+      "sha256": "c31948e990d40398ca03a235f0b54673968ffbc5b6783f14e021daa3bc9aac48",
+      "size": 31246
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -3218,6 +3243,11 @@
       "path": "scripts/native-bitcoin-regtest-integration.ts",
       "sha256": "3b1c8401df13005ca8d6e6517deb0d772dd4c11c065153346b1707e41cbc1339",
       "size": 12547
+    },
+    {
+      "path": "scripts/payout-regtest-integration.ts",
+      "sha256": "cdee5334777fb4d582c72df772a8e81b63f6ed8308cb61573cd744aa522abb98",
+      "size": 23646
     },
     {
       "path": "scripts/reconciliation-resolution-decide-cli.ts",
@@ -3336,8 +3366,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "be30319aa07eb2e525807f0e1f7ef0a3cd6fc5928c7831e69df65694fcfa097d",
-      "size": 40112
+      "sha256": "e5478eecd5b747b38095d8088c9583bc3485c3e52f7196a0a0a02d6f18a90475",
+      "size": 41908
     },
     {
       "path": "scripts/wait-for-http.mjs",

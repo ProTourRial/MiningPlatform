@@ -113,3 +113,43 @@ test('wallet signer client rejects a response bound to another request', async (
   });
   await assert.rejects(client.sign(request), /does not match/);
 });
+
+test('wallet signer client aborts an oversized streamed response', async () => {
+  const secret = 'wallet-signer-test-secret-at-least-thirty-two-bytes';
+  const manifest = {
+    version: 1,
+    requestId: 'signing-request-stream-limit',
+    payoutId: 'payout-request-stream-limit',
+    asset: 'BTC',
+    network: 'mainnet',
+    keyReference: 'treasury-key-stream-limit',
+    destination: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
+    destinationAmountAtomic: '100000',
+    reservedNetworkFeeAtomic: '1000',
+    actualNetworkFeeAtomic: '800',
+    psbtDigest: sha256Hex('unsigned-psbt'),
+    unsignedTransactionDigest: 'b'.repeat(64),
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  } satisfies SigningManifestV1;
+  const request = {
+    manifest,
+    manifestDigest: digestSigningManifest(manifest),
+    psbt: 'unsigned-psbt',
+  } satisfies SignerRequestV1;
+  const client = new IsolatedSignerClient({
+    url: 'https://signer.internal',
+    sharedSecret: secret,
+    fetchImplementation: (async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array(400_000));
+            controller.enqueue(new Uint8Array(400_000));
+            controller.close();
+          },
+        }),
+        { status: 200 },
+      )) as typeof fetch,
+  });
+  await assert.rejects(client.sign(request), /response is too large/);
+});

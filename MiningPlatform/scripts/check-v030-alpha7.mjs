@@ -67,6 +67,14 @@ const requiredFiles = [
   'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
   'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
   'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
+  'packages/database/prisma/migrations/20260829010000_payout_regtest_reorg_recovery/migration.sql',
+  'packages/blockchain-adapters/src/bitcoin-rpc.ts',
+  'apps/wallet-worker/src/payout-boundary.ts',
+  'apps/wallet-worker/src/payout-boundary.test.ts',
+  'apps/wallet-worker/src/payout-executor.ts',
+  'apps/wallet-worker/src/runtime.ts',
+  'scripts/payout-regtest-integration.ts',
+  '.github/workflows/payout-regtest.yml',
   'apps/randomx-gateway/src/submission-repository.ts',
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
@@ -145,6 +153,8 @@ for (const expected of [
   'randomXEvidenceId',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
+  'reorgDetectedAt',
+  'reconfirmationCount',
 ])
   requireText(schema, expected, 'Prisma schema');
 
@@ -504,15 +514,51 @@ requireText(
 
 const randomXMigrationVerifier = await text('scripts/verify-v030-alpha8-migration.mjs');
 for (const expected of [
-  "const latestMigration = '20260827020000_randomx_accounting_path'",
+  "const latestMigration = '20260829010000_payout_regtest_reorg_recovery'",
   "'alpha8-upgrade-randomx-intent'",
   '"upstreamDispatchFingerprint" = "shareFingerprint"',
   'schema-v19 RandomX intent was not safely backfilled to v20',
   'schema-v21 did not backfill exact RandomX contribution hand-off',
+  'schema-v22 upgrade did not safely backfill payout recovery state',
   'intentional RandomX dispatch migration failure',
   'failed v20 migration left immutability disabled',
 ])
   requireText(randomXMigrationVerifier, expected, 'Schema-v21 migration verifier');
+
+const payoutReorgMigration = await text(
+  'packages/database/prisma/migrations/20260829010000_payout_regtest_reorg_recovery/migration.sql',
+);
+for (const expected of [
+  'Payout_reconfirmation_count_check',
+  'Completed payout may re-enter confirmation only after chain-regression evidence',
+  'NEW."reconfirmationCount" <> OLD."reconfirmationCount" + 1',
+  "NEW.\"status\" = 'CONFIRMING' AND \"status\" IN ('ACTIVE', 'CONSUMED')",
+  'Reservation consumption requires a posted payout settlement journal',
+  'Broadcast payout state requires completed signing evidence',
+  'Completed payout requires matched reconciliation and posted settlement evidence',
+])
+  requireText(payoutReorgMigration, expected, 'Schema-v22 payout reorg migration');
+
+const payoutExecutor = await text('apps/wallet-worker/src/payout-executor.ts');
+for (const expected of [
+  'assertRegtestPayoutBoundary()',
+  'rebroadcastExactTransaction',
+  'payout.confirmation.regressed.v1',
+  'payout.reconfirmed.v1',
+  "status: 'CONSUMED'",
+  'WALLET_UTXO_LEDGER_MISMATCH',
+  'pg_advisory_xact_lock',
+  "assertDatabaseActionAllowed(payoutId, 'sign')",
+  "assertDatabaseActionAllowed(payout.id, 'broadcast')",
+  'Signed PSBT artifact digest does not match signing evidence',
+  'Raw transaction artifact digest does not match signing evidence',
+  "networkKey: { contains: 'regtest', mode: 'insensitive' }",
+  '`chain-observation:${payoutId}:${randomUUID()}`',
+  '`payout-completion:${payoutId}`',
+  'tx.asset.findUniqueOrThrow',
+  'tx.payoutRoute.findUniqueOrThrow',
+])
+  requireText(payoutExecutor, expected, 'Regtest payout executor');
 
 const scheduler = await text('apps/scheduler/src/runtime.ts');
 requireText(
@@ -698,6 +744,20 @@ if (activeRegtestWorkflow) {
     'working-directory: MiningPlatform',
     'Active native Bitcoin regtest workflow',
   );
+}
+
+const packagedPayoutRegtestWorkflow = await text('.github/workflows/payout-regtest.yml');
+const activePayoutRegtestWorkflow = await parentWorkflow('payout-regtest.yml');
+const payoutRegtestWorkflow = activePayoutRegtestWorkflow ?? packagedPayoutRegtestWorkflow;
+for (const expected of [
+  'pnpm --filter @mining/wallet-worker... build',
+  'pnpm --filter @mining/transaction-signer... build',
+  'pnpm test:integration:payout-regtest',
+  'PAYOUT_REGTEST_INTEGRATION_ACK: disposable-bitcoin-payout-regtest-only',
+  'down -v --rmi local --remove-orphans',
+]) {
+  requireText(payoutRegtestWorkflow, expected, 'Active payout regtest workflow');
+  requireText(packagedPayoutRegtestWorkflow, expected, 'Packaged payout regtest workflow');
 }
 for (const expected of [
   'pnpm --filter @mining/bitcoin-template... build',

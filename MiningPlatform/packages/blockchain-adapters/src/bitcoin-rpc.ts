@@ -32,6 +32,13 @@ export type BitcoinWalletSnapshot = {
   observedAt: Date;
 };
 
+export type BitcoinUtxoSnapshot = {
+  confirmedSolvableAtomic: bigint;
+  utxoCount: number;
+  outpointSetDigest: string;
+  observedAt: Date;
+};
+
 export type PreparedBitcoinPayout = {
   psbt: string;
   psbtDigest: string;
@@ -68,6 +75,37 @@ export class BitcoinRpcError extends Error {
     super(message);
     this.name = 'BitcoinRpcError';
   }
+}
+
+async function readBoundedRpcResponse(
+  response: Response,
+  maximumResponseBytes: number,
+  method: string,
+): Promise<string> {
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      receivedBytes += value.byteLength;
+      if (receivedBytes > maximumResponseBytes) {
+        await reader.cancel('Bitcoin RPC response exceeded configured limit');
+        throw new BitcoinRpcError(
+          'Bitcoin RPC response exceeds the configured limit',
+          null,
+          method,
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 function sha256(value: string): string {
@@ -167,14 +205,7 @@ export class BitcoinJsonRpcClient {
           method,
         );
       }
-      const body = await response.text();
-      if (Buffer.byteLength(body) > this.maximumResponseBytes) {
-        throw new BitcoinRpcError(
-          'Bitcoin RPC response exceeds the configured limit',
-          null,
-          method,
-        );
-      }
+      const body = await readBoundedRpcResponse(response, this.maximumResponseBytes, method);
       if (!response.ok) {
         throw new BitcoinRpcError(`Bitcoin RPC HTTP ${response.status}`, null, method);
       }
@@ -266,6 +297,52 @@ export class BitcoinWatchOnlyRpcAdapter {
       chainTipHash: chain.bestblockhash.toLowerCase(),
       verificationProgress: chain.verificationprogress,
       initialBlockDownload: chain.initialblockdownload,
+      observedAt: new Date(),
+    };
+  }
+
+  async getConfirmedUtxoSnapshot(): Promise<BitcoinUtxoSnapshot> {
+    const entries = await this.rpc.call<
+      Array<{
+        txid: string;
+        vout: number;
+        amount: number | string;
+        confirmations: number;
+        spendable?: boolean;
+        solvable?: boolean;
+        safe?: boolean;
+      }>
+    >('listunspent', [1, 9_999_999, [], true]);
+    const outpoints = new Set<string>();
+    let confirmedSolvableAtomic = 0n;
+    for (const entry of entries) {
+      if (
+        !/^[0-9a-f]{64}$/i.test(entry.txid) ||
+        !Number.isInteger(entry.vout) ||
+        entry.vout < 0 ||
+        !Number.isInteger(entry.confirmations) ||
+        entry.confirmations < 1
+      ) {
+        throw new BitcoinRpcError('Bitcoin node returned an invalid UTXO', null, 'listunspent');
+      }
+      // A watch-only descriptor wallet intentionally reports spendable=false.
+      // Solvable UTXOs are still controllable through the isolated signer.
+      if (entry.solvable === false || entry.safe === false) continue;
+      const outpoint = `${entry.txid.toLowerCase()}:${entry.vout}`;
+      if (outpoints.has(outpoint)) {
+        throw new BitcoinRpcError(
+          'Bitcoin node returned a duplicate UTXO outpoint',
+          null,
+          'listunspent',
+        );
+      }
+      outpoints.add(outpoint);
+      confirmedSolvableAtomic += bitcoinToAtomic(entry.amount);
+    }
+    return {
+      confirmedSolvableAtomic,
+      utxoCount: outpoints.size,
+      outpointSetDigest: sha256([...outpoints].sort().join('\n')),
       observedAt: new Date(),
     };
   }
@@ -390,6 +467,19 @@ export class BitcoinWatchOnlyRpcAdapter {
       );
     }
     return transactionId.toLowerCase();
+  }
+
+  async decodeRawTransactionId(rawTransaction: string): Promise<string> {
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) throw new Error('Raw Bitcoin transaction is invalid');
+    const decoded = await this.rpc.call<{ txid: string }>('decoderawtransaction', [rawTransaction]);
+    if (!/^[0-9a-f]{64}$/i.test(decoded.txid)) {
+      throw new BitcoinRpcError(
+        'Bitcoin Core returned an invalid decoded transaction id',
+        null,
+        'decoderawtransaction',
+      );
+    }
+    return decoded.txid.toLowerCase();
   }
 
   async getTransactionObservation(transactionId: string): Promise<BitcoinChainObservation> {

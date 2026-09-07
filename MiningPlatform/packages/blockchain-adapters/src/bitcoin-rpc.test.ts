@@ -50,6 +50,32 @@ test('Bitcoin atomic conversion is exact and bounded', () => {
   assert.throws(() => atomicToBitcoinNumber(0n), /positive/);
 });
 
+test('Bitcoin RPC aborts an oversized streamed response without trusting content-length', async () => {
+  const fetchImplementation = (async () =>
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new Uint8Array(700));
+          controller.enqueue(new Uint8Array(700));
+          controller.close();
+        },
+      }),
+      { status: 200 },
+    )) as typeof fetch;
+  const rpc = new BitcoinJsonRpcClient({
+    url: 'https://bitcoin-node.internal',
+    username: 'rpc-user',
+    password: 'rpc-password',
+    maximumResponseBytes: 1024,
+    fetchImplementation,
+  });
+  await assert.rejects(
+    rpc.call('getblockchaininfo'),
+    (error: unknown) =>
+      error instanceof BitcoinRpcError && /exceeds the configured limit/.test(error.message),
+  );
+});
+
 test('watch-only RPC reports a chain-bound wallet snapshot', async () => {
   const { rpc } = mockClient((request) => {
     if (request.method === 'getblockchaininfo') {
@@ -70,6 +96,43 @@ test('watch-only RPC reports a chain-bound wallet snapshot', async () => {
   assert.equal(snapshot.chainHeight, 912_345n);
   assert.equal(snapshot.chainTipHash, 'a'.repeat(64));
   assert.equal(snapshot.initialBlockDownload, false);
+});
+
+test('watch-only RPC reconciles a deterministic confirmed spendable UTXO set', async () => {
+  const { rpc } = mockClient((request) => {
+    assert.equal(request.method, 'listunspent');
+    return [
+      {
+        txid: 'b'.repeat(64),
+        vout: 1,
+        amount: 0.002,
+        confirmations: 3,
+        spendable: true,
+        solvable: true,
+        safe: true,
+      },
+      {
+        txid: 'a'.repeat(64),
+        vout: 0,
+        amount: '0.00100000',
+        confirmations: 10,
+        spendable: true,
+        solvable: true,
+        safe: true,
+      },
+      {
+        txid: 'c'.repeat(64),
+        vout: 2,
+        amount: 1,
+        confirmations: 4,
+        spendable: false,
+      },
+    ];
+  });
+  const snapshot = await new BitcoinWatchOnlyRpcAdapter('regtest', rpc).getConfirmedUtxoSnapshot();
+  assert.equal(snapshot.confirmedSolvableAtomic, 100_300_000n);
+  assert.equal(snapshot.utxoCount, 3);
+  assert.match(snapshot.outpointSetDigest, /^[0-9a-f]{64}$/);
 });
 
 test('PSBT preparation proves exact destination and rejects fees above the reservation', async () => {
@@ -121,6 +184,7 @@ test('signed PSBT finalization, mempool preflight, broadcast, and confirmation a
     if (request.method === 'finalizepsbt') return { complete: true, hex: '02000000000100' };
     if (request.method === 'testmempoolaccept') return [{ allowed: true }];
     if (request.method === 'sendrawtransaction') return transactionId;
+    if (request.method === 'decoderawtransaction') return { txid: transactionId };
     if (request.method === 'gettransaction') {
       return { confirmations: 3, blockhash: 'd'.repeat(64), abandoned: false };
     }
@@ -131,12 +195,20 @@ test('signed PSBT finalization, mempool preflight, broadcast, and confirmation a
   const finalized = await adapter.finalizeSignedPsbt('signed-psbt');
   await adapter.assertMempoolAcceptance(finalized.rawTransaction);
   assert.equal(await adapter.broadcastRawTransaction(finalized.rawTransaction), transactionId);
+  assert.equal(await adapter.decodeRawTransactionId(finalized.rawTransaction), transactionId);
   const observation = await adapter.getTransactionObservation(transactionId);
   assert.equal(observation.status, 'CONFIRMED');
   assert.equal(observation.confirmations, 3);
   assert.equal(observation.blockHeight, 912_346n);
   assert.deepEqual(
     calls.map((call) => call.method),
-    ['finalizepsbt', 'testmempoolaccept', 'sendrawtransaction', 'gettransaction', 'getblockheader'],
+    [
+      'finalizepsbt',
+      'testmempoolaccept',
+      'sendrawtransaction',
+      'decoderawtransaction',
+      'gettransaction',
+      'getblockheader',
+    ],
   );
 });

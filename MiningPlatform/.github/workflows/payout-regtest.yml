@@ -1,0 +1,77 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: Payout Bitcoin Regtest
+
+on:
+  push:
+    branches: [main, develop, 'codex/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: payout-regtest-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controlled-payout:
+    name: Eligibility to reconciled Bitcoin payout
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: payout-regtest-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://mining:payout-regtest-postgres@127.0.0.1:5432/mining_platform?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build payout runtime and isolated signer
+        run: >-
+          pnpm --filter @mining/api... build &&
+          pnpm --filter @mining/wallet-worker... build &&
+          pnpm --filter @mining/transaction-signer... build
+      - name: Install current schema and deterministic policy seed
+        run: pnpm --filter @mining/database migrate:deploy && pnpm --filter @mining/database seed
+      - name: Start checksum-pinned disposable Bitcoin Core
+        run: >-
+          docker compose -p miningplatform_payout_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          up -d --build --wait bitcoin-core-regtest
+      - name: Prove reservation, approval, isolated signing, broadcast, confirmation, reorg, and reconciliation
+        env:
+          PAYOUT_REGTEST_INTEGRATION_ACK: disposable-bitcoin-payout-regtest-only
+        run: pnpm test:integration:payout-regtest
+      - name: Capture disposable services on failure
+        if: failure()
+        run: >-
+          docker compose -p miningplatform_payout_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          logs --no-color bitcoin-core-regtest
+      - name: Clean disposable regtest state
+        if: always()
+        run: >-
+          docker compose -p miningplatform_payout_regtest
+          -f docker-compose.regtest.yml --profile native-regtest
+          down -v --rmi local --remove-orphans

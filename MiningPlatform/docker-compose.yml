@@ -289,8 +289,14 @@ services:
       WALLET_SIGNER_TLS_CA_FILE: ${WALLET_SIGNER_TLS_CA_FILE:-/run/signer-client/ca.crt}
       WALLET_ARTIFACT_ENCRYPTION_KEY: ${WALLET_ARTIFACT_ENCRYPTION_KEY:-}
       PAYOUTS_ENABLED: 'false'
+      PAYOUT_REQUESTS_ENABLED: 'false'
       PAYOUT_SIGNING_ENABLED: 'false'
       PAYOUT_BROADCAST_ENABLED: 'false'
+      PAYOUT_EXECUTOR_ENABLED: 'false'
+      PAYOUT_EXECUTION_NETWORK: disabled
+      PAYOUT_REGTEST_ACK: ''
+      PAYOUT_MAINNET_ENABLED: 'false'
+      PAYOUT_REORG_MONITOR_CONFIRMATIONS: ${PAYOUT_REORG_MONITOR_CONFIRMATIONS:-100}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres: { condition: service_healthy }

@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260827020000_randomx_accounting_path';
+const latestMigration = '20260829010000_payout_regtest_reorg_recovery';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -508,7 +508,37 @@ try {
         OR to_regclass('public."RandomXUpstreamJobEvidence"') IS NULL
         OR to_regclass('public."RandomXShareSubmissionIntent"') IS NULL
         OR to_regclass('public."RandomXUpstreamShareDecision"') IS NULL
-      THEN RAISE EXCEPTION 'required schema-21 tables are missing'; END IF;
+      THEN RAISE EXCEPTION 'required schema-22 tables are missing'; END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'Payout'
+          AND column_name = 'reorgDetectedAt' AND is_nullable = 'YES'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'Payout'
+          AND column_name = 'reconfirmationCount' AND is_nullable = 'NO'
+      ) OR NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Payout_reconfirmation_count_check'
+      ) OR position(
+        'OLD."status" = ''COMPLETED'' AND NEW."status" = ''CONFIRMING'''
+        in pg_get_functiondef('miningplatform_payout_execution_alignment()'::regprocedure)
+      ) = 0
+      THEN RAISE EXCEPTION 'schema-v22 payout reorg recovery binding is missing'; END IF;
+      IF position(
+        'Reservation consumption requires a posted payout settlement journal'
+        in pg_get_functiondef('miningplatform_balance_reservation_lifecycle()'::regprocedure)
+      ) = 0 OR position(
+        'Broadcast payout state requires completed signing evidence'
+        in pg_get_functiondef('miningplatform_payout_required_evidence()'::regprocedure)
+      ) = 0 OR position(
+        'Completed payout requires matched reconciliation and posted settlement evidence'
+        in pg_get_functiondef('miningplatform_payout_required_evidence()'::regprocedure)
+      ) = 0
+      THEN RAISE EXCEPTION 'schema-v22 payout settlement evidence binding is missing'; END IF;
+      IF '${mode}' = 'upgrade' AND NOT EXISTS (
+        SELECT 1 FROM "Payout" WHERE "id" = 'alpha8-upgrade-payout'
+          AND "reconfirmationCount" = 0 AND "reorgDetectedAt" IS NULL
+      ) THEN RAISE EXCEPTION 'schema-v22 upgrade did not safely backfill payout recovery state'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'RandomXShareSubmissionIntent'

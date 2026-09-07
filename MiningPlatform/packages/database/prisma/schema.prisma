@@ -1427,49 +1427,51 @@ model PayoutAddress {
 }
 
 model Payout {
-  id                String                 @id @default(cuid())
-  idempotencyKey    String                 @unique
-  userId            String
-  miningAccountId   String?
-  assetId           String
-  payoutAddressId   String
-  payoutRouteId     String
-  journalEntryId    String?                @unique
-  amount            Decimal                @db.Decimal(36, 18)
-  networkFee        Decimal                @default(0) @db.Decimal(36, 18)
-  amountAtomic      BigInt?
-  networkFeeAtomic  BigInt                 @default(0)
-  requestSource     PayoutTrigger          @default(MANUAL)
-  executionVersion  Int                    @default(2)
-  status            PayoutStatus           @default(QUEUED)
-  transactionId     String?
-  failureCode       String?
-  failureMessage    String?
-  scheduledAt       DateTime
-  requestedAt       DateTime               @default(now())
-  approvedAt        DateTime?
-  signingAt         DateTime?
-  broadcastAt       DateTime?
-  confirmingAt      DateTime?
-  completedAt       DateTime?
-  failedAt          DateTime?
-  cancelledAt       DateTime?
-  rowVersion        Int                    @default(1)
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  user              User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  miningAccount     MiningAccount?         @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
-  asset             Asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  payoutAddress     PayoutAddress          @relation(fields: [payoutAddressId], references: [id], onDelete: Restrict)
-  payoutRoute       PayoutRoute            @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
-  journalEntry      JournalEntry?          @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
-  eligibility       PayoutEligibility?
-  reservation       BalanceReservation?
-  approvals         PayoutApproval[]
-  signingRequest    SigningRequest?
-  broadcastAttempts BroadcastAttempt[]
-  chainObservations ChainObservation[]
-  reconciliations   PayoutReconciliation[]
+  id                  String                 @id @default(cuid())
+  idempotencyKey      String                 @unique
+  userId              String
+  miningAccountId     String?
+  assetId             String
+  payoutAddressId     String
+  payoutRouteId       String
+  journalEntryId      String?                @unique
+  amount              Decimal                @db.Decimal(36, 18)
+  networkFee          Decimal                @default(0) @db.Decimal(36, 18)
+  amountAtomic        BigInt?
+  networkFeeAtomic    BigInt                 @default(0)
+  requestSource       PayoutTrigger          @default(MANUAL)
+  executionVersion    Int                    @default(2)
+  status              PayoutStatus           @default(QUEUED)
+  transactionId       String?
+  failureCode         String?
+  failureMessage      String?
+  scheduledAt         DateTime
+  requestedAt         DateTime               @default(now())
+  approvedAt          DateTime?
+  signingAt           DateTime?
+  broadcastAt         DateTime?
+  confirmingAt        DateTime?
+  completedAt         DateTime?
+  reorgDetectedAt     DateTime?
+  reconfirmationCount Int                    @default(0)
+  failedAt            DateTime?
+  cancelledAt         DateTime?
+  rowVersion          Int                    @default(1)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  miningAccount       MiningAccount?         @relation(fields: [miningAccountId], references: [id], onDelete: Restrict)
+  asset               Asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  payoutAddress       PayoutAddress          @relation(fields: [payoutAddressId], references: [id], onDelete: Restrict)
+  payoutRoute         PayoutRoute            @relation(fields: [payoutRouteId], references: [id], onDelete: Restrict)
+  journalEntry        JournalEntry?          @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+  eligibility         PayoutEligibility?
+  reservation         BalanceReservation?
+  approvals           PayoutApproval[]
+  signingRequest      SigningRequest?
+  broadcastAttempts   BroadcastAttempt[]
+  chainObservations   ChainObservation[]
+  reconciliations     PayoutReconciliation[]
 
   @@index([status, scheduledAt])
   @@index([userId, createdAt])
