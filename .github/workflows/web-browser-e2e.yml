@@ -28,7 +28,6 @@ jobs:
     env:
       CI: "true"
       E2E_WEB_COMMAND: pnpm start
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/playwright-browsers
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
