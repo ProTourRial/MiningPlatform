@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 685,
-  "managedFilesChecksum": "48b300817a84c6c05b23920cb958f551bf9d9c13b55fb6c17d8cb8be6d3548c4",
+  "managedFilesChecksum": "3c6cc0df0b46482655ec3ee9c8aab28d8627335c0620e4db2dfd2cb355f35abd",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -46,8 +46,8 @@
     },
     {
       "path": ".github/workflows/web-browser-e2e.yml",
-      "sha256": "e452544216ef72dfdf6cb6e314e3caa83aad16956fbf2d7b4eafec1734eba655",
-      "size": 1393
+      "sha256": "35d54e74a559b2392fb40e1548918185bdd799afb01619909043d8eaee572257",
+      "size": 1077
     },
     {
       "path": ".gitignore",

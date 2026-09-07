@@ -7,19 +7,7 @@ name: Web Browser E2E
 on:
   push:
     branches: [main, develop, "codex/**"]
-    paths:
-      - "MiningPlatform/apps/web/**"
-      - "MiningPlatform/packages/shared/**"
-      - "MiningPlatform/package.json"
-      - "MiningPlatform/pnpm-lock.yaml"
-      - ".github/workflows/web-browser-e2e.yml"
   pull_request:
-    paths:
-      - "MiningPlatform/apps/web/**"
-      - "MiningPlatform/packages/shared/**"
-      - "MiningPlatform/package.json"
-      - "MiningPlatform/pnpm-lock.yaml"
-      - ".github/workflows/web-browser-e2e.yml"
 
 permissions:
   contents: read
