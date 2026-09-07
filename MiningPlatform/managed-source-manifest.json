@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 677,
-  "managedFilesChecksum": "011a37c5c2ac17a684c214d50038cd279897b7498039870508d51570ab3cced5",
+  "managedFilesChecksum": "c01fb066eabd636c391510c13e584ddeb4490806d36d38ec58adc2dc5b591d2c",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -41,7 +41,7 @@
     },
     {
       "path": ".github/workflows/payout-regtest.yml",
-      "sha256": "6e3bc91677725057139c8d5abe7ec8a65479d8d564e33719c7fb06e894e227f7",
+      "sha256": "22bba65d8de67c5727fee76bd4afa58157dfb8220d56cf04f2dc73bfad56d5ec",
       "size": 2775
     },
     {
@@ -1281,8 +1281,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f156b987f07e561469bcd86653b3e4895324d11ffcf3c49b94115d55f8a77616",
-      "size": 61626
+      "sha256": "b28ba636408db0550cd3c83eb5e6255fbc0ea09d9b33f7229f8d16f682cbe1df",
+      "size": 61672
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3181,8 +3181,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "bf69180f030abebf57ea5c703278c0278d280099d1664e19009b2b7233e8e35b",
-      "size": 31268
+      "sha256": "be0c17c208b68aa5932e1ba30b599f40573b58adafd9bc858f45196a71156dce",
+      "size": 31346
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
