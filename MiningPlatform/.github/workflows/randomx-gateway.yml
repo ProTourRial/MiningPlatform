@@ -53,6 +53,7 @@ jobs:
       - run: pnpm db:generate
       - run: pnpm db:migrate:deploy
       - run: pnpm --filter @mining/randomx-gateway... build
+      - run: pnpm --filter @mining/upstream-stratum... build
       - run: pnpm --filter @mining/randomx-gateway lint
       - run: pnpm --filter @mining/randomx-gateway typecheck
       - run: pnpm --filter @mining/randomx test

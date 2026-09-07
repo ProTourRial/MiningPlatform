@@ -540,6 +540,7 @@ for (const expected of [
   'postgres:17-alpine',
   'pnpm db:migrate:deploy',
   'pnpm --filter @mining/randomx-gateway... build',
+  'pnpm --filter @mining/upstream-stratum... build',
   'pnpm --filter @mining/randomx-gateway typecheck',
   'src/randomx-upstream.test.ts',
   'pnpm --filter @mining/randomx-gateway test',
