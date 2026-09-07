@@ -76,8 +76,13 @@ const requiredFiles = [
   'scripts/payout-regtest-integration.ts',
   '.github/workflows/payout-regtest.yml',
   'apps/randomx-gateway/src/submission-repository.ts',
+  'apps/randomx-gateway/src/submission-contract.ts',
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
+  'apps/randomx-gateway/src/miner-protocol.ts',
+  'apps/randomx-gateway/src/miner-server.ts',
+  'apps/randomx-gateway/src/miner-server.test.ts',
+  '.github/workflows/randomx-gateway.yml',
   'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'packages/observability-contract/src/index.ts',
   'packages/observability-contract/src/index.test.ts',
@@ -495,6 +500,55 @@ for (const expected of [
 ])
   requireText(randomXSubmissionCoordinator, expected, 'RandomX submission coordinator');
 
+const randomXMinerProtocol = await text('apps/randomx-gateway/src/miner-protocol.ts');
+for (const expected of [
+  "method: 'login'",
+  "method: 'submit'",
+  "method: 'keepalived'",
+  'applyRandomXNonce(assignment.blob',
+  'parseRandomXTarget(assignment.target)',
+  'upstreamJobId',
+])
+  requireText(randomXMinerProtocol, expected, 'RandomX miner-facing protocol');
+
+const randomXMinerServer = await text('apps/randomx-gateway/src/miner-server.ts');
+for (const expected of [
+  'class RandomXConnectionRegistry',
+  'maximumConnections',
+  'maximumLineBytes',
+  'maximumPendingMessages',
+  'maximumSubmissionsPerMinute',
+  'socketTimeoutMs',
+  'workProvider.resolve',
+  'submissionGateway.submit',
+  'Share outcome is uncertain; do not retry automatically',
+  'this.registry.revoke(session.id)',
+])
+  requireText(randomXMinerServer, expected, 'Bounded RandomX miner-facing transport');
+
+const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
+const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');
+const randomXWorkflow = activeRandomXWorkflow ?? packagedRandomXWorkflow;
+if (activeRandomXWorkflow) {
+  requireText(
+    activeRandomXWorkflow,
+    'working-directory: MiningPlatform',
+    'Active RandomX gateway workflow',
+  );
+}
+for (const expected of [
+  'postgres:17-alpine',
+  'pnpm db:migrate:deploy',
+  'pnpm --filter @mining/randomx-gateway... build',
+  'pnpm --filter @mining/randomx-gateway typecheck',
+  'src/randomx-upstream.test.ts',
+  'pnpm --filter @mining/randomx-gateway test',
+  'src/randomx-contribution.integration.test.ts',
+]) {
+  requireText(randomXWorkflow, expected, 'Active RandomX gateway workflow');
+  requireText(packagedRandomXWorkflow, expected, 'Packaged RandomX gateway workflow');
+}
+
 const randomXPoolAdapter = await text('packages/upstream-stratum/src/randomx-pool-adapter.ts');
 for (const expected of [
   'RandomXSubmissionNotDispatchedError',
@@ -822,7 +876,7 @@ for (const expected of [
   'Development: buka verifikasi email',
   'expired-access-token-e2e-simulation',
   "response.url().endsWith('/api/v1/auth/refresh')",
-  "rotatedRefreshCookie?.value",
+  'rotatedRefreshCookie?.value',
   'Kredensial siap digunakan',
   'Aktifkan 2FA',
   'Daftarkan alamat dengan step-up',

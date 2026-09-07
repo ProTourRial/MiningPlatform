@@ -49,16 +49,15 @@ Release blockers:
 - Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
-RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
-accounting projection. Schema v18 now preserves accepted-share evidence through an immutable,
-algorithm-discriminated boundary with account/asset/upstream correlation and unique retry identity.
-A strict mining-worker event consumer now validates the versioned accepted-share contract and commits
-event idempotency plus evidence atomically under a PostgreSQL advisory lock. Its fingerprint binds the
-full bounded work blob, target, and height. No miner-facing producer emits the event yet; contribution
-creation, reward assignment, settlement, and ledger effects remain deliberately blocked until their
-own invariants and failure tests are proven. A canonical producer-side factory now revalidates and
-freezes the exact envelope, while durable pre-RPC intent and transactional outbox delivery remain the
-next mandatory boundary before any authenticated gateway may publish it.
+RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed accounting
+projection and durable gateway. Schema v18 through v21 preserve accepted-share, pre-RPC intent,
+upstream-decision, outbox, and algorithm-discriminated contribution evidence with exact
+account/asset/upstream correlation and unique retry identity. A bounded miner-facing JSON-RPC transport
+now authenticates connections, issues only provider-supplied assignments, resolves private upstream job
+identity before submission, and invokes the durable gateway under line, queue, connection, timeout, and
+per-session share limits. It is deliberately not runtime-activated: the production credential adapter,
+globally unique nonce-space allocator, sidecar provenance, unresolved-intent recovery, and settlement
+reconciliation must be completed before public RandomX traffic or any balance effect is permitted.
 
 ## Active Native Pool Laboratory Track
 

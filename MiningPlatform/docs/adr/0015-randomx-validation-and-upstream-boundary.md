@@ -87,6 +87,15 @@ in application JavaScript is outside the platform's security and correctness bou
     and payload correlation, reject evidence mutation, and protect a correlated outbox envelope while
     allowing delivery status updates. Retention excludes accepted RandomX outbox evidence. These records
     remain evidence only and cannot create a contribution, reward, journal, balance, or payout.
+16. The miner-facing transport is a separate bounded CryptoNote JSON-RPC server. It accepts login,
+    keepalive, and submit only; authenticates before assigning work; holds connection identity in a
+    revocable registry used by the durable coordinator; and translates a private miner job id back to
+    the authoritative upstream job only through an injected work provider. Upstream job ids are never
+    exposed to the miner. Connection, line, pending-message, socket-timeout, and per-session submission
+    bounds are mandatory. Unknown work, mismatched session ids, unavailable assignments, and ambiguous
+    post-intent outcomes fail closed. The transport is not a runtime activation decision: no production
+    listener may start until credential, unique-work allocation, sidecar, upstream, and recovery gates
+    below are satisfied.
 
 ## Consequences
 
@@ -97,9 +106,10 @@ in application JavaScript is outside the platform's security and correctness bou
   authoritative dispatch identity, upstream-decision, and transactional-outbox boundaries required
   before miner-facing RandomX traffic can be considered.
 - Accounting evidence now has deterministic projection, canonical event construction, append-only
-  persistence, strict internal event consumption, and dormant durable submission/outbox orchestration.
-  Miner-facing production, unresolved-intent operator recovery, contribution-fact creation,
-  reward-period assignment, settlement reconciliation, and ledger effects remain intentionally absent.
+  persistence, strict internal event consumption, durable submission/outbox orchestration, and a
+  bounded but inactive miner-facing transport. Production credential wiring, unique work allocation,
+  runtime activation, unresolved-intent operator recovery, reward-period assignment, settlement
+  reconciliation, and ledger effects remain intentionally gated.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
 
@@ -107,15 +117,15 @@ in application JavaScript is outside the platform's security and correctness bou
 
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
-- Add authenticated miner-facing CryptoNote transport with connection, line, rate, and share limits.
+- Bind the miner-facing transport to the audited PostgreSQL worker-credential authenticator and
+  distributed Redis authentication limiter; prove revocation, reconnect, and abuse behavior under load.
 - Transform or allocate miner work so replicas and workers cannot receive overlapping 32-bit RandomX
   nonce space for the same upstream blob; prove uniqueness across reconnect, restart, and failover.
 - Enforce bounded clock skew and monitor database, gateway, sidecar, and upstream time domains before
   accepting timestamp evidence.
-- Add the authenticated miner-facing producer and prove that only its accepted local-plus-upstream
-  decisions reach the strict event consumer without bypassing the projector or database constraints.
-- Add an authenticated, bounded miner-facing transport that invokes the dormant gateway without
-  bypassing its pre-RPC intent or transactional outbox.
+- Wire only the production-authenticated, uniquely allocated miner transport to the gateway and prove
+  that accepted local-plus-upstream decisions reach the strict event consumer without bypassing the
+  projector, pre-RPC intent, transactional outbox, or database constraints.
 - Add operator-owned unresolved-intent recovery, including explicit classification of known local
   non-dispatch versus ambiguous write/response outcomes; never infer rejection or automatically
   resubmit without durable evidence and an approved policy.

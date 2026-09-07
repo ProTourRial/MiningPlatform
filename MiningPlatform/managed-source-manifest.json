@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 685,
-  "managedFilesChecksum": "7926c1f87169fbd1738e0e8ec80c06d64df09f7373b48dac587830beb1a38aaa",
+  "managedFileCount": 690,
+  "managedFilesChecksum": "7869f7d27d9189724030890cfecfc62954e06ca8e0014b9fb3c043cf44147edc",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -43,6 +43,11 @@
       "path": ".github/workflows/payout-regtest.yml",
       "sha256": "22bba65d8de67c5727fee76bd4afa58157dfb8220d56cf04f2dc73bfad56d5ec",
       "size": 2775
+    },
+    {
+      "path": ".github/workflows/randomx-gateway.yml",
+      "sha256": "be8cdd98286002fbe2ca1274510ac03e1d82cb84e8967c52833bc5bc26f235ca",
+      "size": 1966
     },
     {
       "path": ".github/workflows/web-browser-e2e.yml",
@@ -706,8 +711,28 @@
     },
     {
       "path": "apps/randomx-gateway/src/index.ts",
-      "sha256": "571614e2d0abc14f14a0208df7c18161104d5bc2950fb47521aea27e2bccf357",
-      "size": 203
+      "sha256": "1c14546772170fa3e7cfea06fe6651494e92a6a9e1bf750f5e17a3cec1615d50",
+      "size": 317
+    },
+    {
+      "path": "apps/randomx-gateway/src/miner-protocol.ts",
+      "sha256": "4a68ae7c39f33f047a09cc1897690d5fe7d6b8e167133071c5891f9dc11d3202",
+      "size": 6262
+    },
+    {
+      "path": "apps/randomx-gateway/src/miner-server.test.ts",
+      "sha256": "bc44f8cef5e1d10a2441cbcd39cf605a89d4db103caab40618a7dd324187f616",
+      "size": 14322
+    },
+    {
+      "path": "apps/randomx-gateway/src/miner-server.ts",
+      "sha256": "9d489cb7db457d4cdcea22f1c5c015be047dd610d4ca3e6bfe175d187529be94",
+      "size": 17343
+    },
+    {
+      "path": "apps/randomx-gateway/src/submission-contract.ts",
+      "sha256": "0d4f03db7ee8fc5fb97e351c168177e62dd07dc1dcdcf6db435c6c2330a2b248",
+      "size": 1244
     },
     {
       "path": "apps/randomx-gateway/src/submission-coordinator.integration.test.ts",
@@ -716,8 +741,8 @@
     },
     {
       "path": "apps/randomx-gateway/src/submission-coordinator.ts",
-      "sha256": "1e52539a0bcc38bfa2eee9f9e85dc86f43112c3fbdca497f63cbb01e02d8b9df",
-      "size": 14072
+      "sha256": "c4ad074182bf8921a62360db79e77768f77294e822c7a2351931b8b47a8e03f4",
+      "size": 13321
     },
     {
       "path": "apps/randomx-gateway/src/submission-repository.ts",
@@ -1321,8 +1346,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "bfe0ff83a16946aea5e1abd7204e8688e6dd11e5ed73bf3fc007b1fa30c54f8a",
-      "size": 63808
+      "sha256": "fd068b4cfe7209a22a25e9e36f7235eb2a8d73a5fde37ca6d8a4aeab52e5ac1c",
+      "size": 64926
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1426,8 +1451,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "d38a2d96faf63f5ad1df86304838088507e6067548f59a946307ed5d2dcdb3d6",
-      "size": 10115
+      "sha256": "22bb87e63745a244188ff0da026693ff478252259eb1140076b48a460b78c44f",
+      "size": 11043
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -2001,8 +2026,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "1b5074e9ecf6f818ce5c8e28c9ba62933ef03a9577ad2415fd2d65dff3348be4",
-      "size": 10794
+      "sha256": "62faa5e61aa391be4c98c665595c512bb9cd1e451fac03547e5f3c51458334b6",
+      "size": 10719
     },
     {
       "path": "docs/security/COMPLIANCE_READINESS.md",
@@ -3221,8 +3246,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "fd711b9977ee0869b299f857e33cd2b341ee95fa1548a1a0c1b671fc11c6dea9",
-      "size": 34422
+      "sha256": "47b874afdf057b6b12aef08a2a45e49d3c919e97a2e281733a0e9a884dc875b4",
+      "size": 36425
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
