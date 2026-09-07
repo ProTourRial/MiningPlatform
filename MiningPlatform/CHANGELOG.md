@@ -82,7 +82,7 @@
 
 ### Fixed
 
-- The dedicated RandomX CI gate now builds the complete `@mining/upstream-stratum` dependency graph before executing its source-level protocol tests, so a clean GitHub runner cannot accidentally rely on a stale local `@mining/mining-core` `dist` artifact.
+- The dedicated RandomX CI gate now builds the complete upstream-Stratum and accounting-worker dependency graphs before executing source-level protocol and integration tests, so a clean GitHub runner cannot accidentally rely on stale local `@mining/mining-core` or `@mining/ledger` `dist` artifacts.
 - Managed source manifests now exclude local Playwright reports and browser artifacts, keeping release checksums independent from disposable test output.
 - Playwright disables request tracing whenever a Vercel protection-bypass header is configured, preventing that credential from entering retained failure traces.
 - Payout execution rechecks database emergency controls immediately before signing and every initial or recovery broadcast, verifies persisted signed-PSBT and raw-transaction digests before use, releases watch-wallet PSBT input locks before pre-broadcast financial rollback, and serializes active execution per hot wallet under a PostgreSQL advisory lock so independently confirmed spends cannot deadlock physical reconciliation.

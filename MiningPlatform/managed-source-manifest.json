@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 690,
-  "managedFilesChecksum": "12fce32bc1286ac480167c003f5e759fd94fd5292cdea3107900c7db6ac9f629",
+  "managedFilesChecksum": "b87c38598a1543fe26c0caae215924e7f25f29d84492cde5300da29fa216b9bd",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -46,8 +46,8 @@
     },
     {
       "path": ".github/workflows/randomx-gateway.yml",
-      "sha256": "e67184b659ccd6d1d88c954a431327ed9a650c8b9ed5591040f98e0d38c89d41",
-      "size": 2027
+      "sha256": "efc319c24307b41574aebc4390fa3a3074016742dc3cd6a325ad240791ae7020",
+      "size": 2089
     },
     {
       "path": ".github/workflows/web-browser-e2e.yml",
@@ -1346,8 +1346,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "cb61e7d6e9d8f983b541319de00307476044ac998e6e813850b265187fa0aac3",
-      "size": 65182
+      "sha256": "2df6a98ba5f38333d3a573c06a7f81cc82d766aa1082b6d7221a5165592e2b8c",
+      "size": 65226
     },
     {
       "path": "DELETE_FILES.txt",
@@ -3246,8 +3246,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "d033c2e8fc8a6ccdd647ca2411f7b827b95134603de06a89bf9da529483ee89c",
-      "size": 36478
+      "sha256": "6ce5abb91bed26c97b23a09045294f894c8fda2de3368cb93f7b516a30b9bb51",
+      "size": 36532
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
