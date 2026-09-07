@@ -750,6 +750,7 @@ const packagedPayoutRegtestWorkflow = await text('.github/workflows/payout-regte
 const activePayoutRegtestWorkflow = await parentWorkflow('payout-regtest.yml');
 const payoutRegtestWorkflow = activePayoutRegtestWorkflow ?? packagedPayoutRegtestWorkflow;
 for (const expected of [
+  'pnpm db:generate',
   'pnpm --filter @mining/wallet-worker... build',
   'pnpm --filter @mining/transaction-signer... build',
   'pnpm test:integration:payout-regtest',

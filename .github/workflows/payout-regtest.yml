@@ -52,6 +52,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: MiningPlatform/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Generate database client
+        run: pnpm db:generate
       - name: Build payout runtime and isolated signer
         run: >-
           pnpm --filter @mining/api... build &&
