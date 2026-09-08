@@ -120,6 +120,13 @@ in application JavaScript is outside the platform's security and correctness bou
     to the shared session identifier, forwards the already HMAC-protected remote address, hashes the raw
     miner agent before crossing the boundary, and refuses a successful result without a mining-account
     binding. This adapter does not authorize listener startup by itself.
+20. A dedicated runtime composes these boundaries only in an explicitly acknowledged laboratory. It
+    dynamically loads database-dependent code only after enablement, binds the miner listener to
+    loopback, opens a distinct upstream authorization connection per authenticated miner, wraps the
+    source in the Redis-time work lease, validates through the configured sidecar, and persists the
+    pre-RPC intent plus final decision/outbox. `NODE_ENV=production` is rejected before any listener or
+    credential connection is created. This laboratory composition is evidence of wiring, not approval
+    for public RandomX traffic.
 
 ## Consequences
 
@@ -131,10 +138,11 @@ in application JavaScript is outside the platform's security and correctness bou
   before miner-facing RandomX traffic can be considered.
 - Accounting evidence now has deterministic projection, canonical event construction, append-only
   persistence, strict internal event consumption, durable submission/outbox orchestration, and a
-  bounded but inactive miner-facing transport. Per-miner upstream sessions provide an authoritative
+  bounded miner-facing transport with a loopback-only laboratory composition. Per-miner upstream
+  sessions provide an authoritative
   source of provider-personalized work and exact submission routing; the Redis lease still refuses
-  identical search space and does not synthesize uniqueness. Production credential wiring, empirical
-  proof that the selected provider issues distinct blobs, runtime activation, unresolved-intent operator
+  identical search space and does not synthesize uniqueness. Public activation, empirical proof that
+  the selected provider issues distinct blobs, pinned sidecar provenance, unresolved-intent operator
   recovery, reward-period assignment, settlement reconciliation, and ledger effects remain gated.
 - Provider fixtures must be redacted and versioned; production credentials and raw authorization
   messages must never appear in logs, events, or test artifacts.
@@ -143,8 +151,8 @@ in application JavaScript is outside the platform's security and correctness bou
 
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
-- Instantiate the shared production worker-credential adapter in the final runtime composition and prove
-  revocation, reconnect, distributed Redis limiter, referral, and abuse behavior under load.
+- Promote the laboratory's shared worker-credential composition only after proving revocation,
+  reconnect, distributed Redis limiter, referral, and abuse behavior under production-like load.
 - Configure the dedicated-session source against a provider that demonstrably supplies distinct
   upstream-authoritative hashing blobs. Retain the Redis collision guard and prove its ownership, TTL,
   reconnect, process-restart, Redis failover, and partition behavior; standard CryptoNote Stratum does

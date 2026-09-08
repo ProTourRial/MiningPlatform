@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 698,
-  "managedFilesChecksum": "f6a016581e38f9fb49aa1313fe358c1df1436976b7c17075fe0a7d544b2ee5b8",
+  "managedFileCount": 704,
+  "managedFilesChecksum": "453c8bb12420a89fd3366f7f0e541765259159866359cee3dde58b71cbd2b81e",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -16,13 +16,13 @@
     },
     {
       "path": ".env.ci.example",
-      "sha256": "98a784bf55b17ea8b5416408a7b74eafd69c5116e12ba3e0dd2762f04a1d4af2",
-      "size": 6604
+      "sha256": "50ed54ff77a30c1323b516854edecc134d77730fca2cad872c42c84c3f0aac6f",
+      "size": 6634
     },
     {
       "path": ".env.example",
-      "sha256": "7200cddd26ade33684f1dbaeb510276ec97a42304ef619aa6034cd9fdd2fe2b4",
-      "size": 6841
+      "sha256": "a263581c38bc72334b771c2ca2ac7e9604401ba0e0237736a43923ebb069fdec",
+      "size": 7484
     },
     {
       "path": ".gitattributes",
@@ -706,8 +706,18 @@
     },
     {
       "path": "apps/randomx-gateway/package.json",
-      "sha256": "acb62413e040811aef01db443f3daee4c86986b2b54efe6b20fd18addffaf4a3",
-      "size": 806
+      "sha256": "31ada786ac200ac928c44ce55016a051179534ac0744af57a67ef5c7b0963137",
+      "size": 954
+    },
+    {
+      "path": "apps/randomx-gateway/src/config.test.ts",
+      "sha256": "901887114be1b5d17820da76b41502041103d5413fc674f072a9c5d94ae3b707",
+      "size": 3476
+    },
+    {
+      "path": "apps/randomx-gateway/src/config.ts",
+      "sha256": "d2dceb7241c1594f9f02d9389cf776f6017581ce922f5fec26101181c0c287ce",
+      "size": 6871
     },
     {
       "path": "apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts",
@@ -721,8 +731,13 @@
     },
     {
       "path": "apps/randomx-gateway/src/index.ts",
-      "sha256": "f622d3e730ad19332b43d73390fc6bd73c2afe1cd8895923d04a188983554ced",
-      "size": 458
+      "sha256": "dcd5cdeb3257ae718779736cdc36072a60493b3d07a4c5d66c9963fc4463ebc9",
+      "size": 517
+    },
+    {
+      "path": "apps/randomx-gateway/src/main.ts",
+      "sha256": "23e40d037e8973ed43f9304b955c522577502ed467e336b281429b693369e1c5",
+      "size": 1985
     },
     {
       "path": "apps/randomx-gateway/src/miner-protocol.ts",
@@ -753,6 +768,16 @@
       "path": "apps/randomx-gateway/src/production-worker-authenticator.ts",
       "sha256": "618a748be4bb11ff41907451291f2fa2d2ea1016916ca47fe069d889976446f5",
       "size": 2497
+    },
+    {
+      "path": "apps/randomx-gateway/src/runtime.integration.test.ts",
+      "sha256": "aabb7473a5999002f5b594ef20245f0f9134b089bfeac48b457f14a898fe8060",
+      "size": 12086
+    },
+    {
+      "path": "apps/randomx-gateway/src/runtime.ts",
+      "sha256": "a2fe7264d842262ac870873d4b3b43d7e8cbeb8bad93ccae6e8b07e6130a3a3d",
+      "size": 5692
     },
     {
       "path": "apps/randomx-gateway/src/submission-contract.ts",
@@ -1386,8 +1411,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "68c6494a5a5bf52af165db290d132421ca1b4345fefb4960cc0170683c8e55ef",
-      "size": 67078
+      "sha256": "6b416e90233c2c710dcd8845e95ee6a72c95327f11a1c84c1d2f3233f0328fbb",
+      "size": 67511
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1491,8 +1516,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "a7b1fd4a44af618d84de2fe15ed0577657b69b06e31e56ee3f05fbe1f003d41f",
-      "size": 13805
+      "sha256": "0ec18b0271eb21321d18342f47ed8154c203a923289e57a86ecd1dfa95920082",
+      "size": 14463
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1745,6 +1770,11 @@
       "size": 17216
     },
     {
+      "path": "docs/operations/randomx-lab-runbook.md",
+      "sha256": "8da79c8321bcf3a8fcd1ca2c1e9876d52508baaf665aca7b2518b1cd46f70299",
+      "size": 3742
+    },
+    {
       "path": "docs/operations/README.md",
       "sha256": "7535260f903d4081694fb24c07114e41c98ef54d0f79932ebe5f8fae805e692a",
       "size": 58
@@ -1786,8 +1816,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "920c4d7cdb276f7004ddc9f41ebfac28b4d82a7e215d238541b51db2def37374",
-      "size": 20385
+      "sha256": "61e6ff6a81932a940d0cb0afb51eadef445034a382b2f2731493b13abec770f2",
+      "size": 20714
     },
     {
       "path": "docs/product/POOL_PRODUCTION_READINESS.md",
@@ -2066,8 +2096,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "c33a9e40bd8e76cee8786da7e1022c1fefed34e440bbc391f6497656fd7623e5",
-      "size": 11546
+      "sha256": "6b52f43bd0efc0f8df128a599e5f72d4598e523f030415794151d5ba4aab822a",
+      "size": 11624
     },
     {
       "path": "docs/security/COMPLIANCE_READINESS.md",
@@ -2231,8 +2261,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "ede082fb942230c139ee947af8df2aa9c6a9d33cab15011fe8bf41fb408026a1",
-      "size": 7595
+      "sha256": "e6618647e38e75ba265bf8a6f506510abb0c262c78833387b3ea2ca6ba62040a",
+      "size": 7751
     },
     {
       "path": "packages/bitcoin-template/package.json",
@@ -3181,8 +3211,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "a8cf26d1b141cc9a3ee1a5e53a4f5eea0df6c4924baf049e6d37634b6b4886b4",
-      "size": 303424
+      "sha256": "d46ad1b12202b32a8418e6a2786af228463ca55e4aa2dd11d3fc6f2331905931",
+      "size": 303630
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3286,8 +3316,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "fbdb90c75c3e6c2c56a730ff40988d8316719699ee7c3450e8bfc77df228c0fd",
-      "size": 38945
+      "sha256": "899cfb6536ac15821cf328e3253f3b9b719ceaa96cd145b284cc0f04f9db5b3d",
+      "size": 40734
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

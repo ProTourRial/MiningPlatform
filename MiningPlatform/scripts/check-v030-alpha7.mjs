@@ -89,6 +89,12 @@ const requiredFiles = [
   'apps/randomx-gateway/src/production-worker-authenticator.integration.test.ts',
   'apps/randomx-gateway/src/work-isolation.ts',
   'apps/randomx-gateway/src/work-isolation.test.ts',
+  'apps/randomx-gateway/src/config.ts',
+  'apps/randomx-gateway/src/config.test.ts',
+  'apps/randomx-gateway/src/runtime.ts',
+  'apps/randomx-gateway/src/runtime.integration.test.ts',
+  'apps/randomx-gateway/src/main.ts',
+  'docs/operations/randomx-lab-runbook.md',
   '.github/workflows/randomx-gateway.yml',
   'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'packages/observability-contract/src/index.ts',
@@ -587,6 +593,46 @@ requireText(
   "export * from './production-worker-authenticator.js'",
   'Shared production worker authentication subpath',
 );
+
+const randomXRuntimeConfig = await text('apps/randomx-gateway/src/config.ts');
+for (const expected of [
+  'Public RandomX runtime activation is not permitted by this release',
+  'I_ACCEPT_RANDOMX_LAB_ONLY',
+  'This release permits the RandomX miner listener on loopback only',
+  'RANDOMX_JOB_REFRESH_INTERVAL_MS',
+])
+  requireText(randomXRuntimeConfig, expected, 'Fail-closed RandomX runtime configuration');
+
+const randomXRuntime = await text('apps/randomx-gateway/src/runtime.ts');
+for (const expected of [
+  'RandomXProductionWorkerAuthenticator.create',
+  'RedisRandomXWorkLeaseStore.connect',
+  'new DedicatedRandomXUpstreamSessions',
+  'new UniqueRandomXMinerWorkProvider',
+  'new RandomXShareValidator',
+  'createRandomXSubmissionCoordinatorGatewayFactory',
+])
+  requireText(randomXRuntime, expected, 'RandomX laboratory runtime composition');
+
+const randomXMain = await text('apps/randomx-gateway/src/main.ts');
+for (const expected of [
+  "await import('./runtime.js')",
+  'publicListenerEnabled: false',
+  'runtime.listen()',
+])
+  requireText(randomXMain, expected, 'RandomX fail-closed entrypoint');
+
+const randomXRuntimeIntegration = await text(
+  'apps/randomx-gateway/src/runtime.integration.test.ts',
+);
+for (const expected of [
+  'generateWorkerCredential',
+  'createRandomXGatewayRuntime',
+  "method: 'login'",
+  "method: 'submit'",
+  "intent.decision?.outboxEvent?.eventName, 'mining.randomx.share.accepted.v1'",
+])
+  requireText(randomXRuntimeIntegration, expected, 'RandomX runtime integration trace');
 
 const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
 const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');

@@ -165,10 +165,13 @@ menyembunyikan job id upstream, membatasi mapping, mengganti sesi terputus, dan 
 ke adapter/coordinator pemiliknya. Source wajib dibungkus Redis collision guard; sesi TCP berbeda tidak
 dianggap bukti blob unik dan assignment kedua ditolak bila provider mengembalikan ruang kerja sama.
 Credential adapter produksi kini memakai policy PostgreSQL/Redis yang sama dengan Stratum SHA-256 dan
-menolak principal tanpa mining account. Aktivasi listener publik serta komposisi runtime final,
-pembuktian perilaku unique-work provider pada restart/failover/partition, batas clock skew antar-domain,
-operator recovery, reward period, settlement, dan reconciliation RandomX masih merupakan gap aktif dan
-tidak ada saldo yang dapat berubah.
+menolak principal tanpa mining account. Runtime laboratorium mengomposisikan boundary tersebut secara
+utuh pada listener loopback dengan acknowledgement eksplisit dan menolak `NODE_ENV=production` sebelum
+listener dibuat. Trace nyata membuktikan wire miner, kredensial, private job, sidecar validation,
+upstream acceptance, intent, decision, dan outbox. Aktivasi listener publik, sidecar production yang
+dipin dan diuji known-answer, pembuktian unique-work provider pada restart/failover/partition, batas
+clock skew antar-domain, operator recovery, reward period, settlement, dan reconciliation RandomX masih
+merupakan gap aktif dan tidak ada saldo yang dapat berubah.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:
