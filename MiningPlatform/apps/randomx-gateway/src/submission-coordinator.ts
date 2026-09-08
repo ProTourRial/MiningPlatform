@@ -63,13 +63,19 @@ export interface RandomXGatewayIdentityResolver {
   }>;
 }
 
-type RandomXSubmissionCoordinatorOptions = {
+export type RandomXSubmissionCoordinatorOptions = {
   validator: RandomXGatewayValidator;
   upstream: RandomXGatewayUpstream;
   identityResolver: RandomXGatewayIdentityResolver;
   repository?: RandomXSubmissionRepository;
   createId?: () => string;
 };
+
+export function createRandomXSubmissionCoordinatorGatewayFactory(
+  options: Omit<RandomXSubmissionCoordinatorOptions, 'upstream'>,
+): (upstream: RandomXGatewayUpstream) => RandomXSubmissionCoordinator {
+  return (upstream) => new RandomXSubmissionCoordinator({ ...options, upstream });
+}
 
 function digestParts(parts: readonly string[]): string {
   const hash = createHash('sha256');

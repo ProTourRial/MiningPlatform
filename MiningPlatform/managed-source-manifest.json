@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 692,
-  "managedFilesChecksum": "31a5857312832acc9d10d58c4a819e1c984ba11c059f7e70d3d0a4b6f722ab9e",
+  "managedFileCount": 694,
+  "managedFilesChecksum": "e683d5cd7ba725e625e4f03f7f55734bc5474f9922be05013b2c29e5b77fb12e",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -706,13 +706,23 @@
     },
     {
       "path": "apps/randomx-gateway/package.json",
-      "sha256": "fedcc2e7e44fc8cd7400ce8e7ea43bbca048add6032e4363360e94b9ee3013ab",
-      "size": 675
+      "sha256": "de7889fc6ac27398cc329bcfa4160998150ab83d0ccdb794f15182cb014de577",
+      "size": 722
+    },
+    {
+      "path": "apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts",
+      "sha256": "056668714d8402a73b74143e2e09a8d84c2e0dab53b9366c70724be82d6ec363",
+      "size": 14781
+    },
+    {
+      "path": "apps/randomx-gateway/src/dedicated-upstream-sessions.ts",
+      "sha256": "3edf730765a29f30b2d557c326d408689b38308bf5f295513bbc3f7d49e9bd0d",
+      "size": 15413
     },
     {
       "path": "apps/randomx-gateway/src/index.ts",
-      "sha256": "237c7fb80b4d23de4ea1ebfd78ca4edc0443e05ae662212269f878b7269161dd",
-      "size": 354
+      "sha256": "0e686b9201212a1af806184c5e8a6293a31cf48c0a607ca3184ac4162f64b781",
+      "size": 404
     },
     {
       "path": "apps/randomx-gateway/src/miner-protocol.ts",
@@ -741,8 +751,8 @@
     },
     {
       "path": "apps/randomx-gateway/src/submission-coordinator.ts",
-      "sha256": "c4ad074182bf8921a62360db79e77768f77294e822c7a2351931b8b47a8e03f4",
-      "size": 13321
+      "sha256": "f0463c405d314063696af8223bcf1478520c98737a5ebd44ef32624d066c3167",
+      "size": 13618
     },
     {
       "path": "apps/randomx-gateway/src/submission-repository.ts",
@@ -1356,8 +1366,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "1fb6c56ebd0fd6677b0d66b85c2512c20eeacaa5f76b13b9f459dd021e279dc9",
-      "size": 66132
+      "sha256": "90744dd6650d059878c36e4c102a7f4cc3078877636b8144772746386d836891",
+      "size": 66657
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1461,8 +1471,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "d74b8466a97fb360201f4a621edd560872ea13ed0891594119988fd2465a5692",
-      "size": 12153
+      "sha256": "cee39dd708cb99d44bb2b565ae9d298f7e8737a8f07a5382bf611c336eb5e9d5",
+      "size": 13126
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1756,8 +1766,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "7344ea7f13196b16535c0d51a541afbbe215abb3c856d89525631a66dd0aadd2",
-      "size": 19963
+      "sha256": "5bef7722ab4515b9fd529f626ca26925cf206ec266e1661dca85c1cd1cb7fed6",
+      "size": 20242
     },
     {
       "path": "docs/product/POOL_PRODUCTION_READINESS.md",
@@ -2036,8 +2046,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "ec21001a07a0e6d08d87ab971df177069da9f1a9fda73d20f5423679691c588b",
-      "size": 11096
+      "sha256": "528acafbc9721fad0e8cb74a6fcac21952a5f349ff0e1bef57ff97cf867f5e5b",
+      "size": 11342
     },
     {
       "path": "docs/security/COMPLIANCE_READINESS.md",
@@ -3151,8 +3161,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "9b680a2ed5e70c283009cc8e72fc80eb4519dc5c07ae80f0026927d307a1b7f2",
-      "size": 303099
+      "sha256": "22ada8cd59aab2efcaef2d0b7ee7014ab96dd6a03f6c2e5168e5943d5421dd29",
+      "size": 303218
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3256,8 +3266,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "be7436216258068a589cdb0606cc9ef29646153830e2af34e87394d4911eca39",
-      "size": 37148
+      "sha256": "ea740d69730ea065e437019dd9ed809b0ad7db02c7eb446df1f3e48e79319202",
+      "size": 37955
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

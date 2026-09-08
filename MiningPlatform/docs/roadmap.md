@@ -57,11 +57,13 @@ now authenticates connections, issues only provider-supplied assignments, resolv
 identity before submission, and invokes the durable gateway under line, queue, connection, timeout, and
 per-session share limits. A Redis-time lease now rejects identical algorithm/seed/nonce-normalized blobs
 across active connections and gateway replicas, and ownership is rechecked before submission resolution.
-The guard does not mutate work or invent a nonce-range extension unsupported by standard CryptoNote
-Stratum, so an authoritative provider capable of issuing distinct upstream-valid blobs is still required.
-The transport remains deliberately inactive until that provider, the production credential adapter,
-sidecar provenance, unresolved-intent recovery, and settlement reconciliation are wired and proven before
-public RandomX traffic or any balance effect is permitted.
+The concrete source now opens one upstream authorization session per authenticated miner, projects
+provider-issued work behind private job IDs, bounds mappings, replaces disconnected sessions, and routes
+each durable submission through the exact owning adapter/coordinator. It is wrapped by the Redis guard:
+separate TCP sessions do not prove unique work, and a provider returning the same nonce-normalized blob is
+rejected. The transport remains deliberately inactive until provider-specific distinct-work behavior,
+the production credential adapter, sidecar provenance, unresolved-intent recovery, and settlement
+reconciliation are wired and proven before public RandomX traffic or any balance effect is permitted.
 
 ## Active Native Pool Laboratory Track
 

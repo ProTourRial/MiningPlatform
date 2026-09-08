@@ -277,6 +277,9 @@ importers:
       '@mining/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@mining/upstream-stratum':
+        specifier: workspace:*
+        version: link:../../packages/upstream-stratum
       redis:
         specifier: 5.0.0
         version: 5.0.0

@@ -82,6 +82,8 @@ const requiredFiles = [
   'apps/randomx-gateway/src/miner-protocol.ts',
   'apps/randomx-gateway/src/miner-server.ts',
   'apps/randomx-gateway/src/miner-server.test.ts',
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.ts',
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts',
   'apps/randomx-gateway/src/work-isolation.ts',
   'apps/randomx-gateway/src/work-isolation.test.ts',
   '.github/workflows/randomx-gateway.yml',
@@ -540,6 +542,25 @@ for (const expected of [
   'RandomXWorkIsolationConflictError',
 ])
   requireText(randomXWorkIsolation, expected, 'Distributed RandomX work isolation');
+
+const randomXDedicatedSessions = await text(
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.ts',
+);
+for (const expected of [
+  'class DedicatedRandomXUpstreamSessions',
+  'createRandomXPoolAdapterSessionFactory',
+  'maximumRetainedJobsPerConnection',
+  'session.upstream.getJob',
+  'session.submissionGateway.submit',
+  'RandomX connection cannot replace its authenticated worker',
+])
+  requireText(randomXDedicatedSessions, expected, 'Dedicated RandomX upstream sessions');
+
+requireText(
+  await text('apps/randomx-gateway/src/submission-coordinator.ts'),
+  'createRandomXSubmissionCoordinatorGatewayFactory',
+  'Per-session RandomX submission coordinator factory',
+);
 
 const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
 const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');
