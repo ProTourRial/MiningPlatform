@@ -10,16 +10,56 @@ import type { Route } from 'next';
 import { ArrowRight, KeyRound, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { FormEvent} from 'react';
-import { useState } from 'react';
-import { apiFetch, ApiError } from '@/services/api-client';
+import type { FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch, ApiError, API_BASE_URL } from '@/services/api-client';
+
+interface AuthStatus {
+  oauth?: { google?: { enabled: boolean; signIn: boolean; signUp: boolean } };
+}
+
+function oauthMessage(result: string | null): string {
+  if (result === 'not_linked') {
+    return 'Akun Google ini belum ditautkan. Masuk dengan password, aktifkan 2FA, lalu tautkan Google dari halaman Security.';
+  }
+  if (result === 'cancelled') {
+    return 'Google Sign-In dibatalkan. Tidak ada perubahan pada akun Anda.';
+  }
+  if (result === 'failed') {
+    return 'Google Sign-In gagal atau sudah kedaluwarsa. Mulai kembali dari halaman ini.';
+  }
+  return '';
+}
 
 export function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(() => oauthMessage(search.get('oauth')));
   const [submitting, setSubmitting] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  const destination = useMemo(() => {
+    const requestedNext = search.get('next');
+    return requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+      ? requestedNext
+      : '/dashboard';
+  }, [search]);
+
+  useEffect(() => {
+    let active = true;
+    void apiFetch<AuthStatus>('/auth/status', undefined, false)
+      .then((status) => {
+        if (active) setGoogleEnabled(status.oauth?.google?.enabled === true);
+      })
+      .catch(() => {
+        if (active) setGoogleEnabled(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [search]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,10 +77,6 @@ export function LoginForm() {
         }),
       }, false);
 
-      const requestedNext = search.get('next');
-      const destination = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
-        ? requestedNext
-        : '/dashboard';
       router.push(destination as Route);
       router.refresh();
     } catch (error) {
@@ -66,6 +102,23 @@ export function LoginForm() {
         </div>
       ) : null}
       <button disabled={submitting} className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-3.5 text-sm font-bold text-[#04110c] transition hover:bg-[#e3ff91] disabled:opacity-60">{submitting ? <><LoaderCircle size={16} className="animate-spin" /> Memverifikasi…</> : <>Masuk ke workspace <ArrowRight size={16} className="transition group-hover:translate-x-0.5" /></>}</button>
+      {googleEnabled ? (
+        <>
+          <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+            <span className="h-px flex-1 bg-white/8" />atau<span className="h-px flex-1 bg-white/8" />
+          </div>
+          <a
+            href={`${API_BASE_URL}/auth/google/start?next=${encodeURIComponent(destination)}`}
+            className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-white/12 bg-white/[0.035] px-4 py-3.5 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.07]"
+          >
+            <span aria-hidden="true" className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-bold text-[#4285f4]">G</span>
+            Lanjutkan dengan Google
+          </a>
+          <p className="text-center text-[11px] leading-5 text-[var(--muted)]">
+            Hanya untuk akun yang sudah ditautkan dari halaman Security.
+          </p>
+        </>
+      ) : null}
       {message ? <p className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs leading-6 text-amber-100">{message}</p> : null}
       <div className="flex flex-wrap justify-between gap-3 border-t border-white/8 pt-4 text-xs text-[var(--muted)]"><Link href="/forgot-password" className="transition hover:text-white">Lupa password?</Link><Link href="/register" className="font-semibold text-white transition hover:text-[var(--accent)]">Buat akun</Link></div>
     </form>

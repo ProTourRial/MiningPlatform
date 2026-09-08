@@ -1,11 +1,12 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.7",
-  "releaseName": "Payout Control Foundation",
+  "version": "0.3.0-alpha.8",
+  "releaseName": "Full Stack Regtest and Federated Identity Candidate",
   "artifactType": "full-release",
-  "schemaVersion": 13,
-  "migration": "20260822010000_payout_control_foundation",
+  "schemaVersion": 23,
+  "migration": "20260908010000_google_oauth_identity_foundation",
   "compatibleFrom": [
+    "0.3.0-alpha.7",
     "0.3.0-alpha.6",
     "0.3.0-alpha.5",
     "0.3.0-alpha.4",
@@ -14,10 +15,10 @@
     "0.3.0-alpha.1"
   ],
   "patchChecksum": "NOT_PACKAGED",
-  "payloadChecksum": "3cd064f37c1eb5d2aaa1eec2ae9c0b9a2d66adee9d318555ff9417f8918cee10",
+  "payloadChecksum": "99c1cc842e079282d45a77ace8418e9841ff77d34fe9e8b7b76dbf6fddd3fa30",
   "checksumScope": "sha256-payload-v2 with canonical LF and generated-file exclusions",
-  "payloadFileCount": 705,
-  "buildDate": "2026-08-22T00:00:00+07:00",
+  "payloadFileCount": 716,
+  "buildDate": "2026-09-08T00:00:00+07:00",
   "gitCommit": "UNCOMMITTED",
   "author": "Abia Nugrahanto"
 }

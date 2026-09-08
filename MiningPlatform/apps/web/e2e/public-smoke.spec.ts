@@ -35,6 +35,7 @@ test('authentication forms expose the real API contract fields', async ({ page }
   await expect(page.getByLabel('Email')).toBeVisible();
   await expect(page.getByLabel('Password')).toBeVisible();
   await expect(page.getByRole('button', { name: /Masuk ke workspace/i })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /Lanjutkan dengan Google/i })).toHaveCount(0);
 });
 
 test('protected dashboard redirects to login before rendering operational data', async ({

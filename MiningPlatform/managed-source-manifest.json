@@ -1,12 +1,12 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.7",
-  "releaseName": "Payout Control Foundation",
+  "version": "0.3.0-alpha.8",
+  "releaseName": "Full Stack Regtest and Federated Identity Candidate",
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 704,
-  "managedFilesChecksum": "453c8bb12420a89fd3366f7f0e541765259159866359cee3dde58b71cbd2b81e",
+  "managedFileCount": 715,
+  "managedFilesChecksum": "e204dcb09141021431f30f421769484c5c7de74496ccea84aa9835c594ec95a5",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -16,13 +16,13 @@
     },
     {
       "path": ".env.ci.example",
-      "sha256": "50ed54ff77a30c1323b516854edecc134d77730fca2cad872c42c84c3f0aac6f",
-      "size": 6634
+      "sha256": "0786a31269b4334911ce5cfb8ddaf2a5b1ff6ad9537f71f2ac4949a95efe7058",
+      "size": 6750
     },
     {
       "path": ".env.example",
-      "sha256": "a263581c38bc72334b771c2ca2ac7e9604401ba0e0237736a43923ebb069fdec",
-      "size": 7484
+      "sha256": "53be8f307aa477ecb99187fc87201169f59e525432d262e9d13127bc48222f7f",
+      "size": 7759
     },
     {
       "path": ".gitattributes",
@@ -31,7 +31,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "ad4d24c6db09f822b77179ba72892599047f9191c81dfbd31a326d78f8dcd2b2",
+      "sha256": "2ffc41b96ddf7d2b72e26fee61452bf883bd327cd986107b497095ef243fcb23",
       "size": 6293
     },
     {
@@ -91,7 +91,7 @@
     },
     {
       "path": "apps/accounting-worker/package.json",
-      "sha256": "805d4df2d2068ef8a85455942815b8b0399c08d04933ded2b3a8a4f3df3c0b34",
+      "sha256": "0c427fb03c10a01661eb672cd12b005fc62a8e5a85bdce96c65b35d46828fb1c",
       "size": 825
     },
     {
@@ -146,8 +146,8 @@
     },
     {
       "path": "apps/api/package.json",
-      "sha256": "c32eae32614942f431d2fdfb3fd9599e1c27f425c1ac97849fa130592b3710d2",
-      "size": 1323
+      "sha256": "1a5dd2f193515ece7fd0e909f4cc64dd5a4473566cb4a4d9f755e7e2f9835d82",
+      "size": 1360
     },
     {
       "path": "apps/api/src/app.module.ts",
@@ -188,6 +188,21 @@
       "path": "apps/api/src/fee-policy.test.ts",
       "sha256": "6cc1473ac5d335cd3db20ad880658ee68eec344924a734a0a541fe477a9cbd42",
       "size": 951
+    },
+    {
+      "path": "apps/api/src/google-oauth-config.test.ts",
+      "sha256": "c0ba6a69fe41df5b19e40ba5cfe05402c2895e8971eac8f1eb110c3fd2bc3532",
+      "size": 2138
+    },
+    {
+      "path": "apps/api/src/google-oauth-controller.test.ts",
+      "sha256": "75473b23b2c2f5ce4ab4db6e03ddc93d47bc9d15eb66ac00909755e5df2dd217",
+      "size": 5196
+    },
+    {
+      "path": "apps/api/src/google-oauth.integration.test.ts",
+      "sha256": "90f39a2faeae4f4dba85d8769b01e667bbaf509d83bf431e36665f28e667ccdf",
+      "size": 10021
     },
     {
       "path": "apps/api/src/main.ts",
@@ -256,8 +271,8 @@
     },
     {
       "path": "apps/api/src/modules/auth/auth.controller.ts",
-      "sha256": "e385e2bbd6afc29664de628a6e55c03f2e45dad155779a00e02d72c096c68fb1",
-      "size": 6256
+      "sha256": "2fc22e8ae08a01e5b7b006c32652e9d80b4785425da1631410264a2aabae4e1d",
+      "size": 10486
     },
     {
       "path": "apps/api/src/modules/auth/auth.decorators.ts",
@@ -266,8 +281,8 @@
     },
     {
       "path": "apps/api/src/modules/auth/auth.dto.ts",
-      "sha256": "f9c4c60ff149eb08e2612c0a75f513ca6799db30f0e5c2966b24c16655071f3f",
-      "size": 1585
+      "sha256": "e46a29e067c79f2100892d2f81f6cee7be4416a103e315cafd7a17f0ad2ce311",
+      "size": 1638
     },
     {
       "path": "apps/api/src/modules/auth/auth.guard.ts",
@@ -276,18 +291,33 @@
     },
     {
       "path": "apps/api/src/modules/auth/auth.module.ts",
-      "sha256": "3cf70423fc4b9e8f4f441cfb6671662c96851b746a0711a0f620c45776ce9bba",
-      "size": 623
+      "sha256": "ef20c3424a029394e92969b5741a918cb659e0dbf9c41a7aefb6a71e12554913",
+      "size": 884
     },
     {
       "path": "apps/api/src/modules/auth/auth.service.ts",
-      "sha256": "9c30836c98cbcc4b5f958fd64025f0cd85ab0877fd8694477dc3cd3a528248f2",
-      "size": 26173
+      "sha256": "0020c6bc43b7b72a58aa50030ec4a1fc99d47f9e9c04cae1f52f57687433ae6a",
+      "size": 26548
     },
     {
       "path": "apps/api/src/modules/auth/dto/auth.dto.ts",
       "sha256": "eebd77317d6abd3888f47a911dc3c536ca122b62b8928925661cfc3a12d999dd",
       "size": 1434
+    },
+    {
+      "path": "apps/api/src/modules/auth/google-oauth-config.ts",
+      "sha256": "3585396721530129414068e8cab124c440b353e59f2a1743575b4508f7268ed6",
+      "size": 2569
+    },
+    {
+      "path": "apps/api/src/modules/auth/google-oauth.client.ts",
+      "sha256": "b7c01c8913435189c096d4f5458948c030c3227613d32fe787394efaf57639a3",
+      "size": 2774
+    },
+    {
+      "path": "apps/api/src/modules/auth/google-oauth.service.ts",
+      "sha256": "aa865a49dcc439169d017521742e65b02b019cab50597e80a38cd66a7c762996",
+      "size": 14596
     },
     {
       "path": "apps/api/src/modules/auth/identity-config.ts",
@@ -301,8 +331,8 @@
     },
     {
       "path": "apps/api/src/modules/auth/step-up.service.ts",
-      "sha256": "a30e6445a2e9e0b3e5e03a065e3922eafb32242e3562f5a52110bbd6833ab0e5",
-      "size": 5739
+      "sha256": "b57def980520f3dc25d0ba78b977bd708da0bf279e58cf49a4de36e6453f1c47",
+      "size": 5740
     },
     {
       "path": "apps/api/src/modules/domain-modules.ts",
@@ -576,7 +606,7 @@
     },
     {
       "path": "apps/mining-worker/package.json",
-      "sha256": "0ec4ec72820267a33fbb3ffa427ce09bd5a5dbdc6d07425ac0a96e9a9f67dcaa",
+      "sha256": "3da3e502468b6e0659c59b3c7d8b076fafff03bb1a0912c1e1dade746618d9d3",
       "size": 1005
     },
     {
@@ -656,7 +686,7 @@
     },
     {
       "path": "apps/monitoring-agent/package.json",
-      "sha256": "98beee2c9d71374e2ff03f19477ec579780db1483900b1ff39baf5a4b8def487",
+      "sha256": "c4734489fe5f21781c6168d4f397565611214b7f0798e00ce21bfa72c81744c3",
       "size": 688
     },
     {
@@ -676,7 +706,7 @@
     },
     {
       "path": "apps/outbox-worker/package.json",
-      "sha256": "ddd86b1e77eeb3ce85dc640fa3156487b006a6b663c4b85d4814920d2c37ab78",
+      "sha256": "677e14f91209faec256fadc9a6c8f8ff60734ac2421bdc62ac20c9ffbcb1c778",
       "size": 742
     },
     {
@@ -706,7 +736,7 @@
     },
     {
       "path": "apps/randomx-gateway/package.json",
-      "sha256": "31ada786ac200ac928c44ce55016a051179534ac0744af57a67ef5c7b0963137",
+      "sha256": "2d3d4729903f87126d97ff8d16d47bd5955309d3e2137fc534bd1600278ab532",
       "size": 954
     },
     {
@@ -716,7 +746,7 @@
     },
     {
       "path": "apps/randomx-gateway/src/config.ts",
-      "sha256": "d2dceb7241c1594f9f02d9389cf776f6017581ce922f5fec26101181c0c287ce",
+      "sha256": "6247592f6156bc956e7c2be5038a8c7a6139bd5735a13384f695ff930681b240",
       "size": 6871
     },
     {
@@ -816,7 +846,7 @@
     },
     {
       "path": "apps/scheduler/package.json",
-      "sha256": "231afb1a92d880c21f9b3c5b6941dd687ac4ad6cfdc02a9f8a2a1651f4fa29cd",
+      "sha256": "a7f84c3c3ef3558b80984b63d09f2158dbcc9d05d68db932772287eb61f340ea",
       "size": 678
     },
     {
@@ -836,7 +866,7 @@
     },
     {
       "path": "apps/stratum-server/package.json",
-      "sha256": "9bc40dc972408ae1f2b2fbc8403cac2043be73d85540052ed101967102069dd9",
+      "sha256": "501503904036d3e81f67f52d7039e9041b34316a057d51d89687d2f04dc4d7ac",
       "size": 1197
     },
     {
@@ -851,7 +881,7 @@
     },
     {
       "path": "apps/stratum-server/src/config.ts",
-      "sha256": "b92337ab0a6c8f4d064f5e6bd6b1e5c86b9c00492291ad0bda6769905e54d4d7",
+      "sha256": "13314d58025279ecaa9fe2e2062f133c6f0f35365019830ba8b85a4611759973",
       "size": 10988
     },
     {
@@ -946,7 +976,7 @@
     },
     {
       "path": "apps/transaction-signer/package.json",
-      "sha256": "746bb6993bffa89c81ec2fe15b9dcd7dc0a35352d0cec4f46feeb46134f57486",
+      "sha256": "1349e8dbae7a357c8c06594415e022602ad256d4a443446e3061af6e5328d441",
       "size": 725
     },
     {
@@ -976,7 +1006,7 @@
     },
     {
       "path": "apps/upstream-simulator/package.json",
-      "sha256": "8d235079a1302d917f81e9da8f6bfb8a49c608a86df79f7a95cef152b07c572f",
+      "sha256": "0e184005a3275287e4905d8aa1b2628f851a824693c12e3e00522a2cec999aa4",
       "size": 666
     },
     {
@@ -996,7 +1026,7 @@
     },
     {
       "path": "apps/wallet-worker/package.json",
-      "sha256": "33387aa77754a695c7dbed24b003a4463d3fb6005f78a352d00eabf5d47b1fec",
+      "sha256": "faf694e4cd69e6de8689c342b20d8ad678ddd966f85d87d100086cc605f0f9c0",
       "size": 759
     },
     {
@@ -1066,8 +1096,8 @@
     },
     {
       "path": "apps/web/e2e/public-smoke.spec.ts",
-      "sha256": "ef1511bd27775f549ebab539b3ae5a60f08525fac3860c854b97000048db4253",
-      "size": 1854
+      "sha256": "12cf124b59a9f8e23e6ae4884529d7ef9bceee49d740d1751d97ebeb9d9792ad",
+      "size": 1949
     },
     {
       "path": "apps/web/eslint.config.mjs",
@@ -1086,7 +1116,7 @@
     },
     {
       "path": "apps/web/package.json",
-      "sha256": "ed936b4473749a267beefecf55716641e05291d2fb4925e32541c8adf801cb41",
+      "sha256": "f3a608a88a3f66b9e5bd42d1c330b1a3984af1c1b4f42ee44faf93291375d132",
       "size": 1197
     },
     {
@@ -1226,8 +1256,8 @@
     },
     {
       "path": "apps/web/src/components/auth/login-form.tsx",
-      "sha256": "f35a24cf3c54acc5c21038879f886dd9d0aa35087df38f17fcfeee8927225e87",
-      "size": 4638
+      "sha256": "b8b7efbe7fadf44a7f24094a01ed98b7c5faf3ee52786aebf9e0801c6809356d",
+      "size": 6765
     },
     {
       "path": "apps/web/src/components/auth/register-form.tsx",
@@ -1341,8 +1371,8 @@
     },
     {
       "path": "apps/web/src/components/dashboard/security-management-panel.tsx",
-      "sha256": "3cad5bd9f243336186634902ad17d2f0b844eedf234000a5f2ec0302ffd6d5b2",
-      "size": 6199
+      "sha256": "7779d428316b1b2c96b9772287239b77ace3b6e86a3003c35c022c181c84e951",
+      "size": 10050
     },
     {
       "path": "apps/web/src/components/dashboard/universal-miner-panel.tsx",
@@ -1381,7 +1411,7 @@
     },
     {
       "path": "apps/web/src/components/ui/auth-card.tsx",
-      "sha256": "c1acf13ed5354e55406e66addbf5748f583542cc15378fae34d61ffdb1977087",
+      "sha256": "38e83144ca42d3a1394f7705fe452fa1c788d2829e1072e895e2a57857cf994f",
       "size": 4599
     },
     {
@@ -1411,8 +1441,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "6b416e90233c2c710dcd8845e95ee6a72c95327f11a1c84c1d2f3233f0328fbb",
-      "size": 67511
+      "sha256": "403b314f9d44e41da14b2ddeccc087ac992c58cd39b2a83ee0129fd3c7f31db5",
+      "size": 69486
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1436,8 +1466,8 @@
     },
     {
       "path": "docker-compose.yml",
-      "sha256": "71faaf2dc0f57dbecf021756351147fdb8df89db1ee9d7c09094baf0850321d7",
-      "size": 14929
+      "sha256": "ffa527da2086cde31f3c8242d2405e9b77e1e44b49d4304e5e95db9198d252e5",
+      "size": 14936
     },
     {
       "path": "docs/adr/0001-core-mining-foundation.md",
@@ -1743,6 +1773,11 @@
       "path": "docs/operations/financial-truth-runbook.md",
       "sha256": "f8828703e9f8776408adc07eb3aa1f6ae6a9882f1657be88c662ba7dfbef01ac",
       "size": 4232
+    },
+    {
+      "path": "docs/operations/google-oauth-runbook.md",
+      "sha256": "3e9d0162f10299650cc0f812e3c55edea529cec499ce8b0f9c777c173c16dab2",
+      "size": 4587
     },
     {
       "path": "docs/operations/isolated-signer-runbook.md",
@@ -2070,6 +2105,16 @@
       "size": 3468
     },
     {
+      "path": "docs/releases/v0.3.0-alpha.8-validation.md",
+      "sha256": "0f12702a796cc98c7986ac129d294da84be70e80755f34131a7bf8178b1dc7e9",
+      "size": 2904
+    },
+    {
+      "path": "docs/releases/v0.3.0-alpha.8.md",
+      "sha256": "c0d907befe1ddb4461e78064ba6ce91ddb1a434d17236972478372169683efc0",
+      "size": 1736
+    },
+    {
       "path": "docs/releases/v0.3.0-direct-overwrite-validation.md",
       "sha256": "b85c9fdca11aa047c5b4e742accfedca8ba2438c706bb433d2bc0c841b033ba5",
       "size": 1422
@@ -2096,8 +2141,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "6b52f43bd0efc0f8df128a599e5f72d4598e523f030415794151d5ba4aab822a",
-      "size": 11624
+      "sha256": "64373b71db4dc0000816de84e99c4f9322a98f67fd50b8d9e2cc595b339af5ac",
+      "size": 11830
     },
     {
       "path": "docs/security/COMPLIANCE_READINESS.md",
@@ -2261,12 +2306,12 @@
     },
     {
       "path": "package.json",
-      "sha256": "e6618647e38e75ba265bf8a6f506510abb0c262c78833387b3ea2ca6ba62040a",
-      "size": 7751
+      "sha256": "33c6a9742a8df90caa04e7318b0ad93f1bc399c6634eacdd5092a0281098ea9e",
+      "size": 7822
     },
     {
       "path": "packages/bitcoin-template/package.json",
-      "sha256": "7bfdf6a343063e9eea9a23ab79025210e600b3042d91f373b59a28118431ac91",
+      "sha256": "e1c9518fb9ddd2e97dfebcea55943262517a7280d5895a30f41d64f38a03ad97",
       "size": 843
     },
     {
@@ -2326,7 +2371,7 @@
     },
     {
       "path": "packages/blockchain-adapters/package.json",
-      "sha256": "ddc0cad0727e737ba03e601bcbfb96009055bfcf2a9897f7cd57a82c4f6c696e",
+      "sha256": "bf0a116221b2c99b50563d81e0630f71c4c93f3cb0fb0b96589416367708f30f",
       "size": 732
     },
     {
@@ -2371,18 +2416,18 @@
     },
     {
       "path": "packages/build-info/package.json",
-      "sha256": "f9c1891114d8c7a85db303bdbe2ff5ea7feecf979635a15bbb28e58cbc17500e",
+      "sha256": "7097cb1d75436edd65d18c4d01d610764607082386ab156c7929dd7ff76e1166",
       "size": 618
     },
     {
       "path": "packages/build-info/src/generated.ts",
-      "sha256": "358ace4effd0b6097fa41dbf27260e5c1e8ccefa9370af035fcb179f6c40fb92",
-      "size": 490
+      "sha256": "cc4600ef6ad84ce9a1bf7d5286994d97ddb9d219aba04362c260a46932d08f89",
+      "size": 497
     },
     {
       "path": "packages/build-info/src/index.test.ts",
-      "sha256": "ad4e1a3d4dbc5865b3aca84f57541d039ab3630186f160da01a2d1ef593760f7",
-      "size": 553
+      "sha256": "3d9fdcbe0a4f2005fd5e3c2d0dbc88ab3e74c6b926a6f53906d048e70706a4e8",
+      "size": 560
     },
     {
       "path": "packages/build-info/src/index.ts",
@@ -2396,7 +2441,7 @@
     },
     {
       "path": "packages/config/package.json",
-      "sha256": "8afa55ce75b59b5895dd4cfa485dcd97267af4dee2641fb8fcafae663e98d5f2",
+      "sha256": "d3315ba090367eb26c61455d8a1bd20f865d6acb90197b7c0385d918a6ec744b",
       "size": 688
     },
     {
@@ -2411,7 +2456,7 @@
     },
     {
       "path": "packages/database/package.json",
-      "sha256": "41467fe1190df6f0b4f26eb39c7b88abe123933d1d56f23cd80cb2263dfdacba",
+      "sha256": "5a8e3c5702b98f55cb9c47da340cca042d014c88186052a4d418400179899409",
       "size": 1167
     },
     {
@@ -2530,6 +2575,11 @@
       "size": 12592
     },
     {
+      "path": "packages/database/prisma/migrations/20260908010000_google_oauth_identity_foundation/migration.sql",
+      "sha256": "c37610a7e4df84c6ef1af5ea51618c242011a245decf847b9dc4400ecbd4b9dc",
+      "size": 3258
+    },
+    {
       "path": "packages/database/prisma/migrations/migration_lock.toml",
       "sha256": "9b677f26a93c15274b40945c3e021811da0c86523606ad9c47b51affe98cfa38",
       "size": 127
@@ -2541,8 +2591,8 @@
     },
     {
       "path": "packages/database/prisma/schema.prisma",
-      "sha256": "dfed83f8b693ebd4fcd44ab99fd27ced68f1fbcc26f8d0c424ed7e068380c7dd",
-      "size": 77175
+      "sha256": "51e77e61dd6337be73a2e5b6a90bac3fefbe05943002f1ee673fba548359f2e1",
+      "size": 78753
     },
     {
       "path": "packages/database/prisma/seed.ts",
@@ -2561,7 +2611,7 @@
     },
     {
       "path": "packages/event-bus/package.json",
-      "sha256": "20f2658116ca885cd9da47d7189317b5e60cae80a7d93fef1a38052da35c3e33",
+      "sha256": "101d86165cbad503ec17a944b07c4a2c76b2c13d12a5ddc3b7622fc487fa1722",
       "size": 982
     },
     {
@@ -2591,7 +2641,7 @@
     },
     {
       "path": "packages/idempotency/package.json",
-      "sha256": "2c441334e4fbe70868d4509807cd8a0fb94e82124d278359f556ffec56f34427",
+      "sha256": "21c81afbe13e7dc9d6a8b046d9f33854302874e5f2c4bcdab1766be4bc109b62",
       "size": 654
     },
     {
@@ -2611,7 +2661,7 @@
     },
     {
       "path": "packages/ledger/package.json",
-      "sha256": "ad51d0494d83e875e83069ec811224aab5ea5bb4c7842937588501b5ce2f279a",
+      "sha256": "9d6524b8af83fdf294971c65b3a40c817bce23ec70c8c4300d62d5cf2062f67f",
       "size": 649
     },
     {
@@ -2631,7 +2681,7 @@
     },
     {
       "path": "packages/logger/package.json",
-      "sha256": "42de6c1fe2d68d3968a988989ef1b1b36f5f04265fffc76f1c6e426be72b51dd",
+      "sha256": "3a407584865be1c9f29a124afedbedb392dc18b79f70c2891618b6bdfe49242a",
       "size": 689
     },
     {
@@ -2646,7 +2696,7 @@
     },
     {
       "path": "packages/miner-detection/package.json",
-      "sha256": "0db2b80e48933723eee597368f383c56620acaed90c446715acd7612c288483b",
+      "sha256": "c6b7841eee33d54f2be98e0a6b674ae1a2f610c120b09174af0dc9f49ed8811e",
       "size": 658
     },
     {
@@ -2676,7 +2726,7 @@
     },
     {
       "path": "packages/mining-core/package.json",
-      "sha256": "02a9ddb2636fc39871554b2aecd6c65513e7c501d52aef8818d84d282e74b40a",
+      "sha256": "d20902fcbf20eae8612de9054855c1cde4f8817eb1efdf0de3c99c7bf447c201",
       "size": 654
     },
     {
@@ -2746,7 +2796,7 @@
     },
     {
       "path": "packages/observability-contract/package.json",
-      "sha256": "62ce8bdaf276b2ce416b5e9b978547c5422bc86744066da3b6831fa99ae849e2",
+      "sha256": "6e97e7e171e33130a2ae52041874f4f3c1488b8dcf8a613e3b8b30c5b4bba123",
       "size": 665
     },
     {
@@ -2766,7 +2816,7 @@
     },
     {
       "path": "packages/randomx/package.json",
-      "sha256": "b9e4e668eb93660476eb38a0495fbae589166f6d1444c8b1a7e21173479d7e16",
+      "sha256": "33fb0753add20db6f0f39889dec73ebee569869894d8aba70cc3575e5eadfcc4",
       "size": 711
     },
     {
@@ -2831,7 +2881,7 @@
     },
     {
       "path": "packages/reward-engine/package.json",
-      "sha256": "2f839be2db57aff8acfd26507e58728f4ef10cd9a84d256c37b76d7d4eacf153",
+      "sha256": "e583b83c2e1fe30af2d0cad2507e97639ce0e68bf1ab42c4afb890b8c6ac9a15",
       "size": 656
     },
     {
@@ -2851,7 +2901,7 @@
     },
     {
       "path": "packages/security/package.json",
-      "sha256": "740c63bcb238ea533b706e2e5ec5652c8e5b5971c70f3269c7badf850017ab8f",
+      "sha256": "b371ba41100cc5ddea62139610a4a374be6f9f11d76ab304904d367c951c51e1",
       "size": 651
     },
     {
@@ -2941,7 +2991,7 @@
     },
     {
       "path": "packages/shared/package.json",
-      "sha256": "678c6f182859ca8e45b2a3ce30d4ef06db237e448a510074654309cb543f80db",
+      "sha256": "962631d03c4cdd8628b3694e8eeb3db9bcc96b54d1a5853661166ed4e7aa25d8",
       "size": 644
     },
     {
@@ -2976,7 +3026,7 @@
     },
     {
       "path": "packages/signer-protocol/package.json",
-      "sha256": "285d16ddb8810aaf952f8227cb8ee1e6d56316b6e3ab3578240d37d13a7acee3",
+      "sha256": "e00a7789e2ffa3f4eae1815ec5ab11436fdb189a0a19f9d7867c36f6f297c3a5",
       "size": 658
     },
     {
@@ -2996,7 +3046,7 @@
     },
     {
       "path": "packages/state-machine/package.json",
-      "sha256": "d0aecf04f24b58de54eba7834b66ac6cd1b76f831f6a76a71ce3caf6edde7d69",
+      "sha256": "20855c9ab0cdb77f8b535b3f632bdc92ceea5137c185558d8cfc59ab4634ca99",
       "size": 656
     },
     {
@@ -3026,7 +3076,7 @@
     },
     {
       "path": "packages/stratum-protocol/package.json",
-      "sha256": "e29443078057d7cdfeaf03ca2bab0457b7fdfca2c05d81de2c1eed4a644ef7c7",
+      "sha256": "c51e0f42a635827d0e6370a8121b201a69659ed03de51de9524be37942eb5b66",
       "size": 659
     },
     {
@@ -3046,7 +3096,7 @@
     },
     {
       "path": "packages/upstream-stratum/package.json",
-      "sha256": "afb69175b8368570b6f040af66cb960a060c6f5121230f5f05f556ba127ded4e",
+      "sha256": "39e73602170f3680b2ea80a64852c9eab31105e563c6d2b39a536a80fb60adfb",
       "size": 810
     },
     {
@@ -3166,7 +3216,7 @@
     },
     {
       "path": "packages/validation/package.json",
-      "sha256": "48999a914120f3cc7fd84799d0a7041630115a5338abd271cc94d713fb6ea8a8",
+      "sha256": "d9d2f24a7fe2f9dc505bb5c94697f976634777eaa0eab24efea6372169e6d715",
       "size": 777
     },
     {
@@ -3191,7 +3241,7 @@
     },
     {
       "path": "packages/vardiff-policy/package.json",
-      "sha256": "0e5b23b7aaf31eb8216ec0da654ab86a856d824de07653c17369205bac126909",
+      "sha256": "40e672783387fab8ce89437069dbdd634ae2eefed9deb9cf22376b78a4596fee",
       "size": 657
     },
     {
@@ -3211,8 +3261,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "d46ad1b12202b32a8418e6a2786af228463ca55e4aa2dd11d3fc6f2331905931",
-      "size": 303630
+      "sha256": "8abdbcc2deff310993b8e1e079a931349cb98a22fc15eb24b6105ba5d51f27d5",
+      "size": 314511
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3236,13 +3286,13 @@
     },
     {
       "path": "project-manifest.json",
-      "sha256": "4294a50e65c4bd6b75a19a024303559c86f1087faf0d9b3ef1638e83e1fd4aa8",
-      "size": 9383
+      "sha256": "a4707297cdb7bd7fe05089d41cdd8d81b49305e5692f8dd54101692e45a652c9",
+      "size": 9410
     },
     {
       "path": "README.md",
-      "sha256": "59448117a955243066943d0de4037b7fbc696e995df7aa9b6f8714d682ed104b",
-      "size": 16791
+      "sha256": "31ffbfd0c7def2ccbd04d4f28fbfcf32c13a557e48029df0a7d4992e1fc83e37",
+      "size": 16864
     },
     {
       "path": "repair-existing-install.ps1",
@@ -3320,6 +3370,11 @@
       "size": 40734
     },
     {
+      "path": "scripts/check-v030-alpha8.mjs",
+      "sha256": "07e15dfee3f966098562cba03e9f63b44be91a4477b992cddc09debf1b92cc1a",
+      "size": 41549
+    },
+    {
       "path": "scripts/check-v030-upgrade.mjs",
       "sha256": "8ba7ee99ec9481ec27df38c3e8e1d6613e6f0a196d3968df40daef33b30b1cb0",
       "size": 4319
@@ -3346,13 +3401,13 @@
     },
     {
       "path": "scripts/generate-managed-source-manifest.mjs",
-      "sha256": "e4c106c8b950b8d9a81e7bb3234b6b621df0f415627b52440f1d8b45a56640b1",
-      "size": 2524
+      "sha256": "bbcd7e06a5694c15555113e1087e88dc368acc2d7f44842bfc66eb75dff53a4b",
+      "size": 2550
     },
     {
       "path": "scripts/generate-release-manifest.mjs",
-      "sha256": "690b28c95c0d19c7272229f14f726c596b035a6e079d330749f716f45ffafe87",
-      "size": 3203
+      "sha256": "579ee2b3eea9df1215bb47171b78c71c232ce38bc7fd04fb13bca69942f85b16",
+      "size": 3257
     },
     {
       "path": "scripts/journal-reversal-cli.ts",
@@ -3406,7 +3461,7 @@
     },
     {
       "path": "scripts/stratum-smoke-client.ts",
-      "sha256": "8d66319f0098f62046fedf5706c9a07dbbbbad84cfe16e16d03008bf738ec1ea",
+      "sha256": "86b929aa719cf35ed83ebb3697af3a2e62f61ab5a04a5cb20e4e7c24a19805d5",
       "size": 5516
     },
     {
@@ -3501,8 +3556,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "e5478eecd5b747b38095d8088c9583bc3485c3e52f7196a0a0a02d6f18a90475",
-      "size": 41908
+      "sha256": "670d1ebb01287a2ee4be954d188fec1d1438a5d37dc0790d0c310bddf4b6aa47",
+      "size": 42235
     },
     {
       "path": "scripts/wait-for-http.mjs",

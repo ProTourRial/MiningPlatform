@@ -81,12 +81,13 @@ const patchChecksum =
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0-alpha.7',
-  releaseName: 'Payout Control Foundation',
+  version: '0.3.0-alpha.8',
+  releaseName: 'Full Stack Regtest and Federated Identity Candidate',
   artifactType,
-  schemaVersion: 13,
-  migration: '20260822010000_payout_control_foundation',
+  schemaVersion: 23,
+  migration: '20260908010000_google_oauth_identity_foundation',
   compatibleFrom: [
+    '0.3.0-alpha.7',
     '0.3.0-alpha.6',
     '0.3.0-alpha.5',
     '0.3.0-alpha.4',
@@ -98,7 +99,7 @@ const manifest = {
   payloadChecksum,
   checksumScope: 'sha256-payload-v2 with canonical LF and generated-file exclusions',
   payloadFileCount: files.length,
-  buildDate: process.env.BUILD_DATE ?? '2026-08-22T00:00:00+07:00',
+  buildDate: process.env.BUILD_DATE ?? '2026-09-08T00:00:00+07:00',
   gitCommit: process.env.GIT_COMMIT ?? 'UNCOMMITTED',
   author: 'Abia Nugrahanto',
 };

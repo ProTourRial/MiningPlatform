@@ -25,7 +25,7 @@ if (process.env.MIGRATION_TEST_ACK !== expectedAck) {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const verifierTempRoot = resolve(process.env.MININGPLATFORM_TEMP_ROOT ?? tmpdir());
-const latestMigration = '20260829010000_payout_regtest_reorg_recovery';
+const latestMigration = '20260908010000_google_oauth_identity_foundation';
 const migrationsRoot = join(root, 'packages/database/prisma/migrations');
 if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
   throw new Error(`Missing migration: ${latestMigration}`);
@@ -491,6 +491,8 @@ try {
     BEGIN
       SELECT "id" INTO btc_id FROM "Asset" WHERE "symbol" = 'BTC';
       IF to_regclass('public."PayoutEligibility"') IS NULL
+        OR to_regclass('public."ExternalIdentity"') IS NULL
+        OR to_regclass('public."OAuthAttempt"') IS NULL
         OR to_regclass('public."BalanceReservation"') IS NULL
         OR to_regclass('public."PayoutApproval"') IS NULL
         OR to_regclass('public."SigningRequest"') IS NULL
@@ -866,11 +868,22 @@ try {
     '--test-concurrency=1',
     'src/payout-execution.integration.test.ts',
   ]);
+  run('pnpm', [
+    '--filter',
+    '@mining/api',
+    'exec',
+    'node',
+    '--import',
+    'tsx',
+    '--test',
+    '--test-concurrency=1',
+    'src/google-oauth.integration.test.ts',
+  ]);
   run('pnpm', ['--filter', '@mining/mining-worker', 'test']);
   run('pnpm', ['--filter', '@mining/accounting-worker', 'test']);
   run('pnpm', ['--filter', '@mining/randomx-gateway', 'test']);
   process.stdout.write(
-    `\nSchema-21 payout, native-recovery, and RandomX contribution ${mode} verification passed.\n`,
+    `\nSchema-23 payout, native-recovery, RandomX contribution, and Google OAuth ${mode} verification passed.\n`,
   );
 } finally {
   if (

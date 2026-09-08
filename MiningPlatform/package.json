@@ -1,6 +1,6 @@
 {
   "name": "mining-platform",
-  "version": "0.3.0-alpha.7",
+  "version": "0.3.0-alpha.8",
   "private": true,
   "type": "module",
   "description": "Mining Pool Management Platform monorepo",
@@ -70,6 +70,7 @@
     "verify:v030-alpha7:static": "node scripts/check-v030-alpha7.mjs",
     "verify:v030-alpha7": "node scripts/verify-v030-alpha7-release.mjs",
     "verify:v030-alpha7:fast": "node scripts/verify-v030-alpha7-release.mjs --static-only",
+    "verify:v030-alpha8:static": "node scripts/check-v030-alpha8.mjs",
     "verify:migration:v030-alpha3:fresh": "node scripts/verify-v030-alpha3-migration.mjs fresh",
     "verify:migration:v030-alpha3:upgrade": "node scripts/verify-v030-alpha3-migration.mjs upgrade",
     "verify:migration:v030-alpha5:fresh": "node scripts/verify-v030-alpha5-migration.mjs fresh",

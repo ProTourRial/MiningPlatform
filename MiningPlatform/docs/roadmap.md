@@ -18,7 +18,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.7
+## Current Checkpoint: v0.3.0-alpha.8 (schema 23 candidate)
 
 Implemented:
 
@@ -33,6 +33,7 @@ Implemented:
 - v0.2.0-alpha.6 mining foundation, multi-upstream registry, circuit breaker, failover, provider-scoped jobs, bounded share queue, and VarDiff foundation.
 - Official domain architecture, bounded contexts, context map, data flow, event flow, event catalog, and canonical ADR set.
 - Registration, transactional email verification, login/logout, access token, atomic token-family refresh rotation/replay revocation, password reset, and TOTP 2FA.
+- Optional Google Sign-In web-server flow with PKCE, nonce, one-time state, explicit password+TOTP identity linking, no email-based auto-link, and runtime-gated UI.
 - RBAC roles USER, ADMIN, and OWNER; administrative routes require TOTP.
 - User profile, active-session management, scoped API keys, Worker CRUD, and worker credential rotation/revocation.
 - Production worker credential path connected to `ProductionWorkerAuthenticator`.
@@ -42,7 +43,7 @@ Implemented:
 
 Release blockers:
 
-- Successful alpha.7 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, security-diff, and repository CI validation on the exact commit.
+- Successful alpha.8/schema-23 full pnpm, Prisma, PostgreSQL, Redis, Docker, browser, static, security-diff, and repository CI validation on the exact commit.
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.

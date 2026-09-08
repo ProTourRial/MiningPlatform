@@ -57,7 +57,7 @@ export function AuthCard({
           </div>
           <div className="flex items-center gap-3 border-t border-white/10 pt-6 text-[10px] text-[#718077]">
             <ShieldCheck size={14} />
-            <span>Control Plane v0.3.0-alpha.7 · Proprietary preview</span>
+            <span>Control Plane v0.3.0-alpha.8 · Proprietary preview</span>
           </div>
         </aside>
         <section className="grid min-h-screen place-items-center px-5 py-10 sm:px-8 lg:px-12">

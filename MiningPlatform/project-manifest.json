@@ -1,7 +1,7 @@
 {
   "project": "MiningPlatform",
-  "version": "0.3.0-alpha.7",
-  "generated_files": 533,
+  "version": "0.3.0-alpha.8",
+  "generated_files": 715,
   "primary_product_reference": "PROJECT_VISION.md",
   "product_constitution": "docs/product/PRODUCT_CONSTITUTION.md",
   "production_gap_register": "docs/product/PRODUCTION_GAP_REGISTER.md",
@@ -25,8 +25,8 @@
     "scheduler": "centralized"
   },
   "target_release": "0.3.0",
-  "architecture_baseline": "ADR-0001 through ADR-0013",
-  "release_status": "payout-control-foundation-alpha",
+  "architecture_baseline": "ADR-0001 through ADR-0016",
+  "release_status": "full-stack-regtest-and-federated-identity-candidate",
   "implemented": {
     "product_authority": [
       "project-vision-highest-documentation-layer",
@@ -250,7 +250,7 @@
     "lockfile_version": "9.0",
     "install_command": "pnpm install --frozen-lockfile"
   },
-  "schema_version": 13,
+  "schema_version": 23,
   "release_manifest": "release-manifest.json",
   "build_metadata": {
     "api_endpoint": "GET /version",
@@ -259,8 +259,8 @@
   },
   "credential_cli": ["create", "rotate", "revoke", "list"],
   "database_summary": {
-    "models": 51,
-    "enums": 38,
-    "latest_migration": "20260822010000_payout_control_foundation"
+    "models": 71,
+    "enums": 52,
+    "latest_migration": "20260908010000_google_oauth_identity_foundation"
   }
 }

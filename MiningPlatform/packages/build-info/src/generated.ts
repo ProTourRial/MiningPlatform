@@ -8,9 +8,9 @@
  */
 
 export const RELEASE_DEFAULTS = Object.freeze({
-  version: '0.3.0-alpha.7',
+  version: '0.3.0-alpha.8',
   gitCommit: 'UNCOMMITTED',
-  buildDate: '2026-08-22T00:00:00+07:00',
-  schemaVersion: 13,
-  migration: '20260822010000_payout_control_foundation',
+  buildDate: '2026-09-08T00:00:00+07:00',
+  schemaVersion: 23,
+  migration: '20260908010000_google_oauth_identity_foundation',
 });

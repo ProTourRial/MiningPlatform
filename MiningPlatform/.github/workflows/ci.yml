@@ -46,7 +46,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm verify:v030-alpha7:static
+      - run: pnpm verify:v030-alpha8:static
       - run: pnpm release:manifest:verify
 
   integration:
@@ -179,8 +179,8 @@ jobs:
             fi
             sleep 5
           done
-          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .version)" = "0.3.0-alpha.7"
-          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .schemaVersion)" = "13"
+          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .version)" = "0.3.0-alpha.8"
+          test "$(curl --fail --silent http://127.0.0.1/version | jq -r .schemaVersion)" = "23"
           test "$(curl --fail --silent http://127.0.0.1/api/v1/system/configuration | jq -r .payoutsEnabled)" = "false"
       - name: Capture logs on failure
         if: failure()

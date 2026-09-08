@@ -165,7 +165,7 @@ export function loadRandomXGatewayConfig(
       port: port(environment, 'RANDOMX_UPSTREAM_PORT', 3333),
       tls: upstreamTls,
       ...(upstreamServerName ? { serverName: upstreamServerName } : {}),
-      userAgent: environment.RANDOMX_UPSTREAM_USER_AGENT?.trim() || 'MiningPlatform/0.3.0-alpha.7',
+      userAgent: environment.RANDOMX_UPSTREAM_USER_AGENT?.trim() || 'MiningPlatform/0.3.0-alpha.8',
       username: required(environment, 'RANDOMX_UPSTREAM_USERNAME'),
       password: required(environment, 'RANDOMX_UPSTREAM_PASSWORD'),
       connectTimeoutMs: positiveInteger(

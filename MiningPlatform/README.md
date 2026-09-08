@@ -8,18 +8,18 @@ Platform ini bukan cloud mining. Platform tidak menjual kontrak hashrate. Aktivi
 
 ## Status rilis
 
-Versi saat ini: `0.3.0-alpha.7`
+Versi saat ini: `0.3.0-alpha.8`
 
-Rilis ini merupakan **payout-control, financial-truth, reconciliation, referral, Control Plane, dan upstream gateway alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Fee standar awal 0,5% disimpan sebagai policy terversi. Kode referral valid menurunkan fee miner menjadi tepat 0,375% dan mengalokasikan 0,125% dari gross reward sebagai komisi beneficiary menggunakan presisi PPM; kode default `MP05` mengarah ke liability donasi situs. Share yang diterima upstream dapat menjadi immutable contribution fact, settlement atomic, jurnal berimbang, reversal, serta balance projection. Alpha.7 menambahkan katalog Asset/Network/PayoutRoute serta perubahan alamat Bitcoin yang membutuhkan password+TOTP step-up sekali pakai, checksum validation, cooldown, audit, dan tampilan ter-mask. Auto withdrawal dapat dipilih pengguna per akun/aset dengan default OFF, tetapi tetap tidak efektif selama payout gate produksi belum lulus.
+Rilis ini merupakan kandidat **payout regtest, RandomX laboratory, financial truth, Control Plane, dan federated-identity alpha**, bukan mining pool finansial produksi. `PROJECT_VISION.md` tetap menjadi otoritas tertinggi. Fee standar awal 0,5% disimpan sebagai policy terversi. Kode referral valid menurunkan fee miner menjadi tepat 0,375% dan mengalokasikan 0,125% dari gross reward sebagai komisi beneficiary menggunakan presisi PPM; kode default `MP05` mengarah ke liability donasi situs. Payout Bitcoin telah memiliki trace regtest dari eligibility sampai rekonsiliasi dan reorg, tetapi mainnet tetap dinonaktifkan. RandomX hanya dapat aktif pada laboratory loopback yang diakui eksplisit. Google Sign-In bersifat opsional, fail-closed, dan hanya menerima identitas yang sebelumnya ditautkan oleh pengguna melalui password+TOTP step-up; kecocokan email tidak pernah melakukan auto-link. Auto withdrawal dapat dipilih pengguna per akun/aset dengan default OFF, tetapi tetap tidak efektif selama scheduler dan payout gate produksi belum lulus.
 
 Bagian berikut belum aktif atau belum tervalidasi untuk produksi:
 
 - pengiriman Telegram/Discord/webhook dan verifikasi kanal; email verifikasi/reset mendukung adapter Resend;
 - distributed API rate limiting, IP reputation, managed DDoS protection, dan otomatisasi sertifikat publik;
 - fixture serta soak/failover test terhadap upstream pool produksi yang dipilih;
-- migration fresh dan rehearsal upgrade alpha.6 ke schema 13 telah lulus secara lokal; full monorepo, Docker E2E, security diff, dan workflow repository exact commit tetap menjadi gate sebelum upload;
+- migration fresh dan rehearsal upgrade alpha.7 ke schema 23, full monorepo, Docker E2E, security diff, dan workflow repository exact commit wajib hijau pada kandidat yang sama sebelum upload;
 - selected-provider settlement evidence dan operasi reconciliation pada skala produksi;
-- payout eligibility/reservation, isolated wallet signing, approval, broadcast, confirmation, reconciliation, dan payout nyata;
+- otorisasi custody mainnet, signer/HSM produksi, maker/checker operasional, wallet funding, broadcast mainnet, dan payout dana nyata;
 - load, stress, soak, dan chaos testing.
 
 Jangan menghubungkan perangkat mining produksi atau dana nyata ke rilis ini.

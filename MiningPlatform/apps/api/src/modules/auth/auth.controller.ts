@@ -11,6 +11,7 @@ import {
   Headers,
   HttpCode,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -35,10 +36,14 @@ import {
   TotpCodeDto,
 } from './auth.dto.js';
 import { AuthService, type RequestFingerprint } from './auth.service.js';
+import { googleOAuthRuntimeConfig } from './google-oauth-config.js';
+import { GoogleOAuthService } from './google-oauth.service.js';
 import { StepUpService } from './step-up.service.js';
 
 const REFRESH_COOKIE = 'mp_refresh';
 const ACCESS_COOKIE = 'mp_access';
+const GOOGLE_OAUTH_BINDING_COOKIE = 'mp_google_oauth_binding';
+const GOOGLE_OAUTH_SECURE_BINDING_COOKIE = '__Host-mp_google_oauth_binding';
 
 function cookieValue(header: string | undefined, name: string): string | undefined {
   if (!header) return undefined;
@@ -77,12 +82,51 @@ function writeAuthCookies(response: Response, accessToken: string, refreshToken:
   });
 }
 
+function googleOAuthBindingCookie() {
+  const config = googleOAuthRuntimeConfig();
+  if (!config.enabled) throw new UnauthorizedException('Google Sign-In is not enabled');
+  const secure = new URL(config.returnOrigin).protocol === 'https:';
+  return {
+    name: secure ? GOOGLE_OAUTH_SECURE_BINDING_COOKIE : GOOGLE_OAUTH_BINDING_COOKIE,
+    secure,
+    maxAge: config.attemptTtlSeconds * 1_000,
+  };
+}
+
+function writeGoogleOAuthBindingCookie(response: Response, browserBinding: string): void {
+  const cookie = googleOAuthBindingCookie();
+  response.cookie(cookie.name, browserBinding, {
+    httpOnly: true,
+    secure: cookie.secure,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: cookie.maxAge,
+  });
+  response.setHeader('Cache-Control', 'no-store');
+}
+
+function readGoogleOAuthBindingCookie(header: string | undefined): string | undefined {
+  return cookieValue(header, googleOAuthBindingCookie().name);
+}
+
+function clearGoogleOAuthBindingCookie(response: Response): void {
+  const cookie = googleOAuthBindingCookie();
+  response.clearCookie(cookie.name, {
+    httpOnly: true,
+    secure: cookie.secure,
+    sameSite: 'lax',
+    path: '/',
+  });
+  response.setHeader('Cache-Control', 'no-store');
+}
+
 @ApiTags('auth')
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly stepUpService: StepUpService,
+    private readonly googleOAuthService: GoogleOAuthService,
   ) {}
 
   @Get('status')
@@ -99,7 +143,78 @@ export class AuthController {
         'totp-2fa',
         'single-use-step-up',
       ],
+      oauth: { google: this.googleOAuthService.publicStatus() },
     };
+  }
+
+  @Get('google/start')
+  @UseGuards(AuthRateLimitGuard)
+  async startGoogleSignIn(@Query('next') next: string | undefined, @Res() response: Response) {
+    const request = await this.googleOAuthService.startSignIn(next);
+    writeGoogleOAuthBindingCookie(response, request.browserBinding);
+    return response.redirect(request.authorizationUrl);
+  }
+
+  @Get('google/callback')
+  @UseGuards(AuthRateLimitGuard)
+  async completeGoogleSignIn(
+    @Query('state') state: string | undefined,
+    @Query('code') code: string | undefined,
+    @Query('error') providerError: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+    @Headers('user-agent') userAgent: string | undefined,
+  ) {
+    const browserBinding = readGoogleOAuthBindingCookie(request.headers.cookie);
+    try {
+      if (providerError) await this.googleOAuthService.cancel(state ?? '', browserBinding);
+      if (!state || !code) throw new Error('OAuth callback is incomplete');
+      const result = await this.googleOAuthService.complete(
+        { state, code },
+        fingerprint(request, userAgent),
+        browserBinding,
+      );
+      if (result.purpose === 'SIGN_IN') {
+        writeAuthCookies(response, result.session.accessToken, result.session.refreshToken);
+      }
+      clearGoogleOAuthBindingCookie(response);
+      return response.redirect(this.googleOAuthService.successUrl(result.redirectPath));
+    } catch (error) {
+      clearGoogleOAuthBindingCookie(response);
+      return response.redirect(this.googleOAuthService.callbackErrorUrl(error));
+    }
+  }
+
+  @Get('google/connection')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  googleConnection(@CurrentPrincipal() principal: AuthPrincipal) {
+    return this.googleOAuthService.connection(principal.userId);
+  }
+
+  @Post('google/link/start')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, AuthRateLimitGuard)
+  async startGoogleLink(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Headers('x-step-up-token') stepUpToken: string | undefined,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const request = await this.googleOAuthService.startLink(principal, stepUpToken);
+    writeGoogleOAuthBindingCookie(response, request.browserBinding);
+    return { authorizationUrl: request.authorizationUrl };
+  }
+
+  @Post('google/unlink')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, AuthRateLimitGuard)
+  unlinkGoogle(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Headers('x-step-up-token') stepUpToken: string | undefined,
+  ) {
+    return this.googleOAuthService.unlink(principal, stepUpToken);
   }
 
   @Post('register')
