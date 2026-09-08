@@ -39,10 +39,20 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
     env:
       CI: "true"
       NODE_ENV: test
       DATABASE_URL: postgresql://mining:randomx-ci-postgres@127.0.0.1:5432/mining_platform_randomx?schema=public
+      REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

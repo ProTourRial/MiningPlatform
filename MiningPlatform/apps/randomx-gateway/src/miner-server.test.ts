@@ -444,3 +444,28 @@ test('rejects connections beyond the configured global listener limit', async ()
     await server.close();
   }
 });
+
+test('closes the work provider even when authenticator shutdown fails', async () => {
+  const dependencies = fixtures();
+  let workProviderClosed = false;
+  const server = new RandomXMinerServer(config, {
+    ...dependencies,
+    authenticator: {
+      ...dependencies.authenticator,
+      async close() {
+        throw new Error('authenticator close failed');
+      },
+    },
+    workProvider: {
+      ...dependencies.workProvider,
+      async close() {
+        workProviderClosed = true;
+      },
+    },
+    now: () => new Date(now),
+    createId: () => 'shutdown-test',
+  });
+  await server.listen();
+  await assert.rejects(server.close(), AggregateError);
+  assert.equal(workProviderClosed, true);
+});

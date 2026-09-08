@@ -277,6 +277,9 @@ importers:
       '@mining/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      redis:
+        specifier: 5.0.0
+        version: 5.0.0
     devDependencies:
       '@types/node':
         specifier: 22.0.0

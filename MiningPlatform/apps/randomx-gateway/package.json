@@ -14,7 +14,8 @@
   "dependencies": {
     "@mining/database": "workspace:*",
     "@mining/randomx": "workspace:*",
-    "@mining/shared": "workspace:*"
+    "@mining/shared": "workspace:*",
+    "redis": "5.0.0"
   },
   "devDependencies": {
     "@types/node": "22.0.0",

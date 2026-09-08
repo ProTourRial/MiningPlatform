@@ -55,9 +55,13 @@ upstream-decision, outbox, and algorithm-discriminated contribution evidence wit
 account/asset/upstream correlation and unique retry identity. A bounded miner-facing JSON-RPC transport
 now authenticates connections, issues only provider-supplied assignments, resolves private upstream job
 identity before submission, and invokes the durable gateway under line, queue, connection, timeout, and
-per-session share limits. It is deliberately not runtime-activated: the production credential adapter,
-globally unique nonce-space allocator, sidecar provenance, unresolved-intent recovery, and settlement
-reconciliation must be completed before public RandomX traffic or any balance effect is permitted.
+per-session share limits. A Redis-time lease now rejects identical algorithm/seed/nonce-normalized blobs
+across active connections and gateway replicas, and ownership is rechecked before submission resolution.
+The guard does not mutate work or invent a nonce-range extension unsupported by standard CryptoNote
+Stratum, so an authoritative provider capable of issuing distinct upstream-valid blobs is still required.
+The transport remains deliberately inactive until that provider, the production credential adapter,
+sidecar provenance, unresolved-intent recovery, and settlement reconciliation are wired and proven before
+public RandomX traffic or any balance effect is permitted.
 
 ## Active Native Pool Laboratory Track
 

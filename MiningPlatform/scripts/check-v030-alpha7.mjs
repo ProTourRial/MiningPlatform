@@ -82,6 +82,8 @@ const requiredFiles = [
   'apps/randomx-gateway/src/miner-protocol.ts',
   'apps/randomx-gateway/src/miner-server.ts',
   'apps/randomx-gateway/src/miner-server.test.ts',
+  'apps/randomx-gateway/src/work-isolation.ts',
+  'apps/randomx-gateway/src/work-isolation.test.ts',
   '.github/workflows/randomx-gateway.yml',
   'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'packages/observability-contract/src/index.ts',
@@ -526,6 +528,19 @@ for (const expected of [
 ])
   requireText(randomXMinerServer, expected, 'Bounded RandomX miner-facing transport');
 
+const randomXWorkIsolation = await text('apps/randomx-gateway/src/work-isolation.ts');
+for (const expected of [
+  "applyRandomXNonce(assignment.blob, '00000000')",
+  'class RedisRandomXWorkLeaseStore',
+  "redis.call('TIME')",
+  "redis.call('PEXPIRETIME'",
+  "'CONFLICT'",
+  'class UniqueRandomXMinerWorkProvider',
+  'this.leaseStore.owns',
+  'RandomXWorkIsolationConflictError',
+])
+  requireText(randomXWorkIsolation, expected, 'Distributed RandomX work isolation');
+
 const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
 const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');
 const randomXWorkflow = activeRandomXWorkflow ?? packagedRandomXWorkflow;
@@ -538,6 +553,8 @@ if (activeRandomXWorkflow) {
 }
 for (const expected of [
   'postgres:17-alpine',
+  'redis:7-alpine',
+  'REDIS_INTEGRATION_URL',
   'pnpm db:migrate:deploy',
   'pnpm --filter @mining/randomx-gateway... build',
   'pnpm --filter @mining/upstream-stratum... build',

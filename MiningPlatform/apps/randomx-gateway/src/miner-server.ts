@@ -63,6 +63,7 @@ export interface RandomXMinerWorkProvider {
   }): Promise<RandomXMinerJobAssignment | undefined>;
   resolve(connectionId: string, minerJobId: string): Promise<{ upstreamJobId: string } | undefined>;
   release(connectionId: string): Promise<void>;
+  close?(): Promise<void>;
 }
 
 export interface RandomXMinerSubmissionGateway {
@@ -257,7 +258,19 @@ export class RandomXMinerServer {
       );
       this.listening = false;
     }
-    await this.dependencies.authenticator.close?.();
+    const dependencyClosures = await Promise.allSettled([
+      Promise.resolve(this.dependencies.authenticator.close?.()),
+      Promise.resolve(this.dependencies.workProvider.close?.()),
+    ]);
+    const closeFailures = dependencyClosures.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (closeFailures.length > 0) {
+      throw new AggregateError(
+        closeFailures.map((failure) => failure.reason),
+        'RandomX miner dependencies did not close cleanly',
+      );
+    }
   }
 
   private acceptConnection(socket: Socket): void {

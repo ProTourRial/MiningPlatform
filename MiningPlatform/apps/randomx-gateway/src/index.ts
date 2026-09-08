@@ -9,3 +9,4 @@ export * from './miner-server.js';
 export * from './submission-contract.js';
 export * from './submission-coordinator.js';
 export * from './submission-repository.js';
+export * from './work-isolation.js';
