@@ -274,9 +274,15 @@ importers:
       '@mining/randomx':
         specifier: workspace:*
         version: link:../../packages/randomx
+      '@mining/security':
+        specifier: workspace:*
+        version: link:../../packages/security
       '@mining/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@mining/stratum-server':
+        specifier: workspace:*
+        version: link:../stratum-server
       '@mining/upstream-stratum':
         specifier: workspace:*
         version: link:../../packages/upstream-stratum

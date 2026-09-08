@@ -113,6 +113,13 @@ in application JavaScript is outside the platform's security and correctness bou
     notifications can trigger downstream publication, but the source never edits the blob or claims
     uniqueness merely because it used a different TCP connection. The Redis lease in decision 17 must
     wrap this source and reject a second session when the provider returns identical work.
+19. RandomX production authentication reuses the existing worker credential authority instead of
+    inventing an algorithm-specific password store. A narrow Stratum package subpath exposes the
+    PostgreSQL credential lookup, scrypt verification, referral attribution, audit records, credential
+    lockout, and distributed Redis failure limiter. The RandomX adapter maps its connection identifier
+    to the shared session identifier, forwards the already HMAC-protected remote address, hashes the raw
+    miner agent before crossing the boundary, and refuses a successful result without a mining-account
+    binding. This adapter does not authorize listener startup by itself.
 
 ## Consequences
 
@@ -136,8 +143,8 @@ in application JavaScript is outside the platform's security and correctness bou
 
 - Pin and verify the RandomX sidecar image or build provenance.
 - Exercise known-answer RandomX vectors against the deployed sidecar.
-- Bind the miner-facing transport to the audited PostgreSQL worker-credential authenticator and
-  distributed Redis authentication limiter; prove revocation, reconnect, and abuse behavior under load.
+- Instantiate the shared production worker-credential adapter in the final runtime composition and prove
+  revocation, reconnect, distributed Redis limiter, referral, and abuse behavior under load.
 - Configure the dedicated-session source against a provider that demonstrably supplies distinct
   upstream-authoritative hashing blobs. Retain the Redis collision guard and prove its ownership, TTL,
   reconnect, process-restart, Redis failover, and partition behavior; standard CryptoNote Stratum does

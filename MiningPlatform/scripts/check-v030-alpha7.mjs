@@ -84,6 +84,9 @@ const requiredFiles = [
   'apps/randomx-gateway/src/miner-server.test.ts',
   'apps/randomx-gateway/src/dedicated-upstream-sessions.ts',
   'apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.test.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.integration.test.ts',
   'apps/randomx-gateway/src/work-isolation.ts',
   'apps/randomx-gateway/src/work-isolation.test.ts',
   '.github/workflows/randomx-gateway.yml',
@@ -109,6 +112,7 @@ const requiredFiles = [
   'apps/web/e2e/public-smoke.spec.ts',
   'apps/web/e2e/authenticated-control-plane.spec.ts',
   'apps/web/playwright.config.ts',
+  'apps/stratum-server/src/worker-authentication.ts',
   '.github/workflows/web-browser-e2e.yml',
   'scripts/verify-v030-alpha7-migration.mjs',
   'scripts/verify-v030-alpha8-migration.mjs',
@@ -562,6 +566,28 @@ requireText(
   'Per-session RandomX submission coordinator factory',
 );
 
+const randomXProductionAuthentication = await text(
+  'apps/randomx-gateway/src/production-worker-authenticator.ts',
+);
+for (const expected of [
+  'class RandomXProductionWorkerAuthenticator',
+  'ProductionWorkerAuthenticator.create(config)',
+  'hmacSensitiveValue(context.agent',
+  'AUTHENTICATION_CONTEXT_INVALID',
+  'worker.miningAccountId',
+])
+  requireText(
+    randomXProductionAuthentication,
+    expected,
+    'RandomX production worker authentication adapter',
+  );
+
+requireText(
+  await text('apps/stratum-server/src/worker-authentication.ts'),
+  "export * from './production-worker-authenticator.js'",
+  'Shared production worker authentication subpath',
+);
+
 const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
 const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');
 const randomXWorkflow = activeRandomXWorkflow ?? packagedRandomXWorkflow;
@@ -581,6 +607,7 @@ for (const expected of [
   'pnpm --filter @mining/upstream-stratum... build',
   'pnpm --filter @mining/accounting-worker... build',
   'pnpm --filter @mining/randomx-gateway typecheck',
+  'src/production-worker-authenticator.test.ts',
   'src/randomx-upstream.test.ts',
   'pnpm --filter @mining/randomx-gateway test',
   'src/randomx-contribution.integration.test.ts',

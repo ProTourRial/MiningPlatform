@@ -6,7 +6,6 @@
 
 import { hmacSensitiveValue, verifyWorkerCredentialSecret } from '@mining/security';
 import { randomUUID } from 'node:crypto';
-import type { StratumServerConfig } from './config.js';
 import { RedisWorkerAuthRateLimiter, type WorkerAuthRateLimiter } from './auth-rate-limiter.js';
 import type {
   WorkerAuthenticationContext,
@@ -14,6 +13,14 @@ import type {
   WorkerAuthenticationResult,
   WorkerAuthenticator,
 } from './worker-authenticator.js';
+
+export type ProductionWorkerAuthenticationConfig = {
+  redisUrl: string;
+  ipHashKey: string;
+  workerAuthMaximumFailures: number;
+  workerAuthWindowMs: number;
+  workerAuthLockMs: number;
+};
 
 export interface WorkerCredentialCandidate {
   workerId: string;
@@ -343,13 +350,15 @@ export function parseWorkerIdentity(
 
 export class ProductionWorkerAuthenticator implements WorkerAuthenticator {
   constructor(
-    private readonly config: StratumServerConfig,
+    private readonly config: ProductionWorkerAuthenticationConfig,
     private readonly store: WorkerCredentialStore,
     private readonly limiter: WorkerAuthRateLimiter,
     private readonly now: () => Date = () => new Date(),
   ) {}
 
-  static async create(config: StratumServerConfig): Promise<ProductionWorkerAuthenticator> {
+  static async create(
+    config: ProductionWorkerAuthenticationConfig,
+  ): Promise<ProductionWorkerAuthenticator> {
     const [store, limiter] = await Promise.all([
       PrismaWorkerCredentialStore.create(),
       RedisWorkerAuthRateLimiter.connect({

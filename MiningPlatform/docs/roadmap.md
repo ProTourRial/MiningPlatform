@@ -62,8 +62,10 @@ provider-issued work behind private job IDs, bounds mappings, replaces disconnec
 each durable submission through the exact owning adapter/coordinator. It is wrapped by the Redis guard:
 separate TCP sessions do not prove unique work, and a provider returning the same nonce-normalized blob is
 rejected. The transport remains deliberately inactive until provider-specific distinct-work behavior,
-the production credential adapter, sidecar provenance, unresolved-intent recovery, and settlement
-reconciliation are wired and proven before public RandomX traffic or any balance effect is permitted.
+sidecar provenance, unresolved-intent recovery, and settlement reconciliation are wired and proven
+before public RandomX traffic or any balance effect is permitted. Its production credential adapter now
+reuses the established PostgreSQL credential/referral/audit policy and Redis lockout limiter while
+requiring a mining-account-bound principal; final runtime composition and load evidence remain gated.
 
 ## Active Native Pool Laboratory Track
 

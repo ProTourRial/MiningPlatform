@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 694,
-  "managedFilesChecksum": "e683d5cd7ba725e625e4f03f7f55734bc5474f9922be05013b2c29e5b77fb12e",
+  "managedFileCount": 698,
+  "managedFilesChecksum": "f6a016581e38f9fb49aa1313fe358c1df1436976b7c17075fe0a7d544b2ee5b8",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -46,8 +46,8 @@
     },
     {
       "path": ".github/workflows/randomx-gateway.yml",
-      "sha256": "6a0dee6aa5dac108b8101bbe30ba73e373cb7c0fb19506354a727272b1513cd6",
-      "size": 2372
+      "sha256": "4957c7da2c09526edf3a7f98121a0944f73770c84889d1b20c64038d119d5cfa",
+      "size": 2496
     },
     {
       "path": ".github/workflows/web-browser-e2e.yml",
@@ -706,8 +706,8 @@
     },
     {
       "path": "apps/randomx-gateway/package.json",
-      "sha256": "de7889fc6ac27398cc329bcfa4160998150ab83d0ccdb794f15182cb014de577",
-      "size": 722
+      "sha256": "acb62413e040811aef01db443f3daee4c86986b2b54efe6b20fd18addffaf4a3",
+      "size": 806
     },
     {
       "path": "apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts",
@@ -721,8 +721,8 @@
     },
     {
       "path": "apps/randomx-gateway/src/index.ts",
-      "sha256": "0e686b9201212a1af806184c5e8a6293a31cf48c0a607ca3184ac4162f64b781",
-      "size": 404
+      "sha256": "f622d3e730ad19332b43d73390fc6bd73c2afe1cd8895923d04a188983554ced",
+      "size": 458
     },
     {
       "path": "apps/randomx-gateway/src/miner-protocol.ts",
@@ -738,6 +738,21 @@
       "path": "apps/randomx-gateway/src/miner-server.ts",
       "sha256": "53f3aad9843ae3f549e4b38cf80948f0ce887d64a8aea235cf35f2dcfaf3119e",
       "size": 17854
+    },
+    {
+      "path": "apps/randomx-gateway/src/production-worker-authenticator.integration.test.ts",
+      "sha256": "ed722896b62adbeb38daa2ba99415adf33224963765576edba574d56b089a438",
+      "size": 4621
+    },
+    {
+      "path": "apps/randomx-gateway/src/production-worker-authenticator.test.ts",
+      "sha256": "d5ae8bf74a90703df7b2dbfbe2e57c66ac3b92c0592105301317d5c943582d86",
+      "size": 3588
+    },
+    {
+      "path": "apps/randomx-gateway/src/production-worker-authenticator.ts",
+      "sha256": "618a748be4bb11ff41907451291f2fa2d2ea1016916ca47fe069d889976446f5",
+      "size": 2497
     },
     {
       "path": "apps/randomx-gateway/src/submission-contract.ts",
@@ -796,8 +811,8 @@
     },
     {
       "path": "apps/stratum-server/package.json",
-      "sha256": "7d7c535b404c871cdd36f869d043f8a4913935c469d08454d96ca1eb422f70f2",
-      "size": 984
+      "sha256": "9bc40dc972408ae1f2b2fbc8403cac2043be73d85540052ed101967102069dd9",
+      "size": 1197
     },
     {
       "path": "apps/stratum-server/src/auth-rate-limiter.ts",
@@ -841,8 +856,8 @@
     },
     {
       "path": "apps/stratum-server/src/production-worker-authenticator.ts",
-      "sha256": "5b363132411edc25b2cdc4f0e8d6624105572133905930b0f777719ca1144e01",
-      "size": 16364
+      "sha256": "c99f66bfc316f66201d1fa053ca61d5369aed08eb0b681ab00bd036a3b71dbf9",
+      "size": 16544
     },
     {
       "path": "apps/stratum-server/src/redis-duplicate-share-store.ts",
@@ -888,6 +903,11 @@
       "path": "apps/stratum-server/src/upstream-gateway.test.ts",
       "sha256": "3d51af04ab017b474e591a53bc4c5fcfc1ffd5be9463e3807588eaf3b99381db",
       "size": 12907
+    },
+    {
+      "path": "apps/stratum-server/src/worker-authentication.ts",
+      "sha256": "84ac3a5855dd2284ea99578203f1b36571745a51d04020ec5c1de369243988a3",
+      "size": 251
     },
     {
       "path": "apps/stratum-server/src/worker-authenticator.ts",
@@ -1366,8 +1386,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "90744dd6650d059878c36e4c102a7f4cc3078877636b8144772746386d836891",
-      "size": 66657
+      "sha256": "68c6494a5a5bf52af165db290d132421ca1b4345fefb4960cc0170683c8e55ef",
+      "size": 67078
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1471,8 +1491,8 @@
     },
     {
       "path": "docs/adr/0015-randomx-validation-and-upstream-boundary.md",
-      "sha256": "cee39dd708cb99d44bb2b565ae9d298f7e8737a8f07a5382bf611c336eb5e9d5",
-      "size": 13126
+      "sha256": "a7b1fd4a44af618d84de2fe15ed0577657b69b06e31e56ee3f05fbe1f003d41f",
+      "size": 13805
     },
     {
       "path": "docs/adr/0016-bitcoin-core-native-template-boundary.md",
@@ -1766,8 +1786,8 @@
     },
     {
       "path": "docs/product/NATIVE_POOL_GAP_REGISTER.md",
-      "sha256": "5bef7722ab4515b9fd529f626ca26925cf206ec266e1661dca85c1cd1cb7fed6",
-      "size": 20242
+      "sha256": "920c4d7cdb276f7004ddc9f41ebfac28b4d82a7e215d238541b51db2def37374",
+      "size": 20385
     },
     {
       "path": "docs/product/POOL_PRODUCTION_READINESS.md",
@@ -2046,8 +2066,8 @@
     },
     {
       "path": "docs/roadmap.md",
-      "sha256": "528acafbc9721fad0e8cb74a6fcac21952a5f349ff0e1bef57ff97cf867f5e5b",
-      "size": 11342
+      "sha256": "c33a9e40bd8e76cee8786da7e1022c1fefed34e440bbc391f6497656fd7623e5",
+      "size": 11546
     },
     {
       "path": "docs/security/COMPLIANCE_READINESS.md",
@@ -3161,8 +3181,8 @@
     },
     {
       "path": "pnpm-lock.yaml",
-      "sha256": "22ada8cd59aab2efcaef2d0b7ee7014ab96dd6a03f6c2e5168e5943d5421dd29",
-      "size": 303218
+      "sha256": "a8cf26d1b141cc9a3ee1a5e53a4f5eea0df6c4924baf049e6d37634b6b4886b4",
+      "size": 303424
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -3266,8 +3286,8 @@
     },
     {
       "path": "scripts/check-v030-alpha7.mjs",
-      "sha256": "ea740d69730ea065e437019dd9ed809b0ad7db02c7eb446df1f3e48e79319202",
-      "size": 37955
+      "sha256": "fbdb90c75c3e6c2c56a730ff40988d8316719699ee7c3450e8bfc77df228c0fd",
+      "size": 38945
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

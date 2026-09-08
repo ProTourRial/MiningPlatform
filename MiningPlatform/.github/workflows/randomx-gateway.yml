@@ -67,6 +67,7 @@ jobs:
       - run: pnpm --filter @mining/accounting-worker... build
       - run: pnpm --filter @mining/randomx-gateway lint
       - run: pnpm --filter @mining/randomx-gateway typecheck
+      - run: pnpm --filter @mining/stratum-server exec node --import tsx --test src/production-worker-authenticator.test.ts
       - run: pnpm --filter @mining/randomx test
       - run: pnpm --filter @mining/upstream-stratum exec node --import tsx --test src/randomx-upstream.test.ts
       - run: pnpm --filter @mining/randomx-gateway test
