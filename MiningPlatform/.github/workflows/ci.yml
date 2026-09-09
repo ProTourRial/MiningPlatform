@@ -104,6 +104,8 @@ jobs:
     env:
       CI: 'true'
       DATABASE_URL: postgresql://mining:migration-postgres@127.0.0.1:5432/mining_platform?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
     services:
       postgres:
         image: postgres:17-alpine
@@ -118,6 +120,15 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

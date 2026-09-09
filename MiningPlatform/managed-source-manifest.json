@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 715,
-  "managedFilesChecksum": "68221e1e34b33e063c611b4ff73c63f802e7fcb09cfe4a16793def5d90356164",
+  "managedFilesChecksum": "9bf98f532dc5ca01944644c5defde8db7eb88e4fbd174c856f6109c51990d3b0",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -31,8 +31,8 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "2ffc41b96ddf7d2b72e26fee61452bf883bd327cd986107b497095ef243fcb23",
-      "size": 6293
+      "sha256": "01fc8ccf9469f74f90ec89119a3f0f549488f0a7bae60b018dd17523e6e763bf",
+      "size": 6616
     },
     {
       "path": ".github/workflows/native-bitcoin-regtest.yml",
@@ -1441,8 +1441,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "8acb5ab4e87acf3b72f5d083a2698ef780675677f03f4b05d1baf1b6f24ac988",
-      "size": 69950
+      "sha256": "9cf6c923f91f77264d44ca5d23a4278e49170daa897c316e73a3b7f4531b6e80",
+      "size": 70208
     },
     {
       "path": "DELETE_FILES.txt",

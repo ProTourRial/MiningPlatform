@@ -89,6 +89,7 @@
 
 ### Fixed
 
+- Active and packaged schema-v23 migration rehearsals now provision the Redis service required by their RandomX runtime evidence, preventing the client from retrying an unavailable integration endpoint indefinitely after database verification has succeeded.
 - Google OAuth controller requests now snapshot the transient binding-cookie policy before any asynchronous provider operation, so one callback consistently reads and clears the same HTTP or `__Host-` cookie even when configuration is evaluated around an async boundary; controller coverage now accepts either valid deployment cookie policy and supplies a real remote IP so the CI fingerprint path is exercised instead of failing on an incomplete request fixture.
 - Google OAuth sign-in and identity-link callbacks now require a short-lived HttpOnly browser-binding cookie whose raw value never enters the database; HTTPS deployments use the `__Host-` prefix, validation occurs before state consumption or provider exchange, and success, cancellation, and failure all clear the transient cookie. This closes login-CSRF/session-swapping by preventing a valid callback URL from being transferred into another browser session.
 - The dedicated RandomX CI gate now builds the complete upstream-Stratum and accounting-worker dependency graphs before executing source-level protocol and integration tests, so a clean GitHub runner cannot accidentally rely on stale local `@mining/mining-core` or `@mining/ledger` `dist` artifacts.
