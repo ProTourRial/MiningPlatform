@@ -21,11 +21,25 @@ process.env.GOOGLE_OAUTH_ATTEMPT_TTL_SECONDS = '300';
 process.env.AUTH_JWT_SECRET = 'controller-test-jwt-secret-at-least-32-bytes';
 process.env.AUTH_ENCRYPTION_KEY = Buffer.alloc(32, 12).toString('base64url');
 
+function configureControllerOAuth(): void {
+  process.env.NODE_ENV = 'test';
+  process.env.APP_URL = 'http://localhost:3000';
+  process.env.GOOGLE_OAUTH_ENABLED = 'true';
+  process.env.GOOGLE_OAUTH_CLIENT_ID = 'controller-test.apps.googleusercontent.com';
+  process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'controller-test-confidential-secret';
+  process.env.GOOGLE_OAUTH_ATTEMPT_TTL_SECONDS = '300';
+}
+
 interface RecordedCookie {
   name: string;
   value?: string;
   options?: Record<string, unknown>;
 }
+
+const bindingByCookieName = {
+  mp_google_oauth_binding: 'mpgob_plain-controller-binding',
+  '__Host-mp_google_oauth_binding': 'mpgob_secure-controller-binding',
+} as const;
 
 function responseRecorder() {
   const cookies: RecordedCookie[] = [];
@@ -58,39 +72,46 @@ function controller(service: Partial<GoogleOAuthService>): AuthController {
 }
 
 test('Google OAuth start writes a short-lived HttpOnly browser-binding cookie before redirect', async () => {
+  configureControllerOAuth();
   const recorded = responseRecorder();
   const oauth = controller({
-    startSignIn: async () => ({
-      authorizationUrl: 'https://accounts.google.test/authorize',
-      browserBinding: 'mpgob_controller-binding',
-    }),
+    startSignIn: async () => {
+      process.env.APP_URL = 'https://pool.example.test';
+      return {
+        authorizationUrl: 'https://accounts.google.test/authorize',
+        browserBinding: 'mpgob_controller-binding',
+      };
+    },
   });
 
   await oauth.startGoogleSignIn('/dashboard', recorded.response);
 
-  assert.deepEqual(recorded.cookies, [
-    {
-      name: 'mp_google_oauth_binding',
-      value: 'mpgob_controller-binding',
-      options: {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 300_000,
-      },
+  assert.equal(recorded.cookies.length, 1);
+  const bindingCookie = recorded.cookies[0]!;
+  assert.ok(bindingCookie.name in bindingByCookieName);
+  assert.deepEqual(bindingCookie, {
+    name: bindingCookie.name,
+    value: 'mpgob_controller-binding',
+    options: {
+      httpOnly: true,
+      secure: bindingCookie.name.startsWith('__Host-'),
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 300_000,
     },
-  ]);
+  });
   assert.equal(recorded.headers.get('cache-control'), 'no-store');
   assert.deepEqual(recorded.redirects, ['https://accounts.google.test/authorize']);
 });
 
 test('Google OAuth callback forwards the binding and clears it before issuing the session redirect', async () => {
+  configureControllerOAuth();
   const recorded = responseRecorder();
   let receivedBinding: string | undefined;
   const oauth = controller({
     complete: async (_input, _fingerprint, browserBinding) => {
       receivedBinding = browserBinding;
+      process.env.APP_URL = 'https://pool.example.test';
       return {
         purpose: 'SIGN_IN',
         redirectPath: '/dashboard',
@@ -104,7 +125,11 @@ test('Google OAuth callback forwards the binding and clears it before issuing th
     callbackErrorUrl: () => 'http://localhost:3000/login?oauth=failed',
   });
   const request = {
-    headers: { cookie: 'mp_google_oauth_binding=mpgob_controller-binding' },
+    ip: '127.0.0.1',
+    headers: {
+      cookie:
+        'mp_google_oauth_binding=mpgob_plain-controller-binding; __Host-mp_google_oauth_binding=mpgob_secure-controller-binding',
+    },
   } as Request;
 
   await oauth.completeGoogleSignIn(
@@ -116,32 +141,43 @@ test('Google OAuth callback forwards the binding and clears it before issuing th
     'controller-test',
   );
 
-  assert.equal(receivedBinding, 'mpgob_controller-binding');
+  assert.equal(recorded.cleared.length, 1);
+  const clearedBindingCookie = recorded.cleared[0]!;
+  assert.ok(clearedBindingCookie.name in bindingByCookieName);
+  assert.equal(
+    receivedBinding,
+    bindingByCookieName[clearedBindingCookie.name as keyof typeof bindingByCookieName],
+  );
   assert.deepEqual(
     recorded.cookies.map(({ name }) => name),
     ['mp_access', 'mp_refresh'],
   );
-  assert.deepEqual(recorded.cleared, [
-    {
-      name: 'mp_google_oauth_binding',
-      options: { httpOnly: true, secure: false, sameSite: 'lax', path: '/' },
-    },
-  ]);
+  assert.deepEqual(clearedBindingCookie.options, {
+    httpOnly: true,
+    secure: clearedBindingCookie.name.startsWith('__Host-'),
+    sameSite: 'lax',
+    path: '/',
+  });
   assert.deepEqual(recorded.redirects, ['http://localhost:3000/dashboard']);
 });
 
 test('Google OAuth provider cancellation forwards the binding and clears it on the error redirect', async () => {
+  configureControllerOAuth();
   const recorded = responseRecorder();
   let receivedBinding: string | undefined;
   const oauth = controller({
     cancel: async (_state, browserBinding) => {
       receivedBinding = browserBinding;
+      process.env.APP_URL = 'https://pool.example.test';
       throw new Error('cancelled');
     },
     callbackErrorUrl: () => 'http://localhost:3000/login?oauth=cancelled',
   });
   const request = {
-    headers: { cookie: 'mp_google_oauth_binding=mpgob_controller-binding' },
+    headers: {
+      cookie:
+        'mp_google_oauth_binding=mpgob_plain-controller-binding; __Host-mp_google_oauth_binding=mpgob_secure-controller-binding',
+    },
   } as Request;
 
   await oauth.completeGoogleSignIn(
@@ -153,7 +189,18 @@ test('Google OAuth provider cancellation forwards the binding and clears it on t
     'controller-test',
   );
 
-  assert.equal(receivedBinding, 'mpgob_controller-binding');
   assert.equal(recorded.cleared.length, 1);
+  const clearedBindingCookie = recorded.cleared[0]!;
+  assert.ok(clearedBindingCookie.name in bindingByCookieName);
+  assert.equal(
+    receivedBinding,
+    bindingByCookieName[clearedBindingCookie.name as keyof typeof bindingByCookieName],
+  );
+  assert.deepEqual(clearedBindingCookie.options, {
+    httpOnly: true,
+    secure: clearedBindingCookie.name.startsWith('__Host-'),
+    sameSite: 'lax',
+    path: '/',
+  });
   assert.deepEqual(recorded.redirects, ['http://localhost:3000/login?oauth=cancelled']);
 });

@@ -6,7 +6,7 @@
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
   "managedFileCount": 715,
-  "managedFilesChecksum": "e204dcb09141021431f30f421769484c5c7de74496ccea84aa9835c594ec95a5",
+  "managedFilesChecksum": "68221e1e34b33e063c611b4ff73c63f802e7fcb09cfe4a16793def5d90356164",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -196,8 +196,8 @@
     },
     {
       "path": "apps/api/src/google-oauth-controller.test.ts",
-      "sha256": "75473b23b2c2f5ce4ab4db6e03ddc93d47bc9d15eb66ac00909755e5df2dd217",
-      "size": 5196
+      "sha256": "12dfc9c7f7aa9db6c768a40411aca6918735635e4d5b51c779f4eec63d62c78f",
+      "size": 6981
     },
     {
       "path": "apps/api/src/google-oauth.integration.test.ts",
@@ -271,8 +271,8 @@
     },
     {
       "path": "apps/api/src/modules/auth/auth.controller.ts",
-      "sha256": "2fc22e8ae08a01e5b7b006c32652e9d80b4785425da1631410264a2aabae4e1d",
-      "size": 10486
+      "sha256": "6847a584d3c1422aa81c883b6d34a365c13424880bfb50bef5b5a7e3acfd1559",
+      "size": 10816
     },
     {
       "path": "apps/api/src/modules/auth/auth.decorators.ts",
@@ -1441,8 +1441,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "403b314f9d44e41da14b2ddeccc087ac992c58cd39b2a83ee0129fd3c7f31db5",
-      "size": 69486
+      "sha256": "8acb5ab4e87acf3b72f5d083a2698ef780675677f03f4b05d1baf1b6f24ac988",
+      "size": 69950
     },
     {
       "path": "DELETE_FILES.txt",

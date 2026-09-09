@@ -93,8 +93,13 @@ function googleOAuthBindingCookie() {
   };
 }
 
-function writeGoogleOAuthBindingCookie(response: Response, browserBinding: string): void {
-  const cookie = googleOAuthBindingCookie();
+type GoogleOAuthBindingCookie = ReturnType<typeof googleOAuthBindingCookie>;
+
+function writeGoogleOAuthBindingCookie(
+  response: Response,
+  browserBinding: string,
+  cookie: GoogleOAuthBindingCookie,
+): void {
   response.cookie(cookie.name, browserBinding, {
     httpOnly: true,
     secure: cookie.secure,
@@ -105,12 +110,17 @@ function writeGoogleOAuthBindingCookie(response: Response, browserBinding: strin
   response.setHeader('Cache-Control', 'no-store');
 }
 
-function readGoogleOAuthBindingCookie(header: string | undefined): string | undefined {
-  return cookieValue(header, googleOAuthBindingCookie().name);
+function readGoogleOAuthBindingCookie(
+  header: string | undefined,
+  cookie: GoogleOAuthBindingCookie,
+): string | undefined {
+  return cookieValue(header, cookie.name);
 }
 
-function clearGoogleOAuthBindingCookie(response: Response): void {
-  const cookie = googleOAuthBindingCookie();
+function clearGoogleOAuthBindingCookie(
+  response: Response,
+  cookie: GoogleOAuthBindingCookie,
+): void {
   response.clearCookie(cookie.name, {
     httpOnly: true,
     secure: cookie.secure,
@@ -150,8 +160,9 @@ export class AuthController {
   @Get('google/start')
   @UseGuards(AuthRateLimitGuard)
   async startGoogleSignIn(@Query('next') next: string | undefined, @Res() response: Response) {
+    const bindingCookie = googleOAuthBindingCookie();
     const request = await this.googleOAuthService.startSignIn(next);
-    writeGoogleOAuthBindingCookie(response, request.browserBinding);
+    writeGoogleOAuthBindingCookie(response, request.browserBinding, bindingCookie);
     return response.redirect(request.authorizationUrl);
   }
 
@@ -165,7 +176,8 @@ export class AuthController {
     @Res() response: Response,
     @Headers('user-agent') userAgent: string | undefined,
   ) {
-    const browserBinding = readGoogleOAuthBindingCookie(request.headers.cookie);
+    const bindingCookie = googleOAuthBindingCookie();
+    const browserBinding = readGoogleOAuthBindingCookie(request.headers.cookie, bindingCookie);
     try {
       if (providerError) await this.googleOAuthService.cancel(state ?? '', browserBinding);
       if (!state || !code) throw new Error('OAuth callback is incomplete');
@@ -177,10 +189,10 @@ export class AuthController {
       if (result.purpose === 'SIGN_IN') {
         writeAuthCookies(response, result.session.accessToken, result.session.refreshToken);
       }
-      clearGoogleOAuthBindingCookie(response);
+      clearGoogleOAuthBindingCookie(response, bindingCookie);
       return response.redirect(this.googleOAuthService.successUrl(result.redirectPath));
     } catch (error) {
-      clearGoogleOAuthBindingCookie(response);
+      clearGoogleOAuthBindingCookie(response, bindingCookie);
       return response.redirect(this.googleOAuthService.callbackErrorUrl(error));
     }
   }
@@ -201,8 +213,9 @@ export class AuthController {
     @Headers('x-step-up-token') stepUpToken: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ) {
+    const bindingCookie = googleOAuthBindingCookie();
     const request = await this.googleOAuthService.startLink(principal, stepUpToken);
-    writeGoogleOAuthBindingCookie(response, request.browserBinding);
+    writeGoogleOAuthBindingCookie(response, request.browserBinding, bindingCookie);
     return { authorizationUrl: request.authorizationUrl };
   }
 
