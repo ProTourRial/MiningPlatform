@@ -116,6 +116,8 @@ const requiredFiles = [
   'apps/api/src/modules/payouts/payouts.service.ts',
   'apps/api/src/payout-control.integration.test.ts',
   'apps/api/src/payout-execution.integration.test.ts',
+  'apps/api/src/payout-activation-readiness.test.ts',
+  'apps/api/src/modules/payouts/payout-activation-readiness.ts',
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
   'apps/web/src/components/dashboard/payout-operations-panel.tsx',
   'apps/web/src/components/dashboard/reward-history-panel.tsx',
@@ -856,6 +858,27 @@ for (const expected of [
   'Integration fixture is fail-closed',
 ])
   requireText(payoutExecutionIntegration, expected, 'Payout-execution integration');
+
+const payoutActivationReadiness = await text(
+  'apps/api/src/modules/payouts/payout-activation-readiness.ts',
+);
+for (const expected of [
+  'PAYOUT_EXECUTION_RUNTIME_UNSUPPORTED',
+  'TWO_PERSON_MFA_OPERATOR_COVERAGE_REQUIRED',
+  'UNRESOLVED_PAYOUT_QUARANTINE',
+  'UNKNOWN_BROADCAST_ATTEMPT',
+  'WATCH_ONLY_RPC_WALLET_NOT_CONFIGURED',
+  'latestReconciliationVarianceAtomic === 0n',
+])
+  requireText(payoutActivationReadiness, expected, 'Payout activation readiness');
+
+const payoutOperatorController = await text('apps/api/src/modules/payouts/payouts.controller.ts');
+for (const expected of [
+  "@Get('operations/activation-readiness')",
+  "@Get('operations/quarantined')",
+  "@Roles('ADMIN', 'OWNER')",
+])
+  requireText(payoutOperatorController, expected, 'Payout operator control plane');
 
 const authIntegration = await text('apps/api/src/auth.integration.test.ts');
 for (const expected of [

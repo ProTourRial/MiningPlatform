@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 717,
-  "managedFilesChecksum": "e2654422accd00819fffec0dc3661bf44ad6a77d1d8eb3c3e21b9a8d030bf225",
+  "managedFileCount": 719,
+  "managedFilesChecksum": "2afb24c85c06086224a9f8173f15ccbb20e70eb01377842a91972000d605d73a",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -450,9 +450,14 @@
       "size": 375
     },
     {
+      "path": "apps/api/src/modules/payouts/payout-activation-readiness.ts",
+      "sha256": "1a45b36698c46db91d0f07fba3fe86242ac715075f1a8299042563a2078086cc",
+      "size": 4672
+    },
+    {
       "path": "apps/api/src/modules/payouts/payouts.controller.ts",
-      "sha256": "ad35b5f395f5ba2ec08d4c44b6788b298e6afbca8fbc6307100a28b554189ebf",
-      "size": 5206
+      "sha256": "6eb38075ea395e36ab73cabd67898cfd2f3be94adf58dc0b38652bd678b186e0",
+      "size": 5681
     },
     {
       "path": "apps/api/src/modules/payouts/payouts.dto.ts",
@@ -466,8 +471,8 @@
     },
     {
       "path": "apps/api/src/modules/payouts/payouts.service.ts",
-      "sha256": "40026aede35f95b1d34e6dc833e85db9b3ac8cd6fcc70929f665e2f98662a24e",
-      "size": 45433
+      "sha256": "f659693b2d7c7e29d63b82e12d858ecac0f01a62b123ee1a30f512e73fc4a1d6",
+      "size": 54809
     },
     {
       "path": "apps/api/src/modules/rewards/rewards.controller.ts",
@@ -583,6 +588,11 @@
       "path": "apps/api/src/modules/workers/workers.service.ts",
       "sha256": "f2b943f9983f192c9c58756474f7f3afc86603a70374a022290bd30a149a13d3",
       "size": 9389
+    },
+    {
+      "path": "apps/api/src/payout-activation-readiness.test.ts",
+      "sha256": "ae2aaebd148d71d27bcc924c05517012b7cff8c41cc9dac75045d0d1b3a8002b",
+      "size": 4812
     },
     {
       "path": "apps/api/src/payout-control.integration.test.ts",
@@ -1451,8 +1461,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "46afe7e5845685f8428e03adbe7c3279e594bc404c7909fa4ff5ef8016987968",
-      "size": 72460
+      "sha256": "fdc976b87e5be9f00385542d2d2ae0fe8e1808fbd7b3b4ec8f118598dfedae77",
+      "size": 73172
     },
     {
       "path": "DELETE_FILES.txt",
@@ -1806,8 +1816,8 @@
     },
     {
       "path": "docs/operations/payout-runbook.md",
-      "sha256": "4a31136ff6c05e7a6df88197dd339d44032a1434e3f2f8ff487b92f85b012534",
-      "size": 4672
+      "sha256": "9793399931fc87e2e6e380dd75fb4850a1de322ed03ead84ef8850778f289cbe",
+      "size": 6446
     },
     {
       "path": "docs/operations/POOL_INCIDENT_RUNBOOK.md",
@@ -2116,7 +2126,7 @@
     },
     {
       "path": "docs/releases/v0.3.0-alpha.8-validation.md",
-      "sha256": "dbe16b8fa3056f6d33a2a3ca6a098e65e5b2c1f6674f2eb78c5e146450c6fdc5",
+      "sha256": "cf40e46a1f81c96ebd0f01ab1396fadb27d060d37c18d84c181d57c7ed5d00bc",
       "size": 2904
     },
     {
@@ -3381,8 +3391,8 @@
     },
     {
       "path": "scripts/check-v030-alpha8.mjs",
-      "sha256": "09a926e5cf7b5491df85a259e77b9eb4ef65b93cdb074a9e91d6fd64885377b9",
-      "size": 42076
+      "sha256": "d50425bbca701cb93991de12c8b8dc4754723f68de3bdfb87f0d43fcf522a565",
+      "size": 42987
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",

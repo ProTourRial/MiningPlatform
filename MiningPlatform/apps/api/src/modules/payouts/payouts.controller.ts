@@ -156,6 +156,22 @@ export class PayoutsController {
     });
   }
 
+  @Get('operations/activation-readiness')
+  @ApiBearerAuth()
+  @Roles('ADMIN', 'OWNER')
+  @UseGuards(AuthGuard)
+  activationReadiness(@CurrentPrincipal() principal: AuthPrincipal) {
+    return this.payoutsService.activationReadiness(principal);
+  }
+
+  @Get('operations/quarantined')
+  @ApiBearerAuth()
+  @Roles('ADMIN', 'OWNER')
+  @UseGuards(AuthGuard)
+  quarantined(@CurrentPrincipal() principal: AuthPrincipal) {
+    return this.payoutsService.quarantined(principal);
+  }
+
   @Get('preferences')
   @ApiBearerAuth()
   @Scopes('profile:read')
