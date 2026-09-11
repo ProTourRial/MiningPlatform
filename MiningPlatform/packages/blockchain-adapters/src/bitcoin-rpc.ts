@@ -52,6 +52,14 @@ export type FinalizedBitcoinTransaction = {
   rawTransactionDigest: string;
 };
 
+export type BitcoinPayoutIntent = {
+  unsignedTransactionDigest: string;
+  destination: string;
+  destinationAmountAtomic: bigint;
+  actualNetworkFeeAtomic: bigint;
+  maximumNetworkFeeAtomic: bigint;
+};
+
 export type BitcoinChainObservation = {
   status: 'MEMPOOL' | 'CONFIRMED' | 'REORGED' | 'DROPPED';
   confirmations: number;
@@ -74,6 +82,13 @@ export class BitcoinRpcError extends Error {
   ) {
     super(message);
     this.name = 'BitcoinRpcError';
+  }
+}
+
+export class BitcoinPayoutIntentMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BitcoinPayoutIntentMismatchError';
   }
 }
 
@@ -247,16 +262,78 @@ export class BitcoinJsonRpcClient {
   }
 }
 
+type DecodedBitcoinTransaction = {
+  version?: number;
+  locktime?: number;
+  vin: Array<{ txid: string; vout: number; sequence?: number }>;
+  vout: Array<{
+    n?: number;
+    value: number;
+    scriptPubKey: { hex?: string; address?: string; addresses?: string[] };
+  }>;
+};
+
 type DecodedPsbt = {
   fee?: number;
-  tx: {
-    vin: Array<{ txid: string; vout: number }>;
-    vout: Array<{
-      value: number;
-      scriptPubKey: { address?: string; addresses?: string[] };
-    }>;
-  };
+  tx: DecodedBitcoinTransaction;
 };
+
+function transactionIntentDigest(
+  transaction: DecodedBitcoinTransaction,
+  method: 'decodepsbt' | 'decoderawtransaction',
+): string {
+  if (
+    !Number.isInteger(transaction.version) ||
+    !Number.isInteger(transaction.locktime) ||
+    transaction.vin.length === 0 ||
+    transaction.vout.length === 0
+  ) {
+    throw new BitcoinRpcError('Bitcoin transaction intent is incomplete', null, method);
+  }
+  const vin = transaction.vin.map((input) => {
+    if (
+      !/^[0-9a-f]{64}$/i.test(input.txid) ||
+      !Number.isInteger(input.vout) ||
+      input.vout < 0 ||
+      !Number.isInteger(input.sequence) ||
+      input.sequence! < 0
+    ) {
+      throw new BitcoinRpcError('Bitcoin transaction input intent is invalid', null, method);
+    }
+    return {
+      txid: input.txid.toLowerCase(),
+      vout: input.vout,
+      sequence: input.sequence,
+    };
+  });
+  const vout = transaction.vout.map((output) => {
+    if (
+      !Number.isInteger(output.n) ||
+      output.n! < 0 ||
+      output.n! >= transaction.vout.length ||
+      typeof output.scriptPubKey.hex !== 'string' ||
+      !/^(?:[0-9a-f]{2})*$/i.test(output.scriptPubKey.hex)
+    ) {
+      throw new BitcoinRpcError('Bitcoin transaction output intent is invalid', null, method);
+    }
+    return {
+      n: output.n,
+      valueAtomic: bitcoinToAtomic(output.value).toString(),
+      scriptPubKeyHex: output.scriptPubKey.hex.toLowerCase(),
+    };
+  });
+  if (new Set(vout.map((output) => output.n)).size !== vout.length) {
+    throw new BitcoinRpcError('Bitcoin transaction output indexes are not unique', null, method);
+  }
+  return sha256(
+    canonicalJson({
+      version: transaction.version,
+      locktime: transaction.locktime,
+      vin,
+      vout,
+    }),
+  );
+}
 
 export class BitcoinWatchOnlyRpcAdapter {
   readonly asset = 'BTC';
@@ -417,6 +494,122 @@ export class BitcoinWatchOnlyRpcAdapter {
       destinationAmountAtomic: input.amountAtomic,
       actualNetworkFeeAtomic: feeAtomic,
     };
+  }
+
+  async assertSignedPsbtMatchesPayoutIntent(
+    signedPsbt: string,
+    expected: BitcoinPayoutIntent,
+  ): Promise<void> {
+    if (!signedPsbt || signedPsbt.length > 500_000) {
+      throw new BitcoinPayoutIntentMismatchError('Signer returned an invalid signed PSBT');
+    }
+    if (!/^[0-9a-f]{64}$/.test(expected.unsignedTransactionDigest)) {
+      throw new BitcoinPayoutIntentMismatchError('Expected unsigned transaction digest is invalid');
+    }
+    if (
+      expected.destinationAmountAtomic <= 0n ||
+      expected.actualNetworkFeeAtomic < 0n ||
+      expected.maximumNetworkFeeAtomic < expected.actualNetworkFeeAtomic
+    ) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Expected payout amount or fee boundary is invalid',
+      );
+    }
+    const validated = validateBitcoinAddress(expected.destination, this.network);
+    if (!validated.valid) {
+      throw new BitcoinPayoutIntentMismatchError(
+        `Invalid ${this.network} Bitcoin destination in payout manifest`,
+      );
+    }
+
+    const decoded = await this.rpc.call<DecodedPsbt>('decodepsbt', [signedPsbt]);
+    if (sha256(canonicalJson(decoded.tx)) !== expected.unsignedTransactionDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT transaction does not match the approved payout manifest',
+      );
+    }
+    if (bitcoinToAtomic(decoded.fee ?? 0) !== expected.actualNetworkFeeAtomic) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT fee does not match the approved payout manifest',
+      );
+    }
+    let destinationOutputs = 0;
+    for (const output of decoded.tx.vout) {
+      const addresses = output.scriptPubKey.address
+        ? [output.scriptPubKey.address]
+        : output.scriptPubKey.addresses ?? [];
+      if (addresses.includes(expected.destination)) {
+        destinationOutputs += 1;
+        if (bitcoinToAtomic(output.value) !== expected.destinationAmountAtomic) {
+          throw new BitcoinPayoutIntentMismatchError(
+            'Signed PSBT destination amount does not match the approved payout manifest',
+          );
+        }
+        continue;
+      }
+      if (addresses.length !== 1) {
+        throw new BitcoinPayoutIntentMismatchError(
+          'Signed PSBT contains an unrecognized non-address output',
+        );
+      }
+      const addressInfo = await this.rpc.call<{ ismine?: boolean }>('getaddressinfo', [
+        addresses[0],
+      ]);
+      if (!addressInfo.ismine) {
+        throw new BitcoinPayoutIntentMismatchError(
+          'Signed PSBT contains a non-destination output not owned by the watch wallet',
+        );
+      }
+    }
+    if (destinationOutputs !== 1) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT destination does not match the approved payout manifest',
+      );
+    }
+  }
+
+  async assertFinalizedTransactionMatchesSignedPsbt(
+    signedPsbt: string,
+    rawTransaction: string,
+  ): Promise<string> {
+    if (!signedPsbt || signedPsbt.length > 500_000) {
+      throw new BitcoinPayoutIntentMismatchError('Signed PSBT evidence is invalid');
+    }
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) {
+      throw new BitcoinPayoutIntentMismatchError('Raw Bitcoin transaction is invalid');
+    }
+    const [decodedPsbt, decodedRaw] = await Promise.all([
+      this.rpc.call<DecodedPsbt>('decodepsbt', [signedPsbt]),
+      this.rpc.call<DecodedBitcoinTransaction>('decoderawtransaction', [rawTransaction]),
+    ]);
+    const signedIntentDigest = transactionIntentDigest(decodedPsbt.tx, 'decodepsbt');
+    const rawIntentDigest = transactionIntentDigest(decodedRaw, 'decoderawtransaction');
+    if (signedIntentDigest !== rawIntentDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Finalized transaction does not match the verified signed PSBT',
+      );
+    }
+    return rawIntentDigest;
+  }
+
+  async assertRawTransactionMatchesIntentDigest(
+    rawTransaction: string,
+    expectedIntentDigest: string,
+  ): Promise<void> {
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) {
+      throw new BitcoinPayoutIntentMismatchError('Raw Bitcoin transaction is invalid');
+    }
+    if (!/^[0-9a-f]{64}$/.test(expectedIntentDigest)) {
+      throw new BitcoinPayoutIntentMismatchError('Transaction intent digest is invalid');
+    }
+    const decoded = await this.rpc.call<DecodedBitcoinTransaction>('decoderawtransaction', [
+      rawTransaction,
+    ]);
+    if (transactionIntentDigest(decoded, 'decoderawtransaction') !== expectedIntentDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Raw transaction does not match the verified transaction intent',
+      );
+    }
   }
 
   async releasePsbtInputs(psbt: string): Promise<void> {

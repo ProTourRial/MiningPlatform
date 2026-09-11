@@ -14,6 +14,10 @@ import {
   bitcoinToAtomic,
 } from '@mining/blockchain-adapters';
 import { prisma } from '@mining/database';
+import {
+  decryptWalletArtifact,
+  encryptWalletArtifact,
+} from '../apps/wallet-worker/src/artifact-crypto.js';
 import { REGTEST_PAYOUT_ACK } from '../apps/wallet-worker/src/payout-boundary.js';
 import { WalletPayoutExecutor } from '../apps/wallet-worker/src/payout-executor.js';
 import { IsolatedSignerClient } from '../apps/wallet-worker/src/signer-client.js';
@@ -500,14 +504,16 @@ async function main(): Promise<void> {
       signerErrors += String(chunk);
     });
     await waitForSigner();
+    const signerClient = new IsolatedSignerClient({
+      url: `http://127.0.0.1:${signerPort}`,
+      sharedSecret,
+      allowInsecureHttp: true,
+    });
+    const artifactEncryptionKey = randomBytes(32);
     const executor = new WalletPayoutExecutor({
       adapter: watchAdapter,
-      signer: new IsolatedSignerClient({
-        url: `http://127.0.0.1:${signerPort}`,
-        sharedSecret,
-        allowInsecureHttp: true,
-      }),
-      artifactEncryptionKey: randomBytes(32),
+      signer: signerClient,
+      artifactEncryptionKey,
       batchSize: 5,
     });
     const firstRun = await executor.runOnce();
@@ -524,6 +530,7 @@ async function main(): Promise<void> {
       }),
       1,
     );
+
     assert.equal(
       await prisma.walletTransaction.count({
         where: { transactionId: afterBroadcast.transactionId! },
@@ -643,6 +650,139 @@ async function main(): Promise<void> {
     assert.equal(
       await prisma.broadcastAttempt.count({
         where: { payoutId: requested.id, status: 'SUCCEEDED' },
+      }),
+      1,
+    );
+
+    const legacyRequest = await payouts.request(userPrincipal, {
+      miningAccountId: account.id,
+      amountAtomic: '20000',
+      idempotencyKey: `payout-regtest-legacy-ambiguity-${suffix}`,
+    });
+    await payouts.decide(approverPrincipal, {
+      payoutId: legacyRequest.id,
+      decision: 'APPROVED',
+      reason: 'Exercise safe recovery of pre-intent-digest raw transaction evidence.',
+      idempotencyKey: `payout-regtest-legacy-ambiguity-approval-${suffix}`,
+    });
+    const broadcastRawTransaction = watchAdapter.broadcastRawTransaction.bind(watchAdapter);
+    watchAdapter.broadcastRawTransaction = async (rawTransaction) => {
+      await broadcastRawTransaction(rawTransaction);
+      throw new Error('Simulated response loss after Bitcoin Core accepted the transaction');
+    };
+    const ambiguousLegacyRun = await executor.runOnce();
+    watchAdapter.broadcastRawTransaction = broadcastRawTransaction;
+    assert.equal(ambiguousLegacyRun.errors.length, 1);
+    const legacySigning = await prisma.signingRequest.findUniqueOrThrow({
+      where: { payoutId: legacyRequest.id },
+    });
+    assert.equal(
+      await prisma.broadcastAttempt.count({
+        where: { payoutId: legacyRequest.id, status: 'UNKNOWN' },
+      }),
+      1,
+    );
+    const artifactContext = `payout:${legacyRequest.id}:manifest:${legacySigning.manifestDigest}`;
+    const legacyArtifacts = JSON.parse(
+      decryptWalletArtifact(
+        legacySigning.signedArtifactReference!,
+        artifactEncryptionKey,
+        artifactContext,
+      ),
+    ) as Record<string, unknown>;
+    delete legacyArtifacts.transactionIntentDigest;
+    await prisma.signingRequest.update({
+      where: { id: legacySigning.id },
+      data: {
+        signedArtifactReference: encryptWalletArtifact(
+          JSON.stringify(legacyArtifacts),
+          artifactEncryptionKey,
+          artifactContext,
+        ),
+      },
+    });
+    const recoveredLegacyRun = await executor.runOnce();
+    assert.deepEqual(recoveredLegacyRun.errors, []);
+    assert.equal(recoveredLegacyRun.broadcast, 1);
+    assert.equal(
+      (
+        await prisma.payout.findUniqueOrThrow({
+          where: { id: legacyRequest.id },
+        })
+      ).status,
+      'CONFIRMING',
+    );
+    assert.equal(
+      await prisma.broadcastAttempt.count({
+        where: { payoutId: legacyRequest.id, status: 'SUCCEEDED' },
+      }),
+      1,
+    );
+    await node.call('generatetoaddress', [3, confirmationMiningAddress]);
+    const completedLegacyRun = await executor.runOnce();
+    assert.deepEqual(completedLegacyRun.errors, []);
+    assert.equal(completedLegacyRun.completed, 1);
+
+    const revokedRequest = await payouts.request(userPrincipal, {
+      miningAccountId: account.id,
+      amountAtomic: '20000',
+      idempotencyKey: `payout-regtest-revocation-${suffix}`,
+    });
+    await payouts.decide(approverPrincipal, {
+      payoutId: revokedRequest.id,
+      decision: 'APPROVED',
+      reason: 'Exercise the post-signer scoped revocation boundary.',
+      idempotencyKey: `payout-regtest-revocation-approval-${suffix}`,
+    });
+    let destinationRevoked = false;
+    let revocationBlockedWhileSignerActive = false;
+    let revocationPromise: Promise<void> | undefined;
+    const revocationExecutor = new WalletPayoutExecutor({
+      adapter: watchAdapter,
+      signer: {
+        sign: async (request) => {
+          const response = await signerClient.sign(request);
+          if (!revocationPromise) {
+            revocationPromise = prisma.$transaction(async (tx) => {
+              await tx.miningAccount.update({
+                where: { id: account.id },
+                data: { selectedPayoutAddressId: null },
+              });
+              await tx.payoutAddress.update({
+                where: { id: payoutAddress.id },
+                data: { status: 'DISABLED', active: false, disabledAt: new Date() },
+              });
+              destinationRevoked = true;
+            });
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            revocationBlockedWhileSignerActive = !destinationRevoked;
+          }
+          return response;
+        },
+      },
+      artifactEncryptionKey: randomBytes(32),
+      batchSize: 5,
+    });
+    const revokedRun = await revocationExecutor.runOnce();
+    await revocationPromise;
+    assert.deepEqual(revokedRun.errors, []);
+    assert.equal(revocationBlockedWhileSignerActive, true);
+    assert.equal(revokedRun.broadcast, 0);
+    const quarantined = await prisma.payout.findUniqueOrThrow({
+      where: { id: revokedRequest.id },
+      include: { reservation: true, signingRequest: true, broadcastAttempts: true },
+    });
+    assert.equal(quarantined.status, 'SIGNING');
+    assert.equal(quarantined.failureCode, 'PAYOUT_DESTINATION_REVOKED');
+    assert.equal(quarantined.signingRequest?.status, 'FAILED');
+    assert.equal(quarantined.reservation?.status, 'ACTIVE');
+    assert.equal(quarantined.broadcastAttempts.length, 0);
+    assert.equal(
+      await prisma.outboxEvent.count({
+        where: {
+          aggregateId: revokedRequest.id,
+          eventName: 'payout.execution.quarantined.v1',
+        },
       }),
       1,
     );

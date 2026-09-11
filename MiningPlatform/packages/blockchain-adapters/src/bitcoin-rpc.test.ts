@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   BitcoinJsonRpcClient,
+  BitcoinPayoutIntentMismatchError,
   BitcoinRpcError,
   BitcoinWatchOnlyRpcAdapter,
   atomicToBitcoinNumber,
@@ -210,5 +211,128 @@ test('signed PSBT finalization, mempool preflight, broadcast, and confirmation a
       'gettransaction',
       'getblockheader',
     ],
+  );
+});
+
+test('wallet boundary rejects signer PSBTs that do not match the prepared payout intent', async () => {
+  const address = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
+  const preparedTransaction = {
+    version: 2,
+    locktime: 0,
+    vin: [{ txid: 'b'.repeat(64), vout: 1, sequence: 0xfffffffd }],
+    vout: [
+      {
+        n: 0,
+        value: 0.001,
+        scriptPubKey: { hex: '76a914000000000000000000000000000000000000000088ac', address },
+      },
+      {
+        n: 1,
+        value: 0.008999,
+        scriptPubKey: {
+          hex: '00141111111111111111111111111111111111111111',
+          address: 'bc1qzyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3h8ffkz',
+        },
+      },
+    ],
+  };
+  const { rpc } = mockClient((request) => {
+    if (request.method === 'walletcreatefundedpsbt') {
+      return { psbt: 'unsigned-psbt', fee: 0.000001 };
+    }
+    if (request.method === 'decodepsbt') {
+      if (request.params[0] === 'signed-mutated') {
+        return {
+          fee: 0.000001,
+          tx: {
+            ...preparedTransaction,
+            vout: [
+              {
+                ...preparedTransaction.vout[0],
+                value: 0.002,
+              },
+              preparedTransaction.vout[1],
+            ],
+          },
+        };
+      }
+      return { fee: 0.000001, tx: preparedTransaction };
+    }
+    if (request.method === 'getaddressinfo') return { ismine: true };
+    throw new Error(`Unexpected method ${request.method}`);
+  });
+  const adapter = new BitcoinWatchOnlyRpcAdapter('mainnet', rpc);
+  const prepared = await adapter.preparePayout({
+    address,
+    amountAtomic: 100_000n,
+    maximumNetworkFeeAtomic: 100n,
+  });
+  const expected = {
+    unsignedTransactionDigest: prepared.unsignedTransactionDigest,
+    destination: address,
+    destinationAmountAtomic: 100_000n,
+    actualNetworkFeeAtomic: 100n,
+    maximumNetworkFeeAtomic: 100n,
+  };
+
+  await assert.doesNotReject(adapter.assertSignedPsbtMatchesPayoutIntent('signed-valid', expected));
+  await assert.rejects(
+    adapter.assertSignedPsbtMatchesPayoutIntent('signed-mutated', expected),
+    (error: unknown) =>
+      error instanceof BitcoinPayoutIntentMismatchError && /does not match/.test(error.message),
+  );
+
+  const { rpc: unownedRpc } = mockClient((request) => {
+    if (request.method === 'decodepsbt') {
+      return { fee: 0.000001, tx: preparedTransaction };
+    }
+    if (request.method === 'getaddressinfo') return { ismine: false };
+    throw new Error(`Unexpected method ${request.method}`);
+  });
+  const unownedAdapter = new BitcoinWatchOnlyRpcAdapter('mainnet', unownedRpc);
+  await assert.rejects(
+    unownedAdapter.assertSignedPsbtMatchesPayoutIntent('signed-valid', expected),
+    (error: unknown) =>
+      error instanceof BitcoinPayoutIntentMismatchError && /not owned/.test(error.message),
+  );
+});
+
+test('wallet boundary proves the finalized raw transaction preserves signed PSBT intent', async () => {
+  const transaction = {
+    version: 2,
+    locktime: 0,
+    vin: [{ txid: 'd'.repeat(64), vout: 0, sequence: 0xfffffffd }],
+    vout: [
+      {
+        n: 0,
+        value: 0.001,
+        scriptPubKey: { hex: '00142222222222222222222222222222222222222222' },
+      },
+    ],
+  };
+  const { rpc } = mockClient((request) => {
+    if (request.method === 'decodepsbt') return { fee: 0.000001, tx: transaction };
+    if (request.method === 'decoderawtransaction') {
+      return request.params[0] === '00'
+        ? transaction
+        : {
+            ...transaction,
+            vin: [{ ...transaction.vin[0], sequence: 0xfffffffc }],
+          };
+    }
+    throw new Error(`Unexpected method ${request.method}`);
+  });
+  const adapter = new BitcoinWatchOnlyRpcAdapter('mainnet', rpc);
+
+  const intentDigest = await adapter.assertFinalizedTransactionMatchesSignedPsbt(
+    'signed-valid',
+    '00',
+  );
+  assert.match(intentDigest, /^[0-9a-f]{64}$/);
+  await assert.doesNotReject(adapter.assertRawTransactionMatchesIntentDigest('00', intentDigest));
+  await assert.rejects(
+    adapter.assertFinalizedTransactionMatchesSignedPsbt('signed-valid', '01'),
+    (error: unknown) =>
+      error instanceof BitcoinPayoutIntentMismatchError && /does not match/.test(error.message),
   );
 });

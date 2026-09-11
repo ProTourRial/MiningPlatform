@@ -8,7 +8,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   assertPayoutActionControl,
+  assertPayoutExecutionScope,
   assertRegtestPayoutBoundary,
+  PayoutScopedAuthorizationError,
   REGTEST_PAYOUT_ACK,
 } from './payout-boundary.js';
 
@@ -63,4 +65,73 @@ test('database emergency controls are rechecked for each irreversible action', (
     () => assertPayoutActionControl({ ...enabled, broadcastEnabled: false }, 'broadcast'),
     /broadcasting is disabled/,
   );
+});
+
+test('scoped payout authorization remains current at irreversible actions', () => {
+  const now = new Date('2026-09-10T00:00:00.000Z');
+  const scope = {
+    payoutRouteId: 'route-1',
+    payoutAddress: {
+      payoutRouteId: 'route-1',
+      status: 'ACTIVE' as const,
+      active: true,
+      verified: true,
+    },
+    payoutRoute: {
+      id: 'route-1',
+      status: 'PILOT' as const,
+      effectiveFrom: new Date('2026-09-09T00:00:00.000Z'),
+      effectiveUntil: new Date('2026-09-11T00:00:00.000Z'),
+      payoutWallet: { enabled: true, signerKeyReference: 'signer-key-1' },
+    },
+    signingRequest: { signerKeyReference: 'signer-key-1' },
+  };
+
+  assert.doesNotThrow(() => assertPayoutExecutionScope(scope, now));
+
+  const rejected = [
+    {
+      value: {
+        ...scope,
+        payoutAddress: { ...scope.payoutAddress, status: 'DISABLED' as const, active: false },
+      },
+      code: 'PAYOUT_DESTINATION_REVOKED',
+    },
+    {
+      value: { ...scope, payoutRoute: { ...scope.payoutRoute, status: 'DISABLED' as const } },
+      code: 'PAYOUT_ROUTE_REVOKED',
+    },
+    {
+      value: {
+        ...scope,
+        payoutRoute: {
+          ...scope.payoutRoute,
+          effectiveUntil: new Date('2026-09-10T00:00:00.000Z'),
+        },
+      },
+      code: 'PAYOUT_ROUTE_NOT_EFFECTIVE',
+    },
+    {
+      value: {
+        ...scope,
+        payoutRoute: {
+          ...scope.payoutRoute,
+          payoutWallet: { enabled: false, signerKeyReference: 'signer-key-1' },
+        },
+      },
+      code: 'PAYOUT_WALLET_REVOKED',
+    },
+    {
+      value: { ...scope, signingRequest: { signerKeyReference: 'another-key' } },
+      code: 'PAYOUT_SIGNER_BINDING_CHANGED',
+    },
+  ];
+
+  for (const entry of rejected) {
+    assert.throws(
+      () => assertPayoutExecutionScope(entry.value, now),
+      (error: unknown) =>
+        error instanceof PayoutScopedAuthorizationError && error.code === entry.code,
+    );
+  }
 });

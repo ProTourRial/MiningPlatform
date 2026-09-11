@@ -5,11 +5,13 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto';
-import type {
-  BitcoinWatchOnlyRpcAdapter,
-  BitcoinChainObservation,
-  BitcoinUtxoSnapshot,
-  BitcoinWalletSnapshot,
+import {
+  BitcoinPayoutIntentMismatchError,
+  type BitcoinPayoutIntent,
+  type BitcoinWatchOnlyRpcAdapter,
+  type BitcoinChainObservation,
+  type BitcoinUtxoSnapshot,
+  type BitcoinWalletSnapshot,
 } from '@mining/blockchain-adapters';
 import { prisma, type Prisma } from '@mining/database';
 import {
@@ -19,7 +21,12 @@ import {
   type SigningManifestV1,
 } from '@mining/signer-protocol';
 import { decryptWalletArtifact, encryptWalletArtifact } from './artifact-crypto.js';
-import { assertPayoutActionControl, assertRegtestPayoutBoundary } from './payout-boundary.js';
+import {
+  assertPayoutActionControl,
+  assertPayoutExecutionScope,
+  assertRegtestPayoutBoundary,
+  PayoutScopedAuthorizationError,
+} from './payout-boundary.js';
 import type { IsolatedSignerClient } from './signer-client.js';
 
 type StoredPayoutArtifacts = {
@@ -28,11 +35,12 @@ type StoredPayoutArtifacts = {
   signedPsbt?: string;
   rawTransaction?: string;
   rawTransactionDigest?: string;
+  transactionIntentDigest?: string;
 };
 
 export type PayoutExecutorOptions = {
   adapter: BitcoinWatchOnlyRpcAdapter;
-  signer: IsolatedSignerClient;
+  signer: Pick<IsolatedSignerClient, 'sign'>;
   artifactEncryptionKey: Buffer;
   maximumSigningAttempts?: number;
   batchSize?: number;
@@ -115,6 +123,27 @@ function parseManifest(value: Prisma.JsonValue): SigningManifestV1 {
     throw new Error('Stored signing manifest is outside the regtest payout boundary');
   }
   return manifest;
+}
+
+function payoutIntentFromManifest(manifest: SigningManifestV1): BitcoinPayoutIntent {
+  for (const value of [
+    manifest.destinationAmountAtomic,
+    manifest.actualNetworkFeeAtomic,
+    manifest.reservedNetworkFeeAtomic,
+  ]) {
+    if (!/^\d+$/.test(value)) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signing manifest contains an invalid atomic payout amount',
+      );
+    }
+  }
+  return {
+    unsignedTransactionDigest: manifest.unsignedTransactionDigest,
+    destination: manifest.destination,
+    destinationAmountAtomic: BigInt(manifest.destinationAmountAtomic),
+    actualNetworkFeeAtomic: BigInt(manifest.actualNetworkFeeAtomic),
+    maximumNetworkFeeAtomic: BigInt(manifest.reservedNetworkFeeAtomic),
+  };
 }
 
 function isRegtestNetwork(network: { networkKey: string; isTestnet: boolean }): boolean {
@@ -277,6 +306,21 @@ export class WalletPayoutExecutor {
       throw new Error('Wallet executor rejected a non-regtest payout');
     }
     assertPayoutActionControl(payout.asset.payoutControls[0], 'prepare');
+    const now = new Date();
+    if (
+      payout.payoutAddress.status !== 'ACTIVE' ||
+      !payout.payoutAddress.active ||
+      !payout.payoutAddress.verified
+    ) {
+      throw new Error('Payout destination is no longer active and verified');
+    }
+    if (
+      !['PILOT', 'ACTIVE'].includes(payout.payoutRoute.status) ||
+      payout.payoutRoute.effectiveFrom > now ||
+      (payout.payoutRoute.effectiveUntil !== null && payout.payoutRoute.effectiveUntil <= now)
+    ) {
+      throw new Error('Payout route is no longer effective for execution');
+    }
     if (!payout.approvals.some((approval) => approval.decision === 'APPROVED')) {
       throw new Error('Payout does not have maker/checker approval evidence');
     }
@@ -400,6 +444,17 @@ export class WalletPayoutExecutor {
         throw new Error(`Signing request cannot be resumed from ${record.status}`);
       }
       const manifest = parseManifest(record.manifest);
+      if (
+        digestSigningManifest(manifest) !== record.manifestDigest ||
+        record.unsignedTransactionDigest !== manifest.unsignedTransactionDigest
+      ) {
+        await this.failBeforeBroadcast(
+          payoutId,
+          'SIGNING_MANIFEST_MISMATCH',
+          'Stored signing evidence no longer matches the immutable payout manifest.',
+        );
+        return { signed: false, broadcast: false };
+      }
       if (new Date(manifest.expiresAt).getTime() <= Date.now()) {
         await this.failBeforeBroadcast(
           payoutId,
@@ -415,7 +470,9 @@ export class WalletPayoutExecutor {
         record.manifestDigest,
       );
       if (!artifacts.unsignedPsbt) throw new Error('Unsigned PSBT artifact is missing');
-      await this.assertDatabaseActionAllowed(payoutId, 'sign');
+      if (!(await this.assertActionAllowedOrFail(payoutId, 'sign'))) {
+        return { signed: false, broadcast: false };
+      }
       const submitted = await prisma.signingRequest.update({
         where: { id: record.id },
         data: {
@@ -432,13 +489,24 @@ export class WalletPayoutExecutor {
         psbt: artifacts.unsignedPsbt,
       };
       try {
-        const response = await this.options.signer.sign(request);
+        const response = await this.runAuthorizedExternalAction(payoutId, 'sign', () =>
+          this.options.signer.sign(request),
+        );
         if (!response.complete) {
-          await this.failBeforeBroadcast(
+          await this.quarantineAfterSigner(
             payoutId,
             'SIGNER_INCOMPLETE_PSBT',
             'Isolated signer did not complete every required signature.',
+            response.signedPsbt,
           );
+          return { signed: false, broadcast: false };
+        }
+        if (
+          !(await this.assertSignedPsbtMatchesManifest(payoutId, response.signedPsbt, manifest))
+        ) {
+          return { signed: false, broadcast: false };
+        }
+        if (!(await this.assertActionAllowedAfterSigner(payoutId, response.signedPsbt))) {
           return { signed: false, broadcast: false };
         }
         const signedArtifacts: StoredPayoutArtifacts = {
@@ -488,6 +556,18 @@ export class WalletPayoutExecutor {
     const signing = payout.signingRequest;
     if (!signing || signing.status !== 'SIGNED')
       throw new Error('Signed payout artifact is missing');
+    const manifest = parseManifest(signing.manifest);
+    if (
+      digestSigningManifest(manifest) !== signing.manifestDigest ||
+      signing.unsignedTransactionDigest !== manifest.unsignedTransactionDigest
+    ) {
+      await this.quarantineAfterSigner(
+        payoutId,
+        'SIGNING_MANIFEST_MISMATCH',
+        'Stored signing evidence no longer matches the immutable payout manifest.',
+      );
+      return false;
+    }
     const artifacts = parseArtifacts(
       signing.signedArtifactReference,
       this.options.artifactEncryptionKey,
@@ -496,8 +576,12 @@ export class WalletPayoutExecutor {
     );
     let rawTransaction = artifacts.rawTransaction;
     let rawTransactionDigest = artifacts.rawTransactionDigest;
+    let transactionIntentDigest = artifacts.transactionIntentDigest;
     if (!rawTransaction || !rawTransactionDigest) {
       if (!artifacts.signedPsbt) throw new Error('Signed PSBT artifact is missing');
+      if (!(await this.assertSignedPsbtMatchesManifest(payoutId, artifacts.signedPsbt, manifest))) {
+        return false;
+      }
       if (
         !signing.signedTransactionDigest ||
         sha256Hex(artifacts.signedPsbt) !== signing.signedTransactionDigest
@@ -507,11 +591,23 @@ export class WalletPayoutExecutor {
       const finalized = await this.options.adapter.finalizeSignedPsbt(artifacts.signedPsbt);
       rawTransaction = finalized.rawTransaction;
       rawTransactionDigest = finalized.rawTransactionDigest;
+      const verifiedIntentDigest = await this.assertFinalizedTransactionMatchesSignedPsbt(
+        payoutId,
+        artifacts.signedPsbt,
+        rawTransaction,
+      );
+      if (!verifiedIntentDigest) return false;
+      transactionIntentDigest = verifiedIntentDigest;
       await prisma.signingRequest.update({
         where: { id: signing.id },
         data: {
           signedArtifactReference: encryptArtifacts(
-            { version: 1, rawTransaction, rawTransactionDigest },
+            {
+              version: 1,
+              rawTransaction,
+              rawTransactionDigest,
+              transactionIntentDigest,
+            },
             this.options.artifactEncryptionKey,
             payout.id,
             signing.manifestDigest,
@@ -525,11 +621,57 @@ export class WalletPayoutExecutor {
     const expectedTransactionId = await this.options.adapter.decodeRawTransactionId(rawTransaction);
     const successful = payout.broadcastAttempts.find((attempt) => attempt.status === 'SUCCEEDED');
     if (successful) {
-      if (successful.transactionId !== expectedTransactionId) {
+      if (
+        successful.transactionId !== expectedTransactionId ||
+        successful.requestDigest !== rawTransactionDigest
+      ) {
         throw new Error('Successful broadcast evidence is bound to another transaction');
       }
       await this.advanceBroadcastToConfirming(payout.id);
       return true;
+    }
+    if (!transactionIntentDigest) {
+      const ambiguousLegacyAttempt = payout.broadcastAttempts.find(
+        (attempt) =>
+          ['PENDING', 'UNKNOWN'].includes(attempt.status) &&
+          attempt.signingRequestId === signing.id &&
+          attempt.requestDigest === rawTransactionDigest,
+      );
+      if (ambiguousLegacyAttempt) {
+        const observation = await this.options.adapter.getTransactionObservation(
+          expectedTransactionId,
+        );
+        await this.persistChainObservation(payout.id, expectedTransactionId, observation);
+        if (['MEMPOOL', 'CONFIRMED'].includes(observation.status)) {
+          await this.recordObservedBroadcastSuccess(
+            payout,
+            ambiguousLegacyAttempt.id,
+            expectedTransactionId,
+          );
+          return true;
+        }
+      }
+      await this.quarantineAfterSigner(
+        payoutId,
+        'LEGACY_RAW_TRANSACTION_UNVERIFIED',
+        'Raw-only signing evidence has no verified intent and no matching transaction observed on-chain.',
+      );
+      return false;
+    } else {
+      try {
+        await this.options.adapter.assertRawTransactionMatchesIntentDigest(
+          rawTransaction,
+          transactionIntentDigest,
+        );
+      } catch (error) {
+        if (!(error instanceof BitcoinPayoutIntentMismatchError)) throw error;
+        await this.quarantineAfterSigner(
+          payoutId,
+          'RAW_TRANSACTION_INTENT_MISMATCH',
+          `Raw transaction evidence was rejected: ${error.message}`,
+        );
+        return false;
+      }
     }
     await this.assertDatabaseActionAllowed(payout.id, 'broadcast');
     let attempt = payout.broadcastAttempts.find((entry) => entry.status === 'PENDING');
@@ -555,7 +697,9 @@ export class WalletPayoutExecutor {
         previousObservation.status === 'DROPPED'
           ? await (async () => {
               await this.options.adapter.assertMempoolAcceptance(rawTransaction!);
-              return this.options.adapter.broadcastRawTransaction(rawTransaction!);
+              return this.runAuthorizedExternalAction(payout.id, 'broadcast', () =>
+                this.options.adapter.broadcastRawTransaction(rawTransaction!),
+              );
             })()
           : expectedTransactionId;
       if (transactionId !== expectedTransactionId) {
@@ -626,6 +770,75 @@ export class WalletPayoutExecutor {
         data: { status: 'CONFIRMING', confirmingAt: new Date(), rowVersion: { increment: 1 } },
       });
     });
+  }
+
+  private async recordObservedBroadcastSuccess(
+    payout: {
+      id: string;
+      status: string;
+    },
+    attemptId: string,
+    transactionId: string,
+  ): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const observedAttempt = await tx.broadcastAttempt.findUniqueOrThrow({
+        where: { id: attemptId },
+      });
+      let completionAttemptId = observedAttempt.id;
+      if (observedAttempt.status !== 'PENDING') {
+        const recoveryAttempt = await tx.broadcastAttempt.create({
+          data: {
+            idempotencyKey: `payout-broadcast-recovered:${payout.id}:${observedAttempt.id}`,
+            payoutId: payout.id,
+            signingRequestId: observedAttempt.signingRequestId,
+            provider: 'bitcoin-core-regtest-observation',
+            requestDigest: observedAttempt.requestDigest,
+            status: 'PENDING',
+          },
+        });
+        completionAttemptId = recoveryAttempt.id;
+      }
+      await tx.broadcastAttempt.update({
+        where: { id: completionAttemptId },
+        data: {
+          status: 'SUCCEEDED',
+          transactionId,
+          responseDigest: sha256Hex(transactionId),
+          failureCode: null,
+          failureMessage: null,
+          completedAt: new Date(),
+        },
+      });
+      const current = await tx.payout.findUniqueOrThrow({ where: { id: payout.id } });
+      if (current.status === 'SIGNING') {
+        await tx.payout.update({
+          where: { id: payout.id },
+          data: {
+            status: 'BROADCAST',
+            transactionId,
+            broadcastAt: new Date(),
+            rowVersion: { increment: 1 },
+          },
+        });
+      }
+      await tx.outboxEvent.upsert({
+        where: { idempotencyKey: `payout-broadcast-succeeded:${payout.id}:v1` },
+        update: {},
+        create: {
+          eventId: randomUUID(),
+          eventName: 'wallet.transaction.broadcast.v1',
+          eventVersion: 1,
+          producer: 'wallet-worker',
+          aggregateType: 'Payout',
+          aggregateId: payout.id,
+          correlationId: payout.id,
+          idempotencyKey: `payout-broadcast-succeeded:${payout.id}:v1`,
+          payload: { payoutId: payout.id, transactionId, network: 'regtest', recovered: true },
+          occurredAt: new Date(),
+        },
+      });
+    });
+    await this.advanceBroadcastToConfirming(payout.id);
   }
 
   private async observeAndReconcile(payoutId: string): Promise<boolean> {
@@ -774,11 +987,48 @@ export class WalletPayoutExecutor {
       throw new Error('Exact rebroadcast artifact digest does not match signing evidence');
     }
     await this.assertDatabaseActionAllowed(payoutId, 'broadcast');
+    const manifest = parseManifest(signing.manifest);
+    if (
+      digestSigningManifest(manifest) !== signing.manifestDigest ||
+      signing.unsignedTransactionDigest !== manifest.unsignedTransactionDigest
+    ) {
+      throw new Error('Exact rebroadcast signing evidence does not match the payout manifest');
+    }
     const decodedTransactionId = await this.options.adapter.decodeRawTransactionId(
       artifacts.rawTransaction,
     );
     if (decodedTransactionId !== transactionId) {
       throw new Error('Exact rebroadcast artifact is bound to another transaction');
+    }
+    if (artifacts.transactionIntentDigest) {
+      await this.options.adapter.assertRawTransactionMatchesIntentDigest(
+        artifacts.rawTransaction,
+        artifacts.transactionIntentDigest,
+      );
+    } else if (artifacts.signedPsbt) {
+      await this.options.adapter.assertSignedPsbtMatchesPayoutIntent(
+        artifacts.signedPsbt,
+        payoutIntentFromManifest(manifest),
+      );
+      await this.options.adapter.assertFinalizedTransactionMatchesSignedPsbt(
+        artifacts.signedPsbt,
+        artifacts.rawTransaction,
+      );
+    } else {
+      const previousSuccess = await prisma.broadcastAttempt.findFirst({
+        where: {
+          payoutId,
+          status: 'SUCCEEDED',
+          transactionId,
+          requestDigest: artifacts.rawTransactionDigest,
+        },
+        select: { id: true },
+      });
+      if (!previousSuccess) {
+        throw new Error(
+          'Legacy raw-only transaction has no successful broadcast evidence for exact replay',
+        );
+      }
     }
     const attempts = await prisma.broadcastAttempt.count({ where: { payoutId } });
     const attempt = await prisma.broadcastAttempt.create({
@@ -806,8 +1056,10 @@ export class WalletPayoutExecutor {
       return;
     }
     try {
-      const replayedTransactionId = await this.options.adapter.broadcastRawTransaction(
-        artifacts.rawTransaction,
+      const replayedTransactionId = await this.runAuthorizedExternalAction(
+        payoutId,
+        'broadcast',
+        () => this.options.adapter.broadcastRawTransaction(artifacts.rawTransaction!),
       );
       if (replayedTransactionId !== transactionId) {
         throw new Error('Exact rebroadcast returned an unexpected transaction id');
@@ -1218,6 +1470,15 @@ export class WalletPayoutExecutor {
   ): Promise<void> {
     const signingEvidence = await prisma.signingRequest.findUnique({ where: { payoutId } });
     if (
+      signingEvidence &&
+      (signingEvidence.status === 'SUBMITTED' ||
+        signingEvidence.status === 'SIGNED' ||
+        signingEvidence.attemptCount > 0)
+    ) {
+      await this.quarantineAfterSigner(payoutId, failureCode, failureMessage);
+      return;
+    }
+    if (
       signingEvidence?.signedArtifactReference &&
       ['PENDING', 'SUBMITTED'].includes(signingEvidence.status)
     ) {
@@ -1302,17 +1563,213 @@ export class WalletPayoutExecutor {
     });
   }
 
+  private async assertActionAllowedOrFail(
+    payoutId: string,
+    action: 'sign' | 'broadcast',
+  ): Promise<boolean> {
+    try {
+      await this.assertDatabaseActionAllowed(payoutId, action);
+      return true;
+    } catch (error) {
+      if (!(error instanceof PayoutScopedAuthorizationError)) throw error;
+      await this.failBeforeBroadcast(payoutId, error.code, error.message);
+      return false;
+    }
+  }
+
+  private async assertSignedPsbtMatchesManifest(
+    payoutId: string,
+    signedPsbt: string,
+    manifest: SigningManifestV1,
+  ): Promise<boolean> {
+    try {
+      await this.options.adapter.assertSignedPsbtMatchesPayoutIntent(
+        signedPsbt,
+        payoutIntentFromManifest(manifest),
+      );
+      return true;
+    } catch (error) {
+      if (!(error instanceof BitcoinPayoutIntentMismatchError)) throw error;
+      await this.quarantineAfterSigner(
+        payoutId,
+        'SIGNER_TRANSACTION_MISMATCH',
+        `Signer transaction evidence was rejected: ${error.message}`,
+        signedPsbt,
+      );
+      return false;
+    }
+  }
+
+  private async assertActionAllowedAfterSigner(
+    payoutId: string,
+    signedPsbt: string,
+  ): Promise<boolean> {
+    try {
+      await this.assertDatabaseActionAllowed(payoutId, 'sign');
+      return true;
+    } catch (error) {
+      const failureCode =
+        error instanceof PayoutScopedAuthorizationError
+          ? error.code
+          : 'PAYOUT_POST_SIGN_AUTHORIZATION_BLOCKED';
+      await this.quarantineAfterSigner(payoutId, failureCode, asErrorMessage(error), signedPsbt);
+      return false;
+    }
+  }
+
+  private async assertFinalizedTransactionMatchesSignedPsbt(
+    payoutId: string,
+    signedPsbt: string,
+    rawTransaction: string,
+  ): Promise<string | null> {
+    try {
+      return await this.options.adapter.assertFinalizedTransactionMatchesSignedPsbt(
+        signedPsbt,
+        rawTransaction,
+      );
+    } catch (error) {
+      if (!(error instanceof BitcoinPayoutIntentMismatchError)) throw error;
+      await this.quarantineAfterSigner(
+        payoutId,
+        'FINALIZED_TRANSACTION_MISMATCH',
+        `Finalized transaction evidence was rejected: ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  private async quarantineAfterSigner(
+    payoutId: string,
+    failureCode: string,
+    failureMessage: string,
+    signedPsbt?: string,
+  ): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const payout = await tx.payout.findUnique({
+        where: { id: payoutId },
+        include: { signingRequest: true },
+      });
+      if (!payout || payout.status !== 'SIGNING') return;
+      if (
+        payout.signingRequest &&
+        ['PENDING', 'SUBMITTED'].includes(payout.signingRequest.status)
+      ) {
+        await tx.signingRequest.update({
+          where: { id: payout.signingRequest.id },
+          data: {
+            status: 'FAILED',
+            failedAt: new Date(),
+            failureCode,
+            failureMessage,
+            ...(signedPsbt
+              ? {
+                  signedTransactionDigest: sha256Hex(signedPsbt),
+                  signedArtifactReference: encryptArtifacts(
+                    { version: 1, signedPsbt },
+                    this.options.artifactEncryptionKey,
+                    payout.id,
+                    payout.signingRequest.manifestDigest,
+                  ),
+                }
+              : {}),
+          },
+        });
+      }
+      await tx.payout.update({
+        where: { id: payout.id },
+        data: { failureCode, failureMessage, rowVersion: { increment: 1 } },
+      });
+      await tx.outboxEvent.upsert({
+        where: { idempotencyKey: `payout-quarantined:${payout.id}:${failureCode}:v1` },
+        update: {},
+        create: {
+          eventId: randomUUID(),
+          eventName: 'payout.execution.quarantined.v1',
+          eventVersion: 1,
+          producer: 'wallet-worker',
+          aggregateType: 'Payout',
+          aggregateId: payout.id,
+          correlationId: payout.id,
+          idempotencyKey: `payout-quarantined:${payout.id}:${failureCode}:v1`,
+          payload: { payoutId: payout.id, failureCode },
+          occurredAt: new Date(),
+        },
+      });
+    });
+  }
+
   private async assertDatabaseActionAllowed(
     payoutId: string,
     action: 'sign' | 'broadcast',
   ): Promise<void> {
-    const payout = await prisma.payout.findUnique({
+    await prisma.$transaction((tx) =>
+      this.assertDatabaseActionAllowedInTransaction(tx, payoutId, action),
+    );
+  }
+
+  private async runAuthorizedExternalAction<T>(
+    payoutId: string,
+    action: 'sign' | 'broadcast',
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    return prisma.$transaction(
+      async (tx) => {
+        const locked = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT payout."id"
+          FROM "Payout" payout
+          JOIN "Asset" asset ON asset."id" = payout."assetId"
+          JOIN "PayoutAddress" address ON address."id" = payout."payoutAddressId"
+          JOIN "AssetNetwork" network ON network."id" = address."assetNetworkId"
+          JOIN "PayoutRoute" route ON route."id" = payout."payoutRouteId"
+          JOIN "Wallet" wallet ON wallet."id" = route."payoutWalletId"
+          JOIN "PayoutControl" control ON control."assetId" = payout."assetId"
+          JOIN "SigningRequest" signing ON signing."payoutId" = payout."id"
+          WHERE payout."id" = ${payoutId}
+          FOR SHARE OF payout, asset, address, network, route, wallet, control, signing
+        `;
+        if (locked.length !== 1) {
+          throw new Error('Wallet executor could not lock the complete payout authorization scope');
+        }
+        await this.assertDatabaseActionAllowedInTransaction(tx, payoutId, action);
+        return operation();
+      },
+      { maxWait: 10_000, timeout: 60_000 },
+    );
+  }
+
+  private async assertDatabaseActionAllowedInTransaction(
+    tx: Prisma.TransactionClient,
+    payoutId: string,
+    action: 'sign' | 'broadcast',
+  ): Promise<void> {
+    const [clock] = await tx.$queryRaw<Array<{ now: Date }>>`SELECT clock_timestamp() AS "now"`;
+    const payout = await tx.payout.findUnique({
       where: { id: payoutId },
       select: {
+        payoutRouteId: true,
         asset: { select: { symbol: true, enabled: true, payoutControls: true } },
-        payoutAddress: { select: { assetNetwork: true } },
+        payoutAddress: {
+          select: {
+            payoutRouteId: true,
+            status: true,
+            active: true,
+            verified: true,
+            assetNetwork: true,
+          },
+        },
+        payoutRoute: {
+          select: {
+            id: true,
+            status: true,
+            effectiveFrom: true,
+            effectiveUntil: true,
+            payoutWallet: { select: { enabled: true, signerKeyReference: true } },
+          },
+        },
+        signingRequest: { select: { signerKeyReference: true } },
       },
     });
+    const databaseNow = clock?.now;
     if (
       !payout ||
       payout.asset.symbol !== 'BTC' ||
@@ -1322,6 +1779,10 @@ export class WalletPayoutExecutor {
     ) {
       throw new Error('Wallet executor rejected an action outside the regtest boundary');
     }
+    if (!(databaseNow instanceof Date) || Number.isNaN(databaseNow.getTime())) {
+      throw new Error('Wallet executor could not read authoritative database time');
+    }
     assertPayoutActionControl(payout.asset.payoutControls[0], action);
+    assertPayoutExecutionScope(payout, databaseNow);
   }
 }

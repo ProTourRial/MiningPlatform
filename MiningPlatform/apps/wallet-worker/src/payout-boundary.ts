@@ -13,6 +13,93 @@ export type PayoutActionControl = {
   broadcastEnabled: boolean;
 };
 
+export type PayoutExecutionScope = {
+  payoutRouteId: string;
+  payoutAddress: {
+    payoutRouteId: string;
+    status: 'COOLDOWN' | 'ACTIVE' | 'DISABLED';
+    active: boolean;
+    verified: boolean;
+  };
+  payoutRoute: {
+    id: string;
+    status: 'DISABLED' | 'ADDRESS_REGISTRATION' | 'PILOT' | 'ACTIVE';
+    effectiveFrom: Date;
+    effectiveUntil: Date | null;
+    payoutWallet: {
+      enabled: boolean;
+      signerKeyReference: string | null;
+    } | null;
+  };
+  signingRequest: {
+    signerKeyReference: string;
+  } | null;
+};
+
+export class PayoutScopedAuthorizationError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'PayoutScopedAuthorizationError';
+  }
+}
+
+export function assertPayoutExecutionScope(scope: PayoutExecutionScope, now = new Date()): void {
+  if (
+    scope.payoutAddress.status !== 'ACTIVE' ||
+    !scope.payoutAddress.active ||
+    !scope.payoutAddress.verified
+  ) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_DESTINATION_REVOKED',
+      'Payout destination is no longer active and verified',
+    );
+  }
+  if (
+    scope.payoutAddress.payoutRouteId !== scope.payoutRouteId ||
+    scope.payoutRoute.id !== scope.payoutRouteId
+  ) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_ROUTE_BINDING_CHANGED',
+      'Payout destination is no longer bound to the approved payout route',
+    );
+  }
+  if (!['PILOT', 'ACTIVE'].includes(scope.payoutRoute.status)) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_ROUTE_REVOKED',
+      'Payout route is no longer enabled for execution',
+    );
+  }
+  if (
+    scope.payoutRoute.effectiveFrom.getTime() > now.getTime() ||
+    (scope.payoutRoute.effectiveUntil !== null &&
+      scope.payoutRoute.effectiveUntil.getTime() <= now.getTime())
+  ) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_ROUTE_NOT_EFFECTIVE',
+      'Payout route is outside its approved effective window',
+    );
+  }
+  const wallet = scope.payoutRoute.payoutWallet;
+  if (!wallet?.enabled || !wallet.signerKeyReference) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_WALLET_REVOKED',
+      'Payout wallet or isolated signer key is no longer enabled',
+    );
+  }
+  if (
+    !scope.signingRequest ||
+    scope.signingRequest.signerKeyReference !== wallet.signerKeyReference
+  ) {
+    throw new PayoutScopedAuthorizationError(
+      'PAYOUT_SIGNER_BINDING_CHANGED',
+      'Payout signer binding no longer matches the approved wallet',
+    );
+  }
+}
+
 export function assertPayoutActionControl(
   control: PayoutActionControl | null | undefined,
   action: 'prepare' | 'sign' | 'broadcast',
