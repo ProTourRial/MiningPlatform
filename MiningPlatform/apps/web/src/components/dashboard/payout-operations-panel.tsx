@@ -8,8 +8,13 @@
 
 import { CircleAlert, CircleCheck, RefreshCw, Send, ShieldCheck } from 'lucide-react';
 import type { FormEvent } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiRequest } from '@/services/api-client';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ApiRequestError, apiRequest } from '@/services/api-client';
+import {
+  payoutRequestIdentity,
+  payoutRequestOutcomeIsAmbiguous,
+  type PendingPayoutRequestIdentity,
+} from '@/services/payout-request-idempotency';
 
 type PayoutModuleStatus = {
   status: string;
@@ -93,6 +98,7 @@ export function PayoutOperationsPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
+  const pendingRequestIdentity = useRef<PendingPayoutRequestIdentity | undefined>(undefined);
 
   const load = useCallback(async () => {
     setError(undefined);
@@ -132,12 +138,21 @@ export function PayoutOperationsPanel() {
     setNotice(undefined);
     const form = event.currentTarget;
     const data = new FormData(form);
+    const amountAtomic = String(data.get('amountAtomic') ?? '');
+    const requestIdentity = payoutRequestIdentity(
+      pendingRequestIdentity.current,
+      miningAccountId,
+      amountAtomic,
+      () => crypto.randomUUID(),
+    );
+    pendingRequestIdentity.current = requestIdentity;
     try {
       const payout = await apiRequest<PayoutRecord>('/payouts/requests', {
         method: 'POST',
-        headers: { 'idempotency-key': `web:${crypto.randomUUID()}` },
-        body: JSON.stringify({ miningAccountId, amountAtomic: data.get('amountAtomic') }),
+        headers: { 'idempotency-key': requestIdentity.idempotencyKey },
+        body: JSON.stringify({ miningAccountId, amountAtomic }),
       });
+      pendingRequestIdentity.current = undefined;
       setNotice(
         payout.eligibility?.eligible
           ? 'Permintaan lolos eligibility dan saldo telah direservasi untuk review.'
@@ -148,7 +163,15 @@ export function PayoutOperationsPanel() {
       form.reset();
       await load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Permintaan payout gagal');
+      const ambiguous =
+        !(reason instanceof ApiRequestError) || payoutRequestOutcomeIsAmbiguous(reason.status);
+      if (!ambiguous) pendingRequestIdentity.current = undefined;
+      const message = reason instanceof Error ? reason.message : 'Permintaan payout gagal';
+      setError(
+        ambiguous
+          ? `${message}. Ulangi dengan nilai yang sama; identitas permintaan akan digunakan kembali.`
+          : message,
+      );
     } finally {
       setBusy(false);
     }

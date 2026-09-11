@@ -32,6 +32,16 @@ if (!existsSync(join(migrationsRoot, latestMigration, 'migration.sql'))) {
 }
 
 const psqlUrl = new URL(process.env.DATABASE_URL);
+const targetSchema = psqlUrl.searchParams.get('schema')?.trim() || 'public';
+if (!/^[A-Za-z_][A-Za-z0-9_$]{0,62}$/.test(targetSchema)) {
+  throw new Error('DATABASE_URL schema must be one PostgreSQL identifier');
+}
+if (targetSchema !== 'public') {
+  throw new Error(
+    'Alpha.8 migration verification requires DATABASE_URL schema=public because the historical migration chain depends on public pgcrypto functions',
+  );
+}
+const targetSchemaIdentifier = `"${targetSchema}"`;
 psqlUrl.searchParams.delete('schema');
 const psqlContainer = process.env.MIGRATION_PSQL_CONTAINER;
 
@@ -53,10 +63,11 @@ function run(command, args, options = {}) {
 }
 
 function psqlInvocation(command) {
+  const scopedCommand = `SET search_path TO ${targetSchemaIdentifier};\n${command}`;
   if (!psqlContainer) {
     return {
       command: 'psql',
-      args: [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', '--command', command],
+      args: [psqlUrl.toString(), '--set', 'ON_ERROR_STOP=1', '--command', scopedCommand],
     };
   }
   return {
@@ -74,7 +85,7 @@ function psqlInvocation(command) {
       '--set',
       'ON_ERROR_STOP=1',
       '--command',
-      command,
+      scopedCommand,
     ],
   };
 }
@@ -108,14 +119,15 @@ function psqlExpectFailure(command, expectedMessage) {
 }
 
 // Never reset a caller-supplied database. The verifier only accepts a newly
-// provisioned database with no Prisma migration history or public tables.
+// provisioned database with no Prisma migration history or tables in the exact
+// schema selected by DATABASE_URL.
 psql(`
   DO $$
   BEGIN
-    IF to_regclass('public."_prisma_migrations"') IS NOT NULL
+    IF to_regclass('${targetSchema}."_prisma_migrations"') IS NOT NULL
       OR EXISTS (
         SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name <> '_prisma_migrations'
+        WHERE table_schema = '${targetSchema}' AND table_name <> '_prisma_migrations'
       )
     THEN RAISE EXCEPTION 'migration verifier requires a new empty disposable database'; END IF;
   END $$;
@@ -411,7 +423,7 @@ try {
       BEGIN
         IF EXISTS (
           SELECT 1 FROM information_schema.columns
-          WHERE table_schema = 'public'
+          WHERE table_schema = '${targetSchema}'
             AND table_name = 'RandomXShareSubmissionIntent'
             AND column_name = 'upstreamDispatchFingerprint'
         ) THEN RAISE EXCEPTION 'failed v20 migration leaked its new column'; END IF;
@@ -490,34 +502,34 @@ try {
     DECLARE btc_id TEXT;
     BEGIN
       SELECT "id" INTO btc_id FROM "Asset" WHERE "symbol" = 'BTC';
-      IF to_regclass('public."PayoutEligibility"') IS NULL
-        OR to_regclass('public."ExternalIdentity"') IS NULL
-        OR to_regclass('public."OAuthAttempt"') IS NULL
-        OR to_regclass('public."BalanceReservation"') IS NULL
-        OR to_regclass('public."PayoutApproval"') IS NULL
-        OR to_regclass('public."SigningRequest"') IS NULL
-        OR to_regclass('public."BroadcastAttempt"') IS NULL
-        OR to_regclass('public."ChainObservation"') IS NULL
-        OR to_regclass('public."PayoutReconciliation"') IS NULL
-        OR to_regclass('public."WalletReconciliation"') IS NULL
-        OR to_regclass('public."PayoutControl"') IS NULL
-        OR to_regclass('public."NativeBitcoinCandidate"') IS NULL
-        OR to_regclass('public."NativeBitcoinProposalEvidence"') IS NULL
-        OR to_regclass('public."NativeBitcoinSubmissionIntent"') IS NULL
-        OR to_regclass('public."NativeBitcoinSubmissionRecoveryObservation"') IS NULL
-        OR to_regclass('public."NativeBitcoinSubmissionAttempt"') IS NULL
-        OR to_regclass('public."RandomXAcceptedShareEvidence"') IS NULL
-        OR to_regclass('public."RandomXUpstreamJobEvidence"') IS NULL
-        OR to_regclass('public."RandomXShareSubmissionIntent"') IS NULL
-        OR to_regclass('public."RandomXUpstreamShareDecision"') IS NULL
+      IF to_regclass('${targetSchema}."PayoutEligibility"') IS NULL
+        OR to_regclass('${targetSchema}."ExternalIdentity"') IS NULL
+        OR to_regclass('${targetSchema}."OAuthAttempt"') IS NULL
+        OR to_regclass('${targetSchema}."BalanceReservation"') IS NULL
+        OR to_regclass('${targetSchema}."PayoutApproval"') IS NULL
+        OR to_regclass('${targetSchema}."SigningRequest"') IS NULL
+        OR to_regclass('${targetSchema}."BroadcastAttempt"') IS NULL
+        OR to_regclass('${targetSchema}."ChainObservation"') IS NULL
+        OR to_regclass('${targetSchema}."PayoutReconciliation"') IS NULL
+        OR to_regclass('${targetSchema}."WalletReconciliation"') IS NULL
+        OR to_regclass('${targetSchema}."PayoutControl"') IS NULL
+        OR to_regclass('${targetSchema}."NativeBitcoinCandidate"') IS NULL
+        OR to_regclass('${targetSchema}."NativeBitcoinProposalEvidence"') IS NULL
+        OR to_regclass('${targetSchema}."NativeBitcoinSubmissionIntent"') IS NULL
+        OR to_regclass('${targetSchema}."NativeBitcoinSubmissionRecoveryObservation"') IS NULL
+        OR to_regclass('${targetSchema}."NativeBitcoinSubmissionAttempt"') IS NULL
+        OR to_regclass('${targetSchema}."RandomXAcceptedShareEvidence"') IS NULL
+        OR to_regclass('${targetSchema}."RandomXUpstreamJobEvidence"') IS NULL
+        OR to_regclass('${targetSchema}."RandomXShareSubmissionIntent"') IS NULL
+        OR to_regclass('${targetSchema}."RandomXUpstreamShareDecision"') IS NULL
       THEN RAISE EXCEPTION 'required schema-22 tables are missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'Payout'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'Payout'
           AND column_name = 'reorgDetectedAt' AND is_nullable = 'YES'
       ) OR NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'Payout'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'Payout'
           AND column_name = 'reconfirmationCount' AND is_nullable = 'NO'
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'Payout_reconfirmation_count_check'
@@ -543,11 +555,11 @@ try {
       ) THEN RAISE EXCEPTION 'schema-v22 upgrade did not safely backfill payout recovery state'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'RandomXShareSubmissionIntent'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'RandomXShareSubmissionIntent'
           AND column_name = 'upstreamDispatchFingerprint' AND is_nullable = 'NO'
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_indexes
-        WHERE schemaname = 'public' AND tablename = 'RandomXShareSubmissionIntent'
+        WHERE schemaname = '${targetSchema}' AND tablename = 'RandomXShareSubmissionIntent'
           AND indexname = 'RandomXShareSubmissionIntent_upstreamDispatchFingerprint_key'
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_constraint
@@ -555,23 +567,23 @@ try {
       ) THEN RAISE EXCEPTION 'schema-v20 authoritative dispatch binding is missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'ContributionFact'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'ContributionFact'
           AND column_name = 'sourceType' AND is_nullable = 'NO'
       ) OR NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'ContributionFact'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'ContributionFact'
           AND column_name = 'randomXEvidenceId' AND is_nullable = 'YES'
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conname = 'ContributionFact_exact_source_check'
       ) OR NOT EXISTS (
         SELECT 1 FROM pg_indexes
-        WHERE schemaname = 'public' AND tablename = 'ContributionFact'
+        WHERE schemaname = '${targetSchema}' AND tablename = 'ContributionFact'
           AND indexname = 'ContributionFact_randomXEvidenceId_key'
       ) THEN RAISE EXCEPTION 'schema-v21 RandomX contribution source binding is missing'; END IF;
       IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = 'PayoutRoute'
+        WHERE table_schema = '${targetSchema}' AND table_name = 'PayoutRoute'
           AND column_name = 'payoutWalletId'
       ) THEN RAISE EXCEPTION 'payout route wallet binding is missing'; END IF;
       IF NOT EXISTS (
@@ -659,7 +671,7 @@ try {
           AND NOT t.tgisinternal
       ) THEN RAISE EXCEPTION 'RandomX submission/outbox invariant triggers are missing'; END IF;
       IF NOT EXISTS (
-        SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'PayoutApproval'
+        SELECT 1 FROM pg_indexes WHERE schemaname = '${targetSchema}' AND tablename = 'PayoutApproval'
           AND indexname = 'PayoutApproval_payoutId_key'
       ) THEN RAISE EXCEPTION 'one final payout approval decision is not database-enforced'; END IF;
       IF '${mode}' = 'upgrade' AND NOT EXISTS (

@@ -120,6 +120,8 @@ const requiredFiles = [
   'apps/web/src/components/dashboard/payout-operations-panel.tsx',
   'apps/web/src/components/dashboard/reward-history-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
+  'apps/web/src/services/payout-request-idempotency.ts',
+  'apps/web/src/services/payout-request-idempotency.test.ts',
   'apps/web/e2e/public-smoke.spec.ts',
   'apps/web/e2e/authenticated-control-plane.spec.ts',
   'apps/web/playwright.config.ts',
@@ -210,7 +212,7 @@ const oauthMigration = await text(
   `packages/database/prisma/migrations/${expectedMigration}/migration.sql`,
 );
 for (const expected of [
-  "CREATE TYPE \"ExternalIdentityProvider\" AS ENUM ('GOOGLE')",
+  'CREATE TYPE "ExternalIdentityProvider" AS ENUM (\'GOOGLE\')',
   'CREATE TABLE "ExternalIdentity"',
   'CREATE TABLE "OAuthAttempt"',
   'OAuthAttempt_stateHash_key',
@@ -714,6 +716,8 @@ for (const expected of [
   'schema-v22 upgrade did not safely backfill payout recovery state',
   'intentional RandomX dispatch migration failure',
   'failed v20 migration left immutability disabled',
+  "targetSchema !== 'public'",
+  'requires DATABASE_URL schema=public',
 ])
   requireText(randomXMigrationVerifier, expected, 'Schema-v23 migration verifier');
 
@@ -823,6 +827,15 @@ for (const expected of [
   'await refreshSession()',
 ])
   requireText(apiClient, expected, 'Browser refresh single-flight');
+
+const payoutRequestIdempotency = await text('apps/web/src/services/payout-request-idempotency.ts');
+for (const expected of [
+  'current?.fingerprint === fingerprint',
+  'payoutRequestOutcomeIsAmbiguous',
+  'status === 409',
+  'status >= 500',
+])
+  requireText(payoutRequestIdempotency, expected, 'Browser payout request idempotency');
 
 const integration = await text('apps/api/src/payout-control.integration.test.ts');
 for (const expected of [

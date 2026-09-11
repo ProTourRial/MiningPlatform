@@ -5,8 +5,8 @@
   "packagingRevision": "r1",
   "verificationMode": "managed-files-only",
   "extraFilesPolicy": "ignored",
-  "managedFileCount": 715,
-  "managedFilesChecksum": "d055dfbfe286be654e6deac07ea871d44e5e40745f211492cc0912b5eb941cd2",
+  "managedFileCount": 717,
+  "managedFilesChecksum": "e2654422accd00819fffec0dc3661bf44ad6a77d1d8eb3c3e21b9a8d030bf225",
   "author": "Abia Nugrahanto",
   "files": [
     {
@@ -1351,8 +1351,8 @@
     },
     {
       "path": "apps/web/src/components/dashboard/payout-operations-panel.tsx",
-      "sha256": "34fdabe1996f4ab8c51502872fcdd8394d3259de5459fb2c389777c060c37251",
-      "size": 13404
+      "sha256": "0056ce9c3b30b805032264ecb7edaac16ccb3a661da1201c016fd788ad40f92a",
+      "size": 14352
     },
     {
       "path": "apps/web/src/components/dashboard/profile-management-panel.tsx",
@@ -1425,6 +1425,16 @@
       "size": 2998
     },
     {
+      "path": "apps/web/src/services/payout-request-idempotency.test.ts",
+      "sha256": "6c0f3c6f24c342ce4e318ab3d26167ee7c22aea9468aa74c107cfb6cae8f0668",
+      "size": 1754
+    },
+    {
+      "path": "apps/web/src/services/payout-request-idempotency.ts",
+      "sha256": "ebcd8ee200232fa431299ae98d469b8ab47f3d8b3f4de6f9261f357a5b870b20",
+      "size": 846
+    },
+    {
       "path": "apps/web/src/store/ui-store.ts",
       "sha256": "fffbb26a311cd1322cd7aad7aa2f03dca0dfbf925c721ba3cf0336ed469bf5ca",
       "size": 375
@@ -1441,8 +1451,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "a2c813b65464b872cfcce8f2b0ef7e5c114487ce14d0d16105836708ea8421f4",
-      "size": 71457
+      "sha256": "46afe7e5845685f8428e03adbe7c3279e594bc404c7909fa4ff5ef8016987968",
+      "size": 72460
     },
     {
       "path": "DELETE_FILES.txt",
@@ -2106,7 +2116,7 @@
     },
     {
       "path": "docs/releases/v0.3.0-alpha.8-validation.md",
-      "sha256": "0f12702a796cc98c7986ac129d294da84be70e80755f34131a7bf8178b1dc7e9",
+      "sha256": "dbe16b8fa3056f6d33a2a3ca6a098e65e5b2c1f6674f2eb78c5e146450c6fdc5",
       "size": 2904
     },
     {
@@ -3371,8 +3381,8 @@
     },
     {
       "path": "scripts/check-v030-alpha8.mjs",
-      "sha256": "07e15dfee3f966098562cba03e9f63b44be91a4477b992cddc09debf1b92cc1a",
-      "size": 41549
+      "sha256": "09a926e5cf7b5491df85a259e77b9eb4ef65b93cdb074a9e91d6fd64885377b9",
+      "size": 42076
     },
     {
       "path": "scripts/check-v030-upgrade.mjs",
@@ -3556,8 +3566,8 @@
     },
     {
       "path": "scripts/verify-v030-alpha8-migration.mjs",
-      "sha256": "670d1ebb01287a2ee4be954d188fec1d1438a5d37dc0790d0c310bddf4b6aa47",
-      "size": 42235
+      "sha256": "0780c813444e42143ea9ff770d16f37d8a79eda883af64014f11b3a5674c1a91",
+      "size": 43137
     },
     {
       "path": "scripts/wait-for-http.mjs",
