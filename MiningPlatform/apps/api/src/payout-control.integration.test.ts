@@ -278,6 +278,7 @@ test('payout address changes require replay-safe step-up, checksum validation, c
 
   const preferences = await payouts.preferences(user.id);
   assert.equal(preferences[0]?.effective, false);
+  assert.ok(preferences[0]?.blockers.includes('AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED'));
   assert.ok(preferences[0]?.blockers.includes('PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED'));
   assert.ok(preferences[0]?.blockers.includes('NO_SELECTED_PAYOUT_DESTINATION'));
 

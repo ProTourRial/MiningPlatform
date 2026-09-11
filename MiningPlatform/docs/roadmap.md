@@ -18,7 +18,7 @@ v0.6.0  Transparency and Owner Operations
 v1.0.0  Production-Ready Upstream Gateway
 ```
 
-## Current Checkpoint: v0.3.0-alpha.7
+## Current Checkpoint: v0.3.0-alpha.8 (schema 23 candidate)
 
 Implemented:
 
@@ -33,6 +33,7 @@ Implemented:
 - v0.2.0-alpha.6 mining foundation, multi-upstream registry, circuit breaker, failover, provider-scoped jobs, bounded share queue, and VarDiff foundation.
 - Official domain architecture, bounded contexts, context map, data flow, event flow, event catalog, and canonical ADR set.
 - Registration, transactional email verification, login/logout, access token, atomic token-family refresh rotation/replay revocation, password reset, and TOTP 2FA.
+- Optional Google Sign-In web-server flow with PKCE, nonce, one-time state, explicit password+TOTP identity linking, no email-based auto-link, and runtime-gated UI.
 - RBAC roles USER, ADMIN, and OWNER; administrative routes require TOTP.
 - User profile, active-session management, scoped API keys, Worker CRUD, and worker credential rotation/revocation.
 - Production worker credential path connected to `ProductionWorkerAuthenticator`.
@@ -42,23 +43,31 @@ Implemented:
 
 Release blockers:
 
-- Successful alpha.7 full pnpm, Prisma, PostgreSQL, Redis, Docker, static, security-diff, and repository CI validation on the exact commit.
+- Successful alpha.8/schema-23 full pnpm, Prisma, PostgreSQL, Redis, Docker, browser, static, security-diff, and repository CI validation on the exact commit.
 - Captured compatibility and soak/failover fixtures from selected production upstream providers.
 - Distributed API rate limiting, IP reputation, managed DDoS protection, and public TLS automation.
 - Telegram, Discord, webhook delivery and channel verification; Resend identity email provisioning remains external.
 - Selected-provider settlement evidence, payout eligibility/reservation, isolated signer and approval flow, wallet/blockchain reconciliation, and real payouts.
 - Load, stress, and chaos validation.
 
-RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed in-memory
-accounting projection. Schema v18 now preserves accepted-share evidence through an immutable,
-algorithm-discriminated boundary with account/asset/upstream correlation and unique retry identity.
-A strict mining-worker event consumer now validates the versioned accepted-share contract and commits
-event idempotency plus evidence atomically under a PostgreSQL advisory lock. Its fingerprint binds the
-full bounded work blob, target, and height. No miner-facing producer emits the event yet; contribution
-creation, reward assignment, settlement, and ledger effects remain deliberately blocked until their
-own invariants and failure tests are proven. A canonical producer-side factory now revalidates and
-freezes the exact envelope, while durable pre-RPC intent and transactional outbox delivery remain the
-next mandatory boundary before any authenticated gateway may publish it.
+RandomX validation and CryptoNote upstream boundaries now feed a deterministic, fail-closed accounting
+projection and durable gateway. Schema v18 through v21 preserve accepted-share, pre-RPC intent,
+upstream-decision, outbox, and algorithm-discriminated contribution evidence with exact
+account/asset/upstream correlation and unique retry identity. A bounded miner-facing JSON-RPC transport
+now authenticates connections, issues only provider-supplied assignments, resolves private upstream job
+identity before submission, and invokes the durable gateway under line, queue, connection, timeout, and
+per-session share limits. A Redis-time lease now rejects identical algorithm/seed/nonce-normalized blobs
+across active connections and gateway replicas, and ownership is rechecked before submission resolution.
+The concrete source now opens one upstream authorization session per authenticated miner, projects
+provider-issued work behind private job IDs, bounds mappings, replaces disconnected sessions, and routes
+each durable submission through the exact owning adapter/coordinator. It is wrapped by the Redis guard:
+separate TCP sessions do not prove unique work, and a provider returning the same nonce-normalized blob is
+rejected. A fail-closed runtime now composes this path for an explicitly acknowledged, loopback-only
+laboratory and rejects every production-mode activation in code. Its production credential adapter
+reuses the established PostgreSQL credential/referral/audit policy and Redis lockout limiter while
+requiring a mining-account-bound principal. Public traffic remains gated until provider-specific
+distinct-work behavior, pinned sidecar provenance and known-answer vectors, unresolved-intent recovery,
+HA/partition/load evidence, and settlement reconciliation are independently proven.
 
 ## Active Native Pool Laboratory Track
 

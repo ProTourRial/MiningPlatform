@@ -17,6 +17,7 @@ import { prisma, type Prisma } from '@mining/database';
 import { hashSensitiveValue } from '@mining/security';
 import type { AuthPrincipal } from '../auth/auth.decorators.js';
 import { StepUpService } from '../auth/step-up.service.js';
+import { evaluatePayoutActivationReadiness } from './payout-activation-readiness.js';
 
 const PAYOUT_ADDRESS_SCOPE = 'PAYOUT_ADDRESS_WRITE' as const;
 const PAYOUT_EXECUTION_VERSION = 2;
@@ -214,6 +215,259 @@ function payoutView(payout: PayoutViewRecord) {
 @Injectable()
 export class PayoutsService {
   constructor(private readonly stepUpService: StepUpService) {}
+
+  private async requireInteractiveMfaOperator(principal: AuthPrincipal): Promise<void> {
+    if (
+      principal.authenticationType !== 'access-token' ||
+      !['ADMIN', 'OWNER'].includes(principal.role)
+    ) {
+      throw new ForbiddenException(
+        'Payout operations require an interactive ADMIN or OWNER session',
+      );
+    }
+    const security = await prisma.userSecurity.findUnique({
+      where: { userId: principal.userId },
+      select: { totpEnabled: true, totpSecretEncrypted: true },
+    });
+    if (!security?.totpEnabled || !security.totpSecretEncrypted) {
+      throw new ForbiddenException('Payout operations require enrolled TOTP 2FA');
+    }
+  }
+
+  async activationReadiness(principal: AuthPrincipal) {
+    await this.requireInteractiveMfaOperator(principal);
+    const now = await databaseNow();
+    const executionNetwork = process.env.PAYOUT_EXECUTION_NETWORK?.trim().toLowerCase() || null;
+    const walletHealthMaximumAgeSeconds = Number.parseInt(
+      process.env.PAYOUT_WALLET_HEALTH_MAX_AGE_SECONDS ?? '300',
+      10,
+    );
+    const asset = await prisma.asset.findUnique({
+      where: { symbol: 'BTC' },
+      select: {
+        id: true,
+        enabled: true,
+        payoutControls: { take: 1 },
+      },
+    });
+    const control = asset?.payoutControls[0];
+    const route =
+      executionNetwork && asset
+        ? await prisma.payoutRoute.findFirst({
+            where: {
+              status: { in: ['PILOT', 'ACTIVE'] },
+              effectiveFrom: { lte: now },
+              OR: [{ effectiveUntil: null }, { effectiveUntil: { gt: now } }],
+              assetNetwork: {
+                assetId: asset.id,
+                enabled: true,
+                chainFamily: 'BITCOIN',
+                isTestnet: executionNetwork !== 'mainnet',
+                networkKey: { contains: executionNetwork, mode: 'insensitive' },
+              },
+            },
+            include: {
+              payoutWallet: {
+                include: { reconciliations: { orderBy: { reconciledAt: 'desc' }, take: 1 } },
+              },
+            },
+            orderBy: [{ status: 'desc' }, { version: 'desc' }],
+          })
+        : null;
+    const wallet = route?.payoutWallet;
+    const latestReconciliation = wallet?.reconciliations[0];
+    const [eligibleMfaOperatorCount, unresolvedQuarantineCount, unknownBroadcastCount] =
+      await Promise.all([
+        prisma.user.count({
+          where: {
+            status: 'ACTIVE',
+            emailVerifiedAt: { not: null },
+            role: { in: ['ADMIN', 'OWNER'] },
+            security: {
+              is: { totpEnabled: true, totpSecretEncrypted: { not: null } },
+            },
+          },
+        }),
+        prisma.payout.count({
+          where: {
+            executionVersion: PAYOUT_EXECUTION_VERSION,
+            status: 'SIGNING',
+            failureCode: { not: null },
+            reservation: { is: { status: 'ACTIVE' } },
+            signingRequest: { is: { status: 'FAILED' } },
+            ...(asset ? { assetId: asset.id } : {}),
+          },
+        }),
+        prisma.broadcastAttempt.count({
+          where: {
+            status: 'UNKNOWN',
+            payout: {
+              executionVersion: PAYOUT_EXECUTION_VERSION,
+              status: { in: ['SIGNING', 'BROADCAST', 'CONFIRMING'] },
+              broadcastAttempts: { none: { status: 'SUCCEEDED' } },
+              ...(asset ? { assetId: asset.id } : {}),
+            },
+          },
+        }),
+      ]);
+    const readiness = evaluatePayoutActivationReadiness({
+      environment: {
+        payoutsEnabled: process.env.PAYOUTS_ENABLED === 'true',
+        requestsEnabled: process.env.PAYOUT_REQUESTS_ENABLED === 'true',
+        signingEnabled: payoutEnvironmentGate('signing'),
+        broadcastEnabled: payoutEnvironmentGate('broadcast'),
+        executionNetwork,
+        runtimeSupportsTarget: executionNetwork === 'regtest',
+      },
+      asset: { configured: Boolean(asset), enabled: asset?.enabled ?? false },
+      databaseControl: {
+        configured: Boolean(control),
+        paused: control?.paused ?? true,
+        requestsEnabled: control?.requestsEnabled ?? false,
+        signingEnabled: control?.signingEnabled ?? false,
+        broadcastEnabled: control?.broadcastEnabled ?? false,
+      },
+      route: {
+        configured: Boolean(route),
+        active: Boolean(route && ['PILOT', 'ACTIVE'].includes(route.status)),
+      },
+      wallet: {
+        configured: Boolean(wallet),
+        enabled: wallet?.enabled ?? false,
+        rpcWalletConfigured: Boolean(wallet?.rpcWalletName),
+        signerConfigured: Boolean(wallet?.signerKeyReference),
+        singlePayoutLimitConfigured: Boolean(wallet && wallet.maximumSinglePayoutAtomic !== null),
+        dailyPayoutLimitConfigured: Boolean(wallet && wallet.dailyPayoutLimitAtomic !== null),
+        reserveConfigured: Boolean(wallet && wallet.minimumReserveAtomic > 0n),
+        recordReconciledAtMs: wallet?.lastReconciledAt?.getTime() ?? null,
+        latestReconciliationStatus: latestReconciliation?.status ?? null,
+        latestReconciliationAtMs: latestReconciliation?.reconciledAt.getTime() ?? null,
+        latestReconciliationVarianceAtomic: latestReconciliation?.varianceAtomic ?? null,
+      },
+      eligibleMfaOperatorCount,
+      unresolvedQuarantineCount,
+      unknownBroadcastCount,
+      nowMs: now.getTime(),
+      walletHealthMaximumAgeMs: walletHealthMaximumAgeSeconds * 1_000,
+    });
+    return {
+      ...readiness,
+      target: {
+        asset: 'BTC',
+        executionNetwork,
+        fundsClass:
+          executionNetwork === 'mainnet'
+            ? 'REAL_FUNDS'
+            : executionNetwork
+            ? 'TEST_FUNDS'
+            : 'UNKNOWN',
+        routeId: route?.id ?? null,
+        walletId: wallet?.id ?? null,
+      },
+      evidence: {
+        databaseControlVersion: control?.version ?? null,
+        eligibleMfaOperatorCount,
+        unresolvedQuarantineCount,
+        unknownBroadcastCount,
+        latestWalletReconciliationId: latestReconciliation?.id ?? null,
+        latestWalletReconciliationStatus: latestReconciliation?.status ?? null,
+        latestWalletReconciliationAt: latestReconciliation?.reconciledAt ?? null,
+        evaluatedAt: now,
+      },
+    };
+  }
+
+  async quarantined(principal: AuthPrincipal) {
+    await this.requireInteractiveMfaOperator(principal);
+    const payouts = await prisma.payout.findMany({
+      where: {
+        executionVersion: PAYOUT_EXECUTION_VERSION,
+        status: 'SIGNING',
+        failureCode: { not: null },
+        reservation: { is: { status: 'ACTIVE' } },
+        signingRequest: { is: { status: 'FAILED' } },
+      },
+      select: {
+        id: true,
+        amountAtomic: true,
+        networkFeeAtomic: true,
+        failureCode: true,
+        failureMessage: true,
+        requestedAt: true,
+        signingAt: true,
+        updatedAt: true,
+        asset: { select: { symbol: true } },
+        payoutAddress: { select: { addressHash: true } },
+        payoutRoute: {
+          select: {
+            id: true,
+            routeKey: true,
+            version: true,
+            assetNetwork: { select: { networkKey: true, isTestnet: true } },
+            payoutWallet: { select: { id: true, name: true, enabled: true } },
+          },
+        },
+        reservation: {
+          select: { id: true, amountAtomic: true, status: true, journalEntryId: true },
+        },
+        signingRequest: {
+          select: {
+            id: true,
+            status: true,
+            manifestDigest: true,
+            unsignedTransactionDigest: true,
+            signedTransactionDigest: true,
+            submittedAt: true,
+            failedAt: true,
+            failureCode: true,
+          },
+        },
+        broadcastAttempts: {
+          select: {
+            id: true,
+            status: true,
+            requestDigest: true,
+            transactionId: true,
+            attemptedAt: true,
+            completedAt: true,
+          },
+          orderBy: { attemptedAt: 'asc' },
+        },
+        chainObservations: {
+          select: {
+            id: true,
+            transactionId: true,
+            status: true,
+            confirmations: true,
+            blockHeight: true,
+            blockHash: true,
+            observedAt: true,
+            rawDigest: true,
+          },
+          orderBy: { observedAt: 'asc' },
+        },
+      },
+      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+      take: 100,
+    });
+    return {
+      payouts: payouts.map((payout) => ({
+        ...payout,
+        amountAtomic: payout.amountAtomic?.toString() ?? null,
+        networkFeeAtomic: payout.networkFeeAtomic.toString(),
+        payoutAddress: { fingerprint: payout.payoutAddress.addressHash.slice(0, 16) },
+        reservation: payout.reservation
+          ? { ...payout.reservation, amountAtomic: payout.reservation.amountAtomic.toString() }
+          : null,
+        chainObservations: payout.chainObservations.map((observation) => ({
+          ...observation,
+          blockHeight: observation.blockHeight?.toString() ?? null,
+        })),
+      })),
+      resolutionPolicy:
+        'Fail closed: preserve the active reservation until exact transaction or confirmed input-invalidation evidence is independently verified.',
+    };
+  }
 
   async routes() {
     const now = await databaseNow();
@@ -792,28 +1046,30 @@ export class PayoutsService {
           causationId: input.idempotencyKey,
           status: 'PENDING',
           effectiveAt: now,
-          lines: {
-            create: [
-              {
-                ledgerAccountId: availableAccount.id,
-                assetId: account.assetId,
-                debit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
-                credit: '0',
-                debitAtomic: reservationAmountAtomic,
-                creditAtomic: 0n,
-              },
-              {
-                ledgerAccountId: reservedAccount.id,
-                assetId: account.assetId,
-                debit: '0',
-                credit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
-                debitAtomic: 0n,
-                creditAtomic: reservationAmountAtomic,
-              },
-            ],
-          },
         },
       });
+      for (const line of [
+        {
+          journalEntryId: journal.id,
+          ledgerAccountId: availableAccount.id,
+          assetId: account.assetId,
+          debit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
+          credit: '0',
+          debitAtomic: reservationAmountAtomic,
+          creditAtomic: 0n,
+        },
+        {
+          journalEntryId: journal.id,
+          ledgerAccountId: reservedAccount.id,
+          assetId: account.assetId,
+          debit: '0',
+          credit: atomicToDecimal(reservationAmountAtomic, account.asset.decimals),
+          debitAtomic: 0n,
+          creditAtomic: reservationAmountAtomic,
+        },
+      ]) {
+        await tx.journalLine.create({ data: line });
+      }
       await tx.journalEntry.update({
         where: { id: journal.id },
         data: { status: 'POSTED', postedAt: now },
@@ -1064,18 +1320,21 @@ export class PayoutsService {
         causationId: reservation.journalEntryId,
         status: 'PENDING',
         effectiveAt: now,
-        lines: {
-          create: reservation.journalEntry.lines.map((line) => ({
-            ledgerAccountId: line.ledgerAccountId,
-            assetId: line.assetId,
-            debit: line.credit,
-            credit: line.debit,
-            debitAtomic: line.creditAtomic,
-            creditAtomic: line.debitAtomic,
-          })),
-        },
       },
     });
+    for (const line of reservation.journalEntry.lines) {
+      await tx.journalLine.create({
+        data: {
+          journalEntryId: reversal.id,
+          ledgerAccountId: line.ledgerAccountId,
+          assetId: line.assetId,
+          debit: line.credit,
+          credit: line.debit,
+          debitAtomic: line.creditAtomic,
+          creditAtomic: line.debitAtomic,
+        },
+      });
+    }
     await tx.journalEntry.update({
       where: { id: reversal.id },
       data: { status: 'POSTED', postedAt: now },
@@ -1166,6 +1425,7 @@ export class PayoutsService {
             healthMaximumAgeSeconds * 1_000,
       );
       const blockers = [
+        'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED',
         ...(!payoutEnvironmentGate('requests') ? ['PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED'] : []),
         ...(!payoutEnvironmentGate('signing') ? ['PAYOUT_SIGNING_ENVIRONMENT_GATE_DISABLED'] : []),
         ...(!payoutEnvironmentGate('broadcast')

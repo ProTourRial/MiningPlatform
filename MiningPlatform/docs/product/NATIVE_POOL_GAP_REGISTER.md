@@ -160,11 +160,18 @@ acceptance menulis immutable decision dan canonical event ke transactional outbo
 sedangkan rejection tidak membuat accepted event. Correlated outbox envelope dilindungi dari mutasi dan
 retention. Kegagalan setelah intent durable tetap unresolved bahkan ketika adapter mengetahui socket
 belum ditulis; pembedaan operator antara `NOT_DISPATCHED` dan hasil benar-benar ambigu belum durable.
-Miner-facing listener, koordinasi/transformasi nonce space 32-bit per worker dan replica, batas clock
-skew antar-domain, operator recovery, pembentukan contribution fact, reward period, settlement, dan
-reconciliation RandomX masih merupakan gap aktif dan tidak ada saldo yang dapat berubah. Factory
-producer-side yang murni tetap menjadi satu-satunya pembentuk envelope kanonik dan tidak dapat
-melakukan publish atau RPC sendiri.
+Miner-facing transport kini memiliki source konkret yang membuka satu sesi upstream per koneksi miner,
+menyembunyikan job id upstream, membatasi mapping, mengganti sesi terputus, dan mengarahkan submission
+ke adapter/coordinator pemiliknya. Source wajib dibungkus Redis collision guard; sesi TCP berbeda tidak
+dianggap bukti blob unik dan assignment kedua ditolak bila provider mengembalikan ruang kerja sama.
+Credential adapter produksi kini memakai policy PostgreSQL/Redis yang sama dengan Stratum SHA-256 dan
+menolak principal tanpa mining account. Runtime laboratorium mengomposisikan boundary tersebut secara
+utuh pada listener loopback dengan acknowledgement eksplisit dan menolak `NODE_ENV=production` sebelum
+listener dibuat. Trace nyata membuktikan wire miner, kredensial, private job, sidecar validation,
+upstream acceptance, intent, decision, dan outbox. Aktivasi listener publik, sidecar production yang
+dipin dan diuji known-answer, pembuktian unique-work provider pada restart/failover/partition, batas
+clock skew antar-domain, operator recovery, reward period, settlement, dan reconciliation RandomX masih
+merupakan gap aktif dan tidak ada saldo yang dapat berubah.
 
 Fondasi contribution, idempotency, fee snapshot, double-entry journal, reversal, dan reconciliation
 sudah ada untuk `FOLLOW_UPSTREAM`. Native accounting masih memerlukan:

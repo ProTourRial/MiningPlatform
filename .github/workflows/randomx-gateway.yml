@@ -1,0 +1,78 @@
+# MiningPlatform
+# Author: Abia Nugrahanto
+# Copyright (c) 2026 Abia Nugrahanto. All rights reserved.
+
+name: RandomX Gateway
+
+on:
+  push:
+    branches: [main, develop, "codex/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: randomx-gateway-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: MiningPlatform
+
+jobs:
+  validation:
+    name: Miner transport and durable accounting boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: mining_platform_randomx
+          POSTGRES_USER: mining
+          POSTGRES_PASSWORD: randomx-ci-postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mining -d mining_platform_randomx"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      CI: "true"
+      NODE_ENV: test
+      DATABASE_URL: postgresql://mining:randomx-ci-postgres@127.0.0.1:5432/mining_platform_randomx?schema=public
+      REDIS_INTEGRATION_URL: redis://127.0.0.1:6379
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          cache: pnpm
+          cache-dependency-path: MiningPlatform/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:migrate:deploy
+      - run: pnpm --filter @mining/randomx-gateway... build
+      - run: pnpm --filter @mining/upstream-stratum... build
+      - run: pnpm --filter @mining/accounting-worker... build
+      - run: pnpm --filter @mining/randomx-gateway lint
+      - run: pnpm --filter @mining/randomx-gateway typecheck
+      - run: pnpm --filter @mining/stratum-server exec node --import tsx --test src/production-worker-authenticator.test.ts
+      - run: pnpm --filter @mining/randomx test
+      - run: pnpm --filter @mining/upstream-stratum exec node --import tsx --test src/randomx-upstream.test.ts
+      - run: pnpm --filter @mining/randomx-gateway test
+      - run: pnpm --filter @mining/accounting-worker exec node --import tsx --test src/randomx-contribution.integration.test.ts

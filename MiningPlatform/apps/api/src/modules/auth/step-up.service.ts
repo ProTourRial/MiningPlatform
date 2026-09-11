@@ -42,7 +42,7 @@ export class StepUpService {
       include: { security: true },
     });
     if (!user?.security?.totpEnabled || !user.security.totpSecretEncrypted) {
-      throw new ForbiddenException('TOTP must be enabled before sensitive payout changes');
+      throw new ForbiddenException('TOTP must be enabled before sensitive account changes');
     }
 
     const [passwordValid, totpCounter] = await Promise.all([

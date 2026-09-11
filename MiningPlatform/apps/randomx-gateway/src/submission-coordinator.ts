@@ -18,12 +18,17 @@ import {
   RandomXSubmissionRepository,
   type ReplayedRandomXSubmission,
 } from './submission-repository.js';
+import {
+  RandomXSubmissionUncertainError,
+  type RandomXGatewaySubmission,
+  type RandomXSubmissionOutcome,
+} from './submission-contract.js';
 
-export type RandomXGatewaySubmission = {
-  connectionId: string;
-  correlationId: string;
-  submission: RandomXShareSubmission;
-};
+export {
+  RandomXSubmissionUncertainError,
+  type RandomXGatewaySubmission,
+  type RandomXSubmissionOutcome,
+} from './submission-contract.js';
 
 export type RandomXUpstreamSubmissionResult = {
   accepted: boolean;
@@ -58,51 +63,19 @@ export interface RandomXGatewayIdentityResolver {
   }>;
 }
 
-export type RandomXSubmissionOutcome =
-  | {
-      status: 'JOB_UNAVAILABLE';
-      reason: 'UNKNOWN_OR_STALE_JOB';
-      replayed: false;
-    }
-  | {
-      status: 'LOCAL_REJECTED';
-      validation: RandomXValidationResult;
-      replayed: false;
-    }
-  | {
-      status: 'UPSTREAM_REJECTED';
-      intentId: string;
-      decisionId: string;
-      errorCode: number | null;
-      errorMessage: string;
-      replayed: boolean;
-    }
-  | {
-      status: 'ACCEPTED_ENQUEUED';
-      intentId: string;
-      decisionId: string;
-      outboxEventId: string;
-      replayed: boolean;
-    };
-
-export class RandomXSubmissionUncertainError extends Error {
-  constructor(
-    readonly intentId: string,
-    message = 'RandomX submission outcome is uncertain; automatic resubmission is blocked',
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = 'RandomXSubmissionUncertainError';
-  }
-}
-
-type RandomXSubmissionCoordinatorOptions = {
+export type RandomXSubmissionCoordinatorOptions = {
   validator: RandomXGatewayValidator;
   upstream: RandomXGatewayUpstream;
   identityResolver: RandomXGatewayIdentityResolver;
   repository?: RandomXSubmissionRepository;
   createId?: () => string;
 };
+
+export function createRandomXSubmissionCoordinatorGatewayFactory(
+  options: Omit<RandomXSubmissionCoordinatorOptions, 'upstream'>,
+): (upstream: RandomXGatewayUpstream) => RandomXSubmissionCoordinator {
+  return (upstream) => new RandomXSubmissionCoordinator({ ...options, upstream });
+}
 
 function digestParts(parts: readonly string[]): string {
   const hash = createHash('sha256');

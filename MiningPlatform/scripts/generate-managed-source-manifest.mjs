@@ -19,6 +19,8 @@ const excludedDirectories = new Set([
   '.git',
   '.next',
   '.turbo',
+  '.artifacts',
+  '.pnpm-store',
   'node_modules',
   'dist',
   'coverage',
@@ -70,8 +72,8 @@ for (const entry of entries) {
 
 const manifest = {
   project: 'MiningPlatform',
-  version: '0.3.0-alpha.7',
-  releaseName: 'Payout Control Foundation',
+  version: '0.3.0-alpha.8',
+  releaseName: 'Full Stack Regtest and Federated Identity Candidate',
   packagingRevision: 'r1',
   verificationMode: 'managed-files-only',
   extraFilesPolicy: 'ignored',

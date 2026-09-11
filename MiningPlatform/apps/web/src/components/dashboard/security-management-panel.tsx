@@ -7,22 +7,32 @@ import { apiRequest } from '@/services/api-client';
 
 interface SessionSummary { id: string; createdAt: string; lastUsedAt: string; expiresAt: string; ipHash?: string | null; }
 interface MeResponse { security: { totpEnabled: boolean; lastLoginAt?: string | null; passwordChangedAt?: string | null } }
+interface GoogleConnection {
+  provider: 'GOOGLE';
+  enabled: boolean;
+  linked: boolean;
+  identity?: { email: string; createdAt: string; lastUsedAt?: string | null } | null;
+}
 
 export function SecurityManagementPanel() {
   const [me, setMe] = useState<MeResponse>();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [setup, setSetup] = useState<{ secret: string; otpAuthUri: string }>();
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>();
+  const [googleConnection, setGoogleConnection] = useState<GoogleConnection>();
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [error, setError] = useState<string>();
 
   const load = useCallback(async () => {
     try {
-      const [profile, activeSessions] = await Promise.all([
+      const [profile, activeSessions, google] = await Promise.all([
         apiRequest<MeResponse>('/users/me'),
         apiRequest<SessionSummary[]>('/users/me/sessions'),
+        apiRequest<GoogleConnection>('/auth/google/connection'),
       ]);
       setMe(profile);
       setSessions(activeSessions);
+      setGoogleConnection(google);
     } catch {
       setError('Status keamanan tidak dapat dimuat.');
     }
@@ -34,12 +44,14 @@ export function SecurityManagementPanel() {
   void Promise.all([
     apiRequest<MeResponse>('/users/me'),
     apiRequest<SessionSummary[]>('/users/me/sessions'),
+    apiRequest<GoogleConnection>('/auth/google/connection'),
   ])
-    .then(([profile, activeSessions]) => {
+    .then(([profile, activeSessions, google]) => {
       if (ignore) return;
 
       setMe(profile);
       setSessions(activeSessions);
+      setGoogleConnection(google);
     })
     .catch(() => {
       if (!ignore) {
@@ -86,6 +98,39 @@ export function SecurityManagementPanel() {
     } catch { setError('Sesi gagal dicabut.'); }
   }
 
+  async function changeGoogleLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(undefined);
+    setGoogleBusy(true);
+    const data = new FormData(event.currentTarget);
+    try {
+      const authorization = await apiRequest<{ token: string }>('/auth/step-up', {
+        method: 'POST',
+        body: JSON.stringify({
+          scope: 'EXTERNAL_IDENTITY_LINK',
+          password: data.get('password'),
+          code: data.get('code'),
+        }),
+      });
+      const headers = { 'x-step-up-token': authorization.token };
+      if (googleConnection?.linked) {
+        await apiRequest('/auth/google/unlink', { method: 'POST', body: '{}', headers });
+        await load();
+      } else {
+        const result = await apiRequest<{ authorizationUrl: string }>('/auth/google/link/start', {
+          method: 'POST',
+          body: '{}',
+          headers,
+        });
+        window.location.assign(result.authorizationUrl);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Perubahan tautan Google gagal.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-white/10 bg-[var(--surface)] p-5">
@@ -113,6 +158,37 @@ export function SecurityManagementPanel() {
             <button className="rounded-xl border border-red-300/20 px-4 py-2 text-sm text-red-100 hover:bg-red-300/5">Nonaktifkan</button>
           </form>
         )}
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-[var(--surface)] p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Google Sign-In</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {googleConnection?.linked
+                ? `Tertaut ke ${googleConnection.identity?.email ?? 'akun Google terverifikasi'}`
+                : googleConnection?.enabled
+                  ? 'Belum tertaut. Email Google harus sama dengan email akun MiningPlatform.'
+                  : 'Belum diaktifkan pada environment deployment ini.'}
+            </p>
+          </div>
+          <span className={`rounded-full border px-3 py-1 text-xs ${googleConnection?.linked ? 'border-emerald-300/20 bg-emerald-300/5 text-emerald-100' : 'border-white/10 text-[var(--muted)]'}`}>
+            {googleConnection?.linked ? 'Tertaut' : 'Tidak tertaut'}
+          </span>
+        </div>
+        {googleConnection?.enabled && me?.security.totpEnabled ? (
+          <form onSubmit={changeGoogleLink} className="mt-5 grid gap-3 md:grid-cols-[1fr_180px_auto]">
+            <input name="password" type="password" required autoComplete="current-password" placeholder="Password saat ini" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3" />
+            <input name="code" required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" placeholder="Kode TOTP" className="rounded-xl border border-white/10 bg-black/20 px-4 py-3" />
+            <button disabled={googleBusy} className="rounded-xl border border-white/10 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-60">
+              {googleBusy ? 'Memverifikasi…' : googleConnection.linked ? 'Lepaskan Google' : 'Tautkan Google'}
+            </button>
+          </form>
+        ) : googleConnection?.enabled ? (
+          <p className="mt-4 rounded-xl border border-amber-300/15 bg-amber-300/5 p-3 text-xs leading-5 text-amber-100">
+            Aktifkan 2FA terlebih dahulu. Link dan unlink Google selalu memerlukan password serta TOTP sekali pakai.
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-[var(--surface)] p-5">

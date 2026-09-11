@@ -1,6 +1,6 @@
 # Payout Runbook
 
-Status: unreleased controlled-payout implementation. Real payout execution remains disabled.
+Status: controlled regtest payout implementation validated. Real payout execution remains disabled.
 
 ## Non-negotiable runtime boundary
 
@@ -47,6 +47,33 @@ Status: unreleased controlled-payout implementation. Real payout execution remai
 - Risk/compliance dan owner go/no-go tertulis tersedia.
 - `PAYOUTS_ENABLED=true` hanya setelah seluruh approval produksi di atas.
 
+## Activation-readiness control plane
+
+An interactive `ADMIN` or `OWNER` with enrolled TOTP can read
+`GET /v1/payouts/operations/activation-readiness`. The response is an evidence snapshot, not an
+activation command. It reports `eligible=true` only when all four environment gates and all four
+database controls agree, the target BTC route and hot wallet are active, signer reference and
+transaction limits exist, reserve is non-zero, wallet reconciliation is recent and variance-free,
+at least two verified MFA payout operators exist, and there is no unresolved post-signer quarantine
+or unresolved ambiguous broadcast.
+
+The Alpha.8 executor supports only `PAYOUT_EXECUTION_NETWORK=regtest`; any other target returns
+`PAYOUT_EXECUTION_RUNTIME_UNSUPPORTED`. Changing environment or database flags cannot turn this
+release into a mainnet executor.
+
+Operators can read `GET /v1/payouts/operations/quarantined` to inspect non-secret payout,
+reservation, signer-digest, broadcast, and chain-observation evidence. The endpoint never returns
+the encrypted PSBT/raw-transaction artifact or signer credential.
+
+## Post-signer quarantine
+
+After the signer boundary has been touched, an execution failure must retain the active balance
+reservation. Do not release it merely because the transaction is absent from the local mempool:
+the signer or another party may still possess a valid signed transaction. A future resolution
+workflow may advance a quarantine only after exact transaction observation, or release it only
+after confirmed input invalidation plus wallet/ledger reconciliation. Until that evidence exists,
+pause the affected wallet and treat the case as an incident.
+
 ## Failure response
 
 1. Aktifkan payout kill switch.
@@ -64,6 +91,7 @@ pnpm verify:migration:v030-alpha8:fresh
 pnpm verify:migration:v030-alpha8:upgrade
 pnpm test:integration:payout-control
 pnpm --filter @mining/api exec tsx --test src/payout-execution.integration.test.ts
+pnpm --filter @mining/api exec node --import tsx --test src/payout-activation-readiness.test.ts
 ```
 
 Kedua migration command bersifat destruktif terhadap database target dan hanya boleh dijalankan dengan `DATABASE_URL`, `MIGRATION_PSQL_CONTAINER`, serta `MIGRATION_TEST_ACK` yang menunjuk database disposable.

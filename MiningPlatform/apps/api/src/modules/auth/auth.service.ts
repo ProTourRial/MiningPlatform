@@ -45,7 +45,7 @@ export interface RequestFingerprint {
   userAgentHash?: string;
 }
 
-interface IssuedSession {
+export interface IssuedSession {
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresIn: number;
@@ -289,7 +289,14 @@ export class AuthService {
         }
       }
     }
-    return this.issueSession(user, fingerprint);
+    return this.issueSession(user, fingerprint, 'PASSWORD');
+  }
+
+  issueGoogleSession(
+    user: { id: string; email: string; displayName: string; role: 'USER' | 'ADMIN' | 'OWNER' },
+    fingerprint: RequestFingerprint,
+  ): Promise<IssuedSession> {
+    return this.issueSession(user, fingerprint, 'GOOGLE_OAUTH');
   }
 
   async refresh(rawRefreshToken: string, fingerprint: RequestFingerprint): Promise<IssuedSession> {
@@ -655,6 +662,7 @@ export class AuthService {
   private async issueSession(
     user: { id: string; email: string; displayName: string; role: 'USER' | 'ADMIN' | 'OWNER' },
     fingerprint: RequestFingerprint,
+    authenticationMethod: 'PASSWORD' | 'GOOGLE_OAUTH',
   ): Promise<IssuedSession> {
     const config = authRuntimeConfig();
     const refreshToken = generateOpaqueToken('mpr');
@@ -691,6 +699,7 @@ export class AuthService {
           resourceId: created.id,
           ipHash: fingerprint.ipHash,
           userAgentHash: fingerprint.userAgentHash,
+          metadata: { authenticationMethod },
         },
       });
       return created;

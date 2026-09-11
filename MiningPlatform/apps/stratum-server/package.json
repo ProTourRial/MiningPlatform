@@ -1,8 +1,15 @@
 {
   "name": "@mining/stratum-server",
-  "version": "0.3.0-alpha.7",
+  "version": "0.3.0-alpha.8",
   "private": true,
   "type": "module",
+  "exports": {
+    "./worker-authentication": {
+      "types": "./dist/worker-authentication.d.ts",
+      "import": "./dist/worker-authentication.js",
+      "default": "./dist/worker-authentication.js"
+    }
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc -p tsconfig.json",

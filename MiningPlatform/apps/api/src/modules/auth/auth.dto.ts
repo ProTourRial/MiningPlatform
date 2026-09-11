@@ -92,8 +92,8 @@ export class DisableTotpDto extends TotpCodeDto {
 }
 
 export class StepUpAuthorizationDto extends TotpCodeDto {
-  @IsIn(['PAYOUT_ADDRESS_WRITE'])
-  scope!: 'PAYOUT_ADDRESS_WRITE';
+  @IsIn(['PAYOUT_ADDRESS_WRITE', 'EXTERNAL_IDENTITY_LINK'])
+  scope!: 'PAYOUT_ADDRESS_WRITE' | 'EXTERNAL_IDENTITY_LINK';
 
   @IsString()
   @MinLength(12)

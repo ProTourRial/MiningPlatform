@@ -44,12 +44,22 @@ type PayoutAddress = {
   payoutRoute: { id: string; status: string; version: number };
 };
 
+type MiningAccountPreference = {
+  miningAccountId: string;
+  username: string;
+  asset: string;
+  selectedDestination: { id: string } | null;
+};
+
 type StepUpResponse = { token: string; expiresAt: string; singleUse: true };
 
-async function fetchPayoutControlData(): Promise<[PayoutRoute[], PayoutAddress[]]> {
+async function fetchPayoutControlData(): Promise<
+  [PayoutRoute[], PayoutAddress[], MiningAccountPreference[]]
+> {
   return Promise.all([
     apiRequest<PayoutRoute[]>('/payouts/routes'),
     apiRequest<PayoutAddress[]>('/payouts/addresses'),
+    apiRequest<MiningAccountPreference[]>('/payouts/preferences'),
   ]);
 }
 
@@ -63,7 +73,9 @@ function atomicAmount(value: string, decimals: number): string {
 export function PayoutAddressPanel() {
   const [routes, setRoutes] = useState<PayoutRoute[]>([]);
   const [addresses, setAddresses] = useState<PayoutAddress[]>([]);
+  const [accounts, setAccounts] = useState<MiningAccountPreference[]>([]);
   const [routeId, setRouteId] = useState('');
+  const [destinationAccountId, setDestinationAccountId] = useState('');
   const [address, setAddress] = useState('');
   const [label, setLabel] = useState('');
   const [password, setPassword] = useState('');
@@ -74,20 +86,24 @@ export function PayoutAddressPanel() {
   const [clockMs, setClockMs] = useState(0);
 
   async function load() {
-    const [routeValues, addressValues] = await fetchPayoutControlData();
+    const [routeValues, addressValues, accountValues] = await fetchPayoutControlData();
     setRoutes(routeValues);
     setAddresses(addressValues);
+    setAccounts(accountValues);
     setRouteId((current) => current || routeValues[0]?.id || '');
+    setDestinationAccountId((current) => current || accountValues[0]?.miningAccountId || '');
   }
 
   useEffect(() => {
     let active = true;
     void fetchPayoutControlData()
-      .then(([routeValues, addressValues]) => {
+      .then(([routeValues, addressValues, accountValues]) => {
         if (!active) return;
         setRoutes(routeValues);
         setAddresses(addressValues);
+        setAccounts(accountValues);
         setRouteId(routeValues[0]?.id || '');
+        setDestinationAccountId(accountValues[0]?.miningAccountId || '');
       })
       .catch((reason) => {
         if (active)
@@ -160,12 +176,34 @@ export function PayoutAddressPanel() {
       clearSensitiveFields();
       setNotice(
         action === 'activate'
-          ? 'Alamat diaktifkan sebagai tujuan terpilih. Payout tetap terblokir oleh gate global.'
+          ? 'Alamat diaktifkan. Pilih mining account di bawah sebelum alamat menjadi tujuan payout.'
           : 'Alamat dinonaktifkan dan tidak dapat dipakai kembali.',
       );
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Perubahan alamat payout gagal');
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function chooseDestination(target: PayoutAddress) {
+    if (!destinationAccountId) return;
+    setBusy(`select:${target.id}`);
+    setError(undefined);
+    setNotice(undefined);
+    try {
+      const token = await stepUp();
+      await apiRequest(`/payouts/destinations/${destinationAccountId}`, {
+        method: 'POST',
+        headers: { 'x-step-up-token': token },
+        body: JSON.stringify({ payoutAddressId: target.id }),
+      });
+      clearSensitiveFields();
+      setNotice('Tujuan payout mining account disimpan dan dicatat pada audit log.');
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Tujuan payout gagal disimpan');
     } finally {
       setBusy(undefined);
     }
@@ -236,6 +274,20 @@ export function PayoutAddressPanel() {
             className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 font-mono"
           />
         </label>
+        <label className="grid gap-2 text-sm lg:col-span-2">
+          <span className="text-[var(--muted)]">Mining account untuk tujuan payout</span>
+          <select
+            value={destinationAccountId}
+            onChange={(event) => setDestinationAccountId(event.target.value)}
+            className="rounded-xl border border-white/10 bg-black/25 px-4 py-3"
+          >
+            {accounts.map((account) => (
+              <option key={account.miningAccountId} value={account.miningAccountId}>
+                {account.username} · {account.asset}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="grid gap-2 text-sm">
           <span className="text-[var(--muted)]">Password akun</span>
           <input
@@ -286,6 +338,11 @@ export function PayoutAddressPanel() {
       <div className="mt-7 grid gap-3">
         {addresses.map((item) => {
           const cooldownElapsed = clockMs > 0 && new Date(item.cooldownUntil).getTime() <= clockMs;
+          const selectedForAccount = accounts.some(
+            (account) =>
+              account.miningAccountId === destinationAccountId &&
+              account.selectedDestination?.id === item.id,
+          );
           return (
             <article key={item.id} className="dashboard-inset rounded-2xl p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -298,6 +355,11 @@ export function PayoutAddressPanel() {
                     <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px]">
                       {item.asset.symbol} · {item.assetNetwork.displayName}
                     </span>
+                    {selectedForAccount && (
+                      <span className="rounded-full border border-cyan-300/20 px-2 py-0.5 text-[10px] text-cyan-100">
+                        TUJUAN TERPILIH
+                      </span>
+                    )}
                   </div>
                   <p className="mt-2 text-xs text-[var(--muted)]">
                     {item.label ?? 'Tanpa label'} · fingerprint {item.addressFingerprint}
@@ -309,6 +371,16 @@ export function PayoutAddressPanel() {
                   )}
                 </div>
                 <div className="flex gap-2">
+                  {item.status === 'ACTIVE' && item.active && item.verified && (
+                    <button
+                      type="button"
+                      disabled={!destinationAccountId || selectedForAccount || Boolean(busy)}
+                      onClick={() => void chooseDestination(item)}
+                      className="rounded-lg border border-cyan-300/20 px-3 py-2 text-xs text-cyan-100 disabled:opacity-40"
+                    >
+                      {selectedForAccount ? 'Terpilih' : 'Pilih tujuan'}
+                    </button>
+                  )}
                   {item.status === 'COOLDOWN' && (
                     <button
                       type="button"

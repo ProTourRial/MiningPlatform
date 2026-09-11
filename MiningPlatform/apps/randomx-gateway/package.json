@@ -1,20 +1,28 @@
 {
   "name": "@mining/randomx-gateway",
-  "version": "0.3.0-alpha.7",
+  "version": "0.3.0-alpha.8",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "dev": "tsx watch src/main.ts",
     "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts"
   },
   "dependencies": {
+    "@mining/build-info": "workspace:*",
     "@mining/database": "workspace:*",
+    "@mining/logger": "workspace:*",
     "@mining/randomx": "workspace:*",
-    "@mining/shared": "workspace:*"
+    "@mining/security": "workspace:*",
+    "@mining/shared": "workspace:*",
+    "@mining/stratum-server": "workspace:*",
+    "@mining/upstream-stratum": "workspace:*",
+    "redis": "5.0.0"
   },
   "devDependencies": {
     "@types/node": "22.0.0",

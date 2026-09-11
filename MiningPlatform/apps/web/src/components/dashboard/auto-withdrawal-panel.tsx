@@ -17,11 +17,30 @@ type Preference = {
   autoWithdrawalEnabled: boolean;
   effective: boolean;
   blockers: string[];
+  selectedDestination: {
+    id: string;
+    label: string | null;
+    addressDisplay: string;
+    addressFingerprint: string;
+    route: { routeKey: string; version: number; status: string };
+  } | null;
 };
 
 const blockerLabel: Record<string, string> = {
-  AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED: 'Scheduler auto payout belum diaktifkan pada rilis alpha.',
-  GLOBAL_PAYOUT_GATE_DISABLED: 'Payout global masih dinonaktifkan oleh operator.',
+  AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED:
+    'Scheduler auto payout belum diaktifkan; pilihan disimpan tetapi tidak akan membuat payout otomatis.',
+  PAYOUT_REQUEST_ENVIRONMENT_GATE_DISABLED: 'Permintaan payout dinonaktifkan pada environment ini.',
+  PAYOUT_SIGNING_ENVIRONMENT_GATE_DISABLED: 'Isolated signing dinonaktifkan pada environment ini.',
+  PAYOUT_BROADCAST_ENVIRONMENT_GATE_DISABLED: 'Broadcast dinonaktifkan pada environment ini.',
+  PAYOUT_CONTROL_NOT_CONFIGURED: 'Kontrol payout aset belum dikonfigurasi.',
+  PAYOUT_CONTROL_PAUSED: 'Operator sedang menjeda payout.',
+  PAYOUT_REQUEST_CONTROL_DISABLED: 'Kontrol database menonaktifkan permintaan payout.',
+  PAYOUT_SIGNING_CONTROL_DISABLED: 'Kontrol database menonaktifkan signing.',
+  PAYOUT_BROADCAST_CONTROL_DISABLED: 'Kontrol database menonaktifkan broadcast.',
+  NO_SELECTED_PAYOUT_DESTINATION: 'Belum ada tujuan payout untuk mining account ini.',
+  SELECTED_PAYOUT_DESTINATION_INACTIVE: 'Tujuan payout terpilih belum aktif atau terverifikasi.',
+  AUTO_WITHDRAWAL_REQUIRES_ACTIVE_ROUTE: 'Auto withdrawal memerlukan rute berstatus ACTIVE.',
+  HOT_WALLET_NOT_RECENTLY_RECONCILED: 'Hot wallet belum memiliki rekonsiliasi sehat yang mutakhir.',
   NO_ACTIVE_VERIFIED_PAYOUT_ADDRESS: 'Belum ada alamat payout aktif yang terverifikasi.',
   PAYOUT_ROUTE_NOT_ACTIVE:
     'Alamat aktif masih berada pada rute registrasi/pilot, bukan rute payout aktif.',
@@ -111,6 +130,12 @@ export function AutoWithdrawalPanel() {
               </div>
               <p className="mt-2 text-xs text-[var(--muted)]">
                 Minimum payout {preference.minimumPayout} {preference.asset}
+              </p>
+              <p className="mt-2 text-xs text-[var(--muted)]">
+                Tujuan:{' '}
+                {preference.selectedDestination
+                  ? `${preference.selectedDestination.addressDisplay} · ${preference.selectedDestination.route.status}`
+                  : 'belum dipilih'}
               </p>
               {preference.blockers.length > 0 && (
                 <ul className="mt-3 space-y-1 text-xs text-amber-100/70">

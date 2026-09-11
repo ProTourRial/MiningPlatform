@@ -32,6 +32,13 @@ export type BitcoinWalletSnapshot = {
   observedAt: Date;
 };
 
+export type BitcoinUtxoSnapshot = {
+  confirmedSolvableAtomic: bigint;
+  utxoCount: number;
+  outpointSetDigest: string;
+  observedAt: Date;
+};
+
 export type PreparedBitcoinPayout = {
   psbt: string;
   psbtDigest: string;
@@ -43,6 +50,14 @@ export type PreparedBitcoinPayout = {
 export type FinalizedBitcoinTransaction = {
   rawTransaction: string;
   rawTransactionDigest: string;
+};
+
+export type BitcoinPayoutIntent = {
+  unsignedTransactionDigest: string;
+  destination: string;
+  destinationAmountAtomic: bigint;
+  actualNetworkFeeAtomic: bigint;
+  maximumNetworkFeeAtomic: bigint;
 };
 
 export type BitcoinChainObservation = {
@@ -68,6 +83,44 @@ export class BitcoinRpcError extends Error {
     super(message);
     this.name = 'BitcoinRpcError';
   }
+}
+
+export class BitcoinPayoutIntentMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BitcoinPayoutIntentMismatchError';
+  }
+}
+
+async function readBoundedRpcResponse(
+  response: Response,
+  maximumResponseBytes: number,
+  method: string,
+): Promise<string> {
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      receivedBytes += value.byteLength;
+      if (receivedBytes > maximumResponseBytes) {
+        await reader.cancel('Bitcoin RPC response exceeded configured limit');
+        throw new BitcoinRpcError(
+          'Bitcoin RPC response exceeds the configured limit',
+          null,
+          method,
+        );
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 function sha256(value: string): string {
@@ -167,14 +220,7 @@ export class BitcoinJsonRpcClient {
           method,
         );
       }
-      const body = await response.text();
-      if (Buffer.byteLength(body) > this.maximumResponseBytes) {
-        throw new BitcoinRpcError(
-          'Bitcoin RPC response exceeds the configured limit',
-          null,
-          method,
-        );
-      }
+      const body = await readBoundedRpcResponse(response, this.maximumResponseBytes, method);
       if (!response.ok) {
         throw new BitcoinRpcError(`Bitcoin RPC HTTP ${response.status}`, null, method);
       }
@@ -216,16 +262,78 @@ export class BitcoinJsonRpcClient {
   }
 }
 
+type DecodedBitcoinTransaction = {
+  version?: number;
+  locktime?: number;
+  vin: Array<{ txid: string; vout: number; sequence?: number }>;
+  vout: Array<{
+    n?: number;
+    value: number;
+    scriptPubKey: { hex?: string; address?: string; addresses?: string[] };
+  }>;
+};
+
 type DecodedPsbt = {
   fee?: number;
-  tx: {
-    vin: Array<{ txid: string; vout: number }>;
-    vout: Array<{
-      value: number;
-      scriptPubKey: { address?: string; addresses?: string[] };
-    }>;
-  };
+  tx: DecodedBitcoinTransaction;
 };
+
+function transactionIntentDigest(
+  transaction: DecodedBitcoinTransaction,
+  method: 'decodepsbt' | 'decoderawtransaction',
+): string {
+  if (
+    !Number.isInteger(transaction.version) ||
+    !Number.isInteger(transaction.locktime) ||
+    transaction.vin.length === 0 ||
+    transaction.vout.length === 0
+  ) {
+    throw new BitcoinRpcError('Bitcoin transaction intent is incomplete', null, method);
+  }
+  const vin = transaction.vin.map((input) => {
+    if (
+      !/^[0-9a-f]{64}$/i.test(input.txid) ||
+      !Number.isInteger(input.vout) ||
+      input.vout < 0 ||
+      !Number.isInteger(input.sequence) ||
+      input.sequence! < 0
+    ) {
+      throw new BitcoinRpcError('Bitcoin transaction input intent is invalid', null, method);
+    }
+    return {
+      txid: input.txid.toLowerCase(),
+      vout: input.vout,
+      sequence: input.sequence,
+    };
+  });
+  const vout = transaction.vout.map((output) => {
+    if (
+      !Number.isInteger(output.n) ||
+      output.n! < 0 ||
+      output.n! >= transaction.vout.length ||
+      typeof output.scriptPubKey.hex !== 'string' ||
+      !/^(?:[0-9a-f]{2})*$/i.test(output.scriptPubKey.hex)
+    ) {
+      throw new BitcoinRpcError('Bitcoin transaction output intent is invalid', null, method);
+    }
+    return {
+      n: output.n,
+      valueAtomic: bitcoinToAtomic(output.value).toString(),
+      scriptPubKeyHex: output.scriptPubKey.hex.toLowerCase(),
+    };
+  });
+  if (new Set(vout.map((output) => output.n)).size !== vout.length) {
+    throw new BitcoinRpcError('Bitcoin transaction output indexes are not unique', null, method);
+  }
+  return sha256(
+    canonicalJson({
+      version: transaction.version,
+      locktime: transaction.locktime,
+      vin,
+      vout,
+    }),
+  );
+}
 
 export class BitcoinWatchOnlyRpcAdapter {
   readonly asset = 'BTC';
@@ -266,6 +374,52 @@ export class BitcoinWatchOnlyRpcAdapter {
       chainTipHash: chain.bestblockhash.toLowerCase(),
       verificationProgress: chain.verificationprogress,
       initialBlockDownload: chain.initialblockdownload,
+      observedAt: new Date(),
+    };
+  }
+
+  async getConfirmedUtxoSnapshot(): Promise<BitcoinUtxoSnapshot> {
+    const entries = await this.rpc.call<
+      Array<{
+        txid: string;
+        vout: number;
+        amount: number | string;
+        confirmations: number;
+        spendable?: boolean;
+        solvable?: boolean;
+        safe?: boolean;
+      }>
+    >('listunspent', [1, 9_999_999, [], true]);
+    const outpoints = new Set<string>();
+    let confirmedSolvableAtomic = 0n;
+    for (const entry of entries) {
+      if (
+        !/^[0-9a-f]{64}$/i.test(entry.txid) ||
+        !Number.isInteger(entry.vout) ||
+        entry.vout < 0 ||
+        !Number.isInteger(entry.confirmations) ||
+        entry.confirmations < 1
+      ) {
+        throw new BitcoinRpcError('Bitcoin node returned an invalid UTXO', null, 'listunspent');
+      }
+      // A watch-only descriptor wallet intentionally reports spendable=false.
+      // Solvable UTXOs are still controllable through the isolated signer.
+      if (entry.solvable === false || entry.safe === false) continue;
+      const outpoint = `${entry.txid.toLowerCase()}:${entry.vout}`;
+      if (outpoints.has(outpoint)) {
+        throw new BitcoinRpcError(
+          'Bitcoin node returned a duplicate UTXO outpoint',
+          null,
+          'listunspent',
+        );
+      }
+      outpoints.add(outpoint);
+      confirmedSolvableAtomic += bitcoinToAtomic(entry.amount);
+    }
+    return {
+      confirmedSolvableAtomic,
+      utxoCount: outpoints.size,
+      outpointSetDigest: sha256([...outpoints].sort().join('\n')),
       observedAt: new Date(),
     };
   }
@@ -342,6 +496,122 @@ export class BitcoinWatchOnlyRpcAdapter {
     };
   }
 
+  async assertSignedPsbtMatchesPayoutIntent(
+    signedPsbt: string,
+    expected: BitcoinPayoutIntent,
+  ): Promise<void> {
+    if (!signedPsbt || signedPsbt.length > 500_000) {
+      throw new BitcoinPayoutIntentMismatchError('Signer returned an invalid signed PSBT');
+    }
+    if (!/^[0-9a-f]{64}$/.test(expected.unsignedTransactionDigest)) {
+      throw new BitcoinPayoutIntentMismatchError('Expected unsigned transaction digest is invalid');
+    }
+    if (
+      expected.destinationAmountAtomic <= 0n ||
+      expected.actualNetworkFeeAtomic < 0n ||
+      expected.maximumNetworkFeeAtomic < expected.actualNetworkFeeAtomic
+    ) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Expected payout amount or fee boundary is invalid',
+      );
+    }
+    const validated = validateBitcoinAddress(expected.destination, this.network);
+    if (!validated.valid) {
+      throw new BitcoinPayoutIntentMismatchError(
+        `Invalid ${this.network} Bitcoin destination in payout manifest`,
+      );
+    }
+
+    const decoded = await this.rpc.call<DecodedPsbt>('decodepsbt', [signedPsbt]);
+    if (sha256(canonicalJson(decoded.tx)) !== expected.unsignedTransactionDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT transaction does not match the approved payout manifest',
+      );
+    }
+    if (bitcoinToAtomic(decoded.fee ?? 0) !== expected.actualNetworkFeeAtomic) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT fee does not match the approved payout manifest',
+      );
+    }
+    let destinationOutputs = 0;
+    for (const output of decoded.tx.vout) {
+      const addresses = output.scriptPubKey.address
+        ? [output.scriptPubKey.address]
+        : output.scriptPubKey.addresses ?? [];
+      if (addresses.includes(expected.destination)) {
+        destinationOutputs += 1;
+        if (bitcoinToAtomic(output.value) !== expected.destinationAmountAtomic) {
+          throw new BitcoinPayoutIntentMismatchError(
+            'Signed PSBT destination amount does not match the approved payout manifest',
+          );
+        }
+        continue;
+      }
+      if (addresses.length !== 1) {
+        throw new BitcoinPayoutIntentMismatchError(
+          'Signed PSBT contains an unrecognized non-address output',
+        );
+      }
+      const addressInfo = await this.rpc.call<{ ismine?: boolean }>('getaddressinfo', [
+        addresses[0],
+      ]);
+      if (!addressInfo.ismine) {
+        throw new BitcoinPayoutIntentMismatchError(
+          'Signed PSBT contains a non-destination output not owned by the watch wallet',
+        );
+      }
+    }
+    if (destinationOutputs !== 1) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Signed PSBT destination does not match the approved payout manifest',
+      );
+    }
+  }
+
+  async assertFinalizedTransactionMatchesSignedPsbt(
+    signedPsbt: string,
+    rawTransaction: string,
+  ): Promise<string> {
+    if (!signedPsbt || signedPsbt.length > 500_000) {
+      throw new BitcoinPayoutIntentMismatchError('Signed PSBT evidence is invalid');
+    }
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) {
+      throw new BitcoinPayoutIntentMismatchError('Raw Bitcoin transaction is invalid');
+    }
+    const [decodedPsbt, decodedRaw] = await Promise.all([
+      this.rpc.call<DecodedPsbt>('decodepsbt', [signedPsbt]),
+      this.rpc.call<DecodedBitcoinTransaction>('decoderawtransaction', [rawTransaction]),
+    ]);
+    const signedIntentDigest = transactionIntentDigest(decodedPsbt.tx, 'decodepsbt');
+    const rawIntentDigest = transactionIntentDigest(decodedRaw, 'decoderawtransaction');
+    if (signedIntentDigest !== rawIntentDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Finalized transaction does not match the verified signed PSBT',
+      );
+    }
+    return rawIntentDigest;
+  }
+
+  async assertRawTransactionMatchesIntentDigest(
+    rawTransaction: string,
+    expectedIntentDigest: string,
+  ): Promise<void> {
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) {
+      throw new BitcoinPayoutIntentMismatchError('Raw Bitcoin transaction is invalid');
+    }
+    if (!/^[0-9a-f]{64}$/.test(expectedIntentDigest)) {
+      throw new BitcoinPayoutIntentMismatchError('Transaction intent digest is invalid');
+    }
+    const decoded = await this.rpc.call<DecodedBitcoinTransaction>('decoderawtransaction', [
+      rawTransaction,
+    ]);
+    if (transactionIntentDigest(decoded, 'decoderawtransaction') !== expectedIntentDigest) {
+      throw new BitcoinPayoutIntentMismatchError(
+        'Raw transaction does not match the verified transaction intent',
+      );
+    }
+  }
+
   async releasePsbtInputs(psbt: string): Promise<void> {
     const decoded = await this.rpc.call<DecodedPsbt>('decodepsbt', [psbt]);
     if (decoded.tx.vin.length === 0) return;
@@ -390,6 +660,19 @@ export class BitcoinWatchOnlyRpcAdapter {
       );
     }
     return transactionId.toLowerCase();
+  }
+
+  async decodeRawTransactionId(rawTransaction: string): Promise<string> {
+    if (!/^[0-9a-f]+$/i.test(rawTransaction)) throw new Error('Raw Bitcoin transaction is invalid');
+    const decoded = await this.rpc.call<{ txid: string }>('decoderawtransaction', [rawTransaction]);
+    if (!/^[0-9a-f]{64}$/i.test(decoded.txid)) {
+      throw new BitcoinRpcError(
+        'Bitcoin Core returned an invalid decoded transaction id',
+        null,
+        'decoderawtransaction',
+      );
+    }
+    return decoded.txid.toLowerCase();
   }
 
   async getTransactionObservation(transactionId: string): Promise<BitcoinChainObservation> {

@@ -67,9 +67,35 @@ const requiredFiles = [
   'packages/database/prisma/migrations/20260826010000_randomx_submission_outbox/migration.sql',
   'packages/database/prisma/migrations/20260827010000_randomx_authoritative_dispatch_binding/migration.sql',
   'packages/database/prisma/migrations/20260827020000_randomx_accounting_path/migration.sql',
+  'packages/database/prisma/migrations/20260829010000_payout_regtest_reorg_recovery/migration.sql',
+  'packages/blockchain-adapters/src/bitcoin-rpc.ts',
+  'apps/wallet-worker/src/payout-boundary.ts',
+  'apps/wallet-worker/src/payout-boundary.test.ts',
+  'apps/wallet-worker/src/payout-executor.ts',
+  'apps/wallet-worker/src/runtime.ts',
+  'scripts/payout-regtest-integration.ts',
+  '.github/workflows/payout-regtest.yml',
   'apps/randomx-gateway/src/submission-repository.ts',
+  'apps/randomx-gateway/src/submission-contract.ts',
   'apps/randomx-gateway/src/submission-coordinator.ts',
   'apps/randomx-gateway/src/submission-coordinator.integration.test.ts',
+  'apps/randomx-gateway/src/miner-protocol.ts',
+  'apps/randomx-gateway/src/miner-server.ts',
+  'apps/randomx-gateway/src/miner-server.test.ts',
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.ts',
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.test.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.test.ts',
+  'apps/randomx-gateway/src/production-worker-authenticator.integration.test.ts',
+  'apps/randomx-gateway/src/work-isolation.ts',
+  'apps/randomx-gateway/src/work-isolation.test.ts',
+  'apps/randomx-gateway/src/config.ts',
+  'apps/randomx-gateway/src/config.test.ts',
+  'apps/randomx-gateway/src/runtime.ts',
+  'apps/randomx-gateway/src/runtime.integration.test.ts',
+  'apps/randomx-gateway/src/main.ts',
+  'docs/operations/randomx-lab-runbook.md',
+  '.github/workflows/randomx-gateway.yml',
   'apps/accounting-worker/src/randomx-contribution.integration.test.ts',
   'packages/observability-contract/src/index.ts',
   'packages/observability-contract/src/index.test.ts',
@@ -86,7 +112,14 @@ const requiredFiles = [
   'apps/api/src/payout-control.integration.test.ts',
   'apps/api/src/payout-execution.integration.test.ts',
   'apps/web/src/components/dashboard/payout-address-panel.tsx',
+  'apps/web/src/components/dashboard/payout-operations-panel.tsx',
+  'apps/web/src/components/dashboard/reward-history-panel.tsx',
   'apps/web/src/services/api-client.test.ts',
+  'apps/web/e2e/public-smoke.spec.ts',
+  'apps/web/e2e/authenticated-control-plane.spec.ts',
+  'apps/web/playwright.config.ts',
+  'apps/stratum-server/src/worker-authentication.ts',
+  '.github/workflows/web-browser-e2e.yml',
   'scripts/verify-v030-alpha7-migration.mjs',
   'scripts/verify-v030-alpha8-migration.mjs',
   'apps/mining-worker/src/native-bitcoin-evidence.ts',
@@ -145,6 +178,8 @@ for (const expected of [
   'randomXEvidenceId',
   'model NativeBitcoinSubmissionRecoveryObservation',
   'submissionIntentId',
+  'reorgDetectedAt',
+  'reconfirmationCount',
 ])
   requireText(schema, expected, 'Prisma schema');
 
@@ -479,6 +514,154 @@ for (const expected of [
 ])
   requireText(randomXSubmissionCoordinator, expected, 'RandomX submission coordinator');
 
+const randomXMinerProtocol = await text('apps/randomx-gateway/src/miner-protocol.ts');
+for (const expected of [
+  "method: 'login'",
+  "method: 'submit'",
+  "method: 'keepalived'",
+  'applyRandomXNonce(assignment.blob',
+  'parseRandomXTarget(assignment.target)',
+  'upstreamJobId',
+])
+  requireText(randomXMinerProtocol, expected, 'RandomX miner-facing protocol');
+
+const randomXMinerServer = await text('apps/randomx-gateway/src/miner-server.ts');
+for (const expected of [
+  'class RandomXConnectionRegistry',
+  'maximumConnections',
+  'maximumLineBytes',
+  'maximumPendingMessages',
+  'maximumSubmissionsPerMinute',
+  'socketTimeoutMs',
+  'workProvider.resolve',
+  'submissionGateway.submit',
+  'Share outcome is uncertain; do not retry automatically',
+  'this.registry.revoke(session.id)',
+])
+  requireText(randomXMinerServer, expected, 'Bounded RandomX miner-facing transport');
+
+const randomXWorkIsolation = await text('apps/randomx-gateway/src/work-isolation.ts');
+for (const expected of [
+  "applyRandomXNonce(assignment.blob, '00000000')",
+  'class RedisRandomXWorkLeaseStore',
+  "redis.call('TIME')",
+  "redis.call('PEXPIRETIME'",
+  "'CONFLICT'",
+  'class UniqueRandomXMinerWorkProvider',
+  'this.leaseStore.owns',
+  'RandomXWorkIsolationConflictError',
+])
+  requireText(randomXWorkIsolation, expected, 'Distributed RandomX work isolation');
+
+const randomXDedicatedSessions = await text(
+  'apps/randomx-gateway/src/dedicated-upstream-sessions.ts',
+);
+for (const expected of [
+  'class DedicatedRandomXUpstreamSessions',
+  'createRandomXPoolAdapterSessionFactory',
+  'maximumRetainedJobsPerConnection',
+  'session.upstream.getJob',
+  'session.submissionGateway.submit',
+  'RandomX connection cannot replace its authenticated worker',
+])
+  requireText(randomXDedicatedSessions, expected, 'Dedicated RandomX upstream sessions');
+
+requireText(
+  await text('apps/randomx-gateway/src/submission-coordinator.ts'),
+  'createRandomXSubmissionCoordinatorGatewayFactory',
+  'Per-session RandomX submission coordinator factory',
+);
+
+const randomXProductionAuthentication = await text(
+  'apps/randomx-gateway/src/production-worker-authenticator.ts',
+);
+for (const expected of [
+  'class RandomXProductionWorkerAuthenticator',
+  'ProductionWorkerAuthenticator.create(config)',
+  'hmacSensitiveValue(context.agent',
+  'AUTHENTICATION_CONTEXT_INVALID',
+  'worker.miningAccountId',
+])
+  requireText(
+    randomXProductionAuthentication,
+    expected,
+    'RandomX production worker authentication adapter',
+  );
+
+requireText(
+  await text('apps/stratum-server/src/worker-authentication.ts'),
+  "export * from './production-worker-authenticator.js'",
+  'Shared production worker authentication subpath',
+);
+
+const randomXRuntimeConfig = await text('apps/randomx-gateway/src/config.ts');
+for (const expected of [
+  'Public RandomX runtime activation is not permitted by this release',
+  'I_ACCEPT_RANDOMX_LAB_ONLY',
+  'This release permits the RandomX miner listener on loopback only',
+  'RANDOMX_JOB_REFRESH_INTERVAL_MS',
+])
+  requireText(randomXRuntimeConfig, expected, 'Fail-closed RandomX runtime configuration');
+
+const randomXRuntime = await text('apps/randomx-gateway/src/runtime.ts');
+for (const expected of [
+  'RandomXProductionWorkerAuthenticator.create',
+  'RedisRandomXWorkLeaseStore.connect',
+  'new DedicatedRandomXUpstreamSessions',
+  'new UniqueRandomXMinerWorkProvider',
+  'new RandomXShareValidator',
+  'createRandomXSubmissionCoordinatorGatewayFactory',
+])
+  requireText(randomXRuntime, expected, 'RandomX laboratory runtime composition');
+
+const randomXMain = await text('apps/randomx-gateway/src/main.ts');
+for (const expected of [
+  "await import('./runtime.js')",
+  'publicListenerEnabled: false',
+  'runtime.listen()',
+])
+  requireText(randomXMain, expected, 'RandomX fail-closed entrypoint');
+
+const randomXRuntimeIntegration = await text(
+  'apps/randomx-gateway/src/runtime.integration.test.ts',
+);
+for (const expected of [
+  'generateWorkerCredential',
+  'createRandomXGatewayRuntime',
+  "method: 'login'",
+  "method: 'submit'",
+  "intent.decision?.outboxEvent?.eventName, 'mining.randomx.share.accepted.v1'",
+])
+  requireText(randomXRuntimeIntegration, expected, 'RandomX runtime integration trace');
+
+const packagedRandomXWorkflow = await text('.github/workflows/randomx-gateway.yml');
+const activeRandomXWorkflow = await parentWorkflow('randomx-gateway.yml');
+const randomXWorkflow = activeRandomXWorkflow ?? packagedRandomXWorkflow;
+if (activeRandomXWorkflow) {
+  requireText(
+    activeRandomXWorkflow,
+    'working-directory: MiningPlatform',
+    'Active RandomX gateway workflow',
+  );
+}
+for (const expected of [
+  'postgres:17-alpine',
+  'redis:7-alpine',
+  'REDIS_INTEGRATION_URL',
+  'pnpm db:migrate:deploy',
+  'pnpm --filter @mining/randomx-gateway... build',
+  'pnpm --filter @mining/upstream-stratum... build',
+  'pnpm --filter @mining/accounting-worker... build',
+  'pnpm --filter @mining/randomx-gateway typecheck',
+  'src/production-worker-authenticator.test.ts',
+  'src/randomx-upstream.test.ts',
+  'pnpm --filter @mining/randomx-gateway test',
+  'src/randomx-contribution.integration.test.ts',
+]) {
+  requireText(randomXWorkflow, expected, 'Active RandomX gateway workflow');
+  requireText(packagedRandomXWorkflow, expected, 'Packaged RandomX gateway workflow');
+}
+
 const randomXPoolAdapter = await text('packages/upstream-stratum/src/randomx-pool-adapter.ts');
 for (const expected of [
   'RandomXSubmissionNotDispatchedError',
@@ -504,15 +687,51 @@ requireText(
 
 const randomXMigrationVerifier = await text('scripts/verify-v030-alpha8-migration.mjs');
 for (const expected of [
-  "const latestMigration = '20260827020000_randomx_accounting_path'",
+  "const latestMigration = '20260829010000_payout_regtest_reorg_recovery'",
   "'alpha8-upgrade-randomx-intent'",
   '"upstreamDispatchFingerprint" = "shareFingerprint"',
   'schema-v19 RandomX intent was not safely backfilled to v20',
   'schema-v21 did not backfill exact RandomX contribution hand-off',
+  'schema-v22 upgrade did not safely backfill payout recovery state',
   'intentional RandomX dispatch migration failure',
   'failed v20 migration left immutability disabled',
 ])
   requireText(randomXMigrationVerifier, expected, 'Schema-v21 migration verifier');
+
+const payoutReorgMigration = await text(
+  'packages/database/prisma/migrations/20260829010000_payout_regtest_reorg_recovery/migration.sql',
+);
+for (const expected of [
+  'Payout_reconfirmation_count_check',
+  'Completed payout may re-enter confirmation only after chain-regression evidence',
+  'NEW."reconfirmationCount" <> OLD."reconfirmationCount" + 1',
+  "NEW.\"status\" = 'CONFIRMING' AND \"status\" IN ('ACTIVE', 'CONSUMED')",
+  'Reservation consumption requires a posted payout settlement journal',
+  'Broadcast payout state requires completed signing evidence',
+  'Completed payout requires matched reconciliation and posted settlement evidence',
+])
+  requireText(payoutReorgMigration, expected, 'Schema-v22 payout reorg migration');
+
+const payoutExecutor = await text('apps/wallet-worker/src/payout-executor.ts');
+for (const expected of [
+  'assertRegtestPayoutBoundary()',
+  'rebroadcastExactTransaction',
+  'payout.confirmation.regressed.v1',
+  'payout.reconfirmed.v1',
+  "status: 'CONSUMED'",
+  'WALLET_UTXO_LEDGER_MISMATCH',
+  'pg_advisory_xact_lock',
+  "assertDatabaseActionAllowed(payoutId, 'sign')",
+  "assertDatabaseActionAllowed(payout.id, 'broadcast')",
+  'Signed PSBT artifact digest does not match signing evidence',
+  'Raw transaction artifact digest does not match signing evidence',
+  "networkKey: { contains: 'regtest', mode: 'insensitive' }",
+  '`chain-observation:${payoutId}:${randomUUID()}`',
+  '`payout-completion:${payoutId}`',
+  'tx.asset.findUniqueOrThrow',
+  'tx.payoutRoute.findUniqueOrThrow',
+])
+  requireText(payoutExecutor, expected, 'Regtest payout executor');
 
 const scheduler = await text('apps/scheduler/src/runtime.ts');
 requireText(
@@ -699,6 +918,24 @@ if (activeRegtestWorkflow) {
     'Active native Bitcoin regtest workflow',
   );
 }
+
+const packagedPayoutRegtestWorkflow = await text('.github/workflows/payout-regtest.yml');
+const activePayoutRegtestWorkflow = await parentWorkflow('payout-regtest.yml');
+const payoutRegtestWorkflow = activePayoutRegtestWorkflow ?? packagedPayoutRegtestWorkflow;
+for (const expected of [
+  'actions/checkout@v7',
+  'pnpm/action-setup@v6',
+  'actions/setup-node@v7',
+  'pnpm db:generate',
+  'pnpm --filter @mining/wallet-worker... build',
+  'pnpm --filter @mining/transaction-signer... build',
+  'pnpm test:integration:payout-regtest',
+  'PAYOUT_REGTEST_INTEGRATION_ACK: disposable-bitcoin-payout-regtest-only',
+  'down -v --rmi local --remove-orphans',
+]) {
+  requireText(payoutRegtestWorkflow, expected, 'Active payout regtest workflow');
+  requireText(packagedPayoutRegtestWorkflow, expected, 'Packaged payout regtest workflow');
+}
 for (const expected of [
   'pnpm --filter @mining/bitcoin-template... build',
   'up -d --build --wait bitcoin-core-regtest bitcoin-core-fork-regtest',
@@ -710,6 +947,86 @@ for (const expected of [
 ]) {
   requireText(regtestWorkflow, expected, 'Active native Bitcoin regtest workflow');
   requireText(packagedRegtestWorkflow, expected, 'Packaged native Bitcoin regtest workflow');
+}
+
+const nextConfig = await text('apps/web/next.config.ts');
+for (const expected of [
+  'API_UPSTREAM_ORIGIN',
+  'parsed.origin !== apiUpstreamOrigin',
+  "process.env.NODE_ENV === 'production'",
+  "source: '/api/:path*'",
+])
+  requireText(nextConfig, expected, 'Web same-origin API proxy');
+
+requireText(
+  payoutService,
+  "'AUTO_PAYOUT_EXECUTOR_NOT_IMPLEMENTED'",
+  'Auto-withdrawal fail-closed readiness',
+);
+
+const browserConfig = await text('apps/web/playwright.config.ts');
+for (const expected of [
+  "process.env.E2E_BASE_URL ?? 'http://localhost:3000'",
+  'VERCEL_AUTOMATION_BYPASS_SECRET',
+  "trace: vercelBypass ? 'off' : 'retain-on-failure'",
+  "devices['Desktop Chrome']",
+  "devices['Pixel 7']",
+])
+  requireText(browserConfig, expected, 'Playwright browser configuration');
+
+const publicBrowserSmoke = await text('apps/web/e2e/public-smoke.spec.ts');
+for (const expected of [
+  "const publicRoutes = ['/', '/transparency', '/login', '/register']",
+  '404: NOT_FOUND',
+  'No framework detected',
+  'protected dashboard redirects to login',
+])
+  requireText(publicBrowserSmoke, expected, 'Public browser smoke coverage');
+
+const authenticatedBrowserJourney = await text('apps/web/e2e/authenticated-control-plane.spec.ts');
+for (const expected of [
+  "process.env.E2E_FULL_STACK !== 'true'",
+  'Development: buka verifikasi email',
+  'expired-access-token-e2e-simulation',
+  "response.url().endsWith('/api/v1/auth/refresh')",
+  'rotatedRefreshCookie?.value',
+  'Kredensial siap digunakan',
+  'Aktifkan 2FA',
+  'Daftarkan alamat dengan step-up',
+  'Ajukan payout',
+  'Keluar dari session',
+])
+  requireText(authenticatedBrowserJourney, expected, 'Authenticated browser journey');
+
+const packagedBrowserWorkflow = await text('.github/workflows/web-browser-e2e.yml');
+const activeBrowserWorkflow = await parentWorkflow('web-browser-e2e.yml');
+const browserWorkflow = activeBrowserWorkflow ?? packagedBrowserWorkflow;
+if (activeBrowserWorkflow) {
+  requireText(
+    activeBrowserWorkflow,
+    'working-directory: MiningPlatform',
+    'Active browser E2E workflow',
+  );
+}
+for (const expected of [
+  'actions/checkout@v7',
+  'pnpm/action-setup@v6',
+  'actions/setup-node@v7',
+  'pnpm --filter @mining/shared build',
+  'pnpm --filter @mining/web build',
+  'playwright install --with-deps chromium',
+  'pnpm test:e2e:web:smoke',
+  'authenticated-journey:',
+  'postgres:17-alpine',
+  'AUTH_EXPOSE_TEST_TOKENS:',
+  'PAYOUTS_ENABLED:',
+  'pnpm db:migrate:deploy',
+  'pnpm --filter @mining/api... build',
+  'http://127.0.0.1:4400/api/v1/health/ready',
+  'playwright test e2e/authenticated-control-plane.spec.ts',
+]) {
+  requireText(browserWorkflow, expected, 'Active browser E2E workflow');
+  requireText(packagedBrowserWorkflow, expected, 'Packaged browser E2E workflow');
 }
 
 process.stdout.write('v0.3.0-alpha.7 static payout-control checks passed.\n');
